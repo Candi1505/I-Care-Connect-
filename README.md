@@ -320,8 +320,9 @@ index.html
  
       NEVER use the service_role key in GitHub or browser code.
     */
-    const SUPABASE_URL = 'PASTE_YOUR_SUPABASE_PROJECT_URL';
-    const SUPABASE_KEY = 'PASTE_YOUR_SUPABASE_ANON_KEY';
+    const SUPABASE_URL = 'https://pbbsaquwumxyrhqhnobv.supabase.co';
+
+const SUPABASE_KEY = 'sb_publishable_4D2Oc8FJjOXDXgGG7GbzfA_oYRpXSU5';
  
     const supabaseClient = window.supabase.createClient(
       SUPABASE_URL,
