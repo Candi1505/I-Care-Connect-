@@ -1,0 +1,776 @@
+index.html
+html lang="en-AU">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+ <meta name="theme-color" content="#0B4C8C">
+ <title>I-Care Connect Hub</title>
+ 
+ <script src="https://cdn.tailwindcss.com"></script>
+ <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+ 
+ <style>
+   :root {
+     --navy: #0B4C8C;
+     --blue: #2494C7;
+     --purple: #8446A8;
+     --soft: #F8F6F3;
+     --green: #198754;
+     --amber: #D97706;
+     --red: #C93B3B;
+   }
+ 
+   * { box-sizing: border-box; }
+   body {
+     margin: 0;
+     background: var(--soft);
+     color: #263238;
+     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+   }
+ 
+   .safe-top { padding-top: max(18px, env(safe-area-inset-top)); }
+   .safe-bottom { padding-bottom: max(92px, calc(env(safe-area-inset-bottom) + 80px)); }
+   .hidden { display: none !important; }
+ 
+   .nav-button {
+     color: #6B7280;
+     border-radius: 16px;
+   }
+   .nav-button.active {
+     color: var(--navy);
+     background: #EAF4FA;
+     font-weight: 800;
+   }
+ 
+   .pill {
+     display: inline-flex;
+     border-radius: 999px;
+     padding: 5px 10px;
+     font-size: 12px;
+     font-weight: 800;
+     white-space: nowrap;
+   }
+   .pill-active, .pill-accepted { background: #E1F5E9; color: var(--green); }
+   .pill-pending { background: #FFF0D2; color: #8B5700; }
+   .pill-declined, .pill-cancelled { background: #FDE5E5; color: var(--red); }
+ 
+   input, select, textarea {
+     color: #263238;
+     background: white;
+   }
+   button:disabled { opacity: .5; cursor: not-allowed; }
+ </style>
+</head>
+ 
+<body>
+ <!-- LOGIN -->
+ <section id="login-screen"
+          class="min-h-screen safe-top px-5 flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
+   <div class="w-full max-w-sm bg-white rounded-[32px] shadow-xl border-t-8 border-[#8446A8] p-6">
+     <div class="text-center mb-6">
+       <div class="mx-auto w-24 h-24 rounded-[28px] bg-gradient-to-br from-[#2494C7] to-[#8446A8] text-white flex items-center justify-center text-5xl font-bold mb-4">
+         ∞
+       </div>
+       <h1 class="text-3xl font-bold text-[#0B4C8C]">I-Care Connect Hub</h1>
+       <p class="text-zinc-500 text-sm mt-1">Connecting care, creating independence</p>
+     </div>
+ 
+     <form id="login-form" class="space-y-3">
+       <label class="block text-sm font-semibold text-[#0B4C8C]" for="login-email">Email address</label>
+       <input id="login-email" type="email" autocomplete="email" required
+              class="w-full border border-zinc-300 rounded-2xl p-4"
+              placeholder="staff@example.com">
+ 
+       <label class="block text-sm font-semibold text-[#0B4C8C]" for="login-password">Password</label>
+       <input id="login-password" type="password" autocomplete="current-password" minlength="8" required
+              class="w-full border border-zinc-300 rounded-2xl p-4"
+              placeholder="Password">
+ 
+       <p id="login-message" class="text-sm min-h-5" role="status"></p>
+ 
+       <button id="login-button" type="submit"
+               class="w-full bg-gradient-to-r from-[#0B4C8C] to-[#8446A8] text-white rounded-2xl py-4 font-bold">
+         Sign in
+       </button>
+     </form>
+   </div>
+ </section>
+ 
+ <!-- APP -->
+ <div id="app-shell" class="hidden">
+   <main class="max-w-md mx-auto min-h-screen bg-[#F8F6F3] safe-bottom">
+     <header class="safe-top px-5 pb-5 text-white bg-gradient-to-br from-[#0B4C8C] via-[#2494C7] to-[#8446A8]">
+       <div class="flex items-center justify-between">
+         <div>
+           <h1 class="text-2xl font-bold">I-Care Connect Hub</h1>
+           <p id="header-role" class="text-blue-100 text-sm mt-1">Loading profile…</p>
+         </div>
+         <button type="button" id="sign-out-button"
+                 class="rounded-2xl px-4 py-2 bg-white/15 text-sm font-semibold">
+           Sign out
+         </button>
+       </div>
+     </header>
+ 
+     <!-- HOME -->
+     <section id="home-panel" class="p-4">
+       <div class="mb-4">
+         <h2 id="welcome-name" class="text-2xl font-bold text-[#0B4C8C]">Welcome</h2>
+         <p class="text-zinc-500 text-sm">Today at a glance</p>
+       </div>
+ 
+       <div id="supervisor-card"
+            class="hidden bg-white rounded-3xl border-l-4 border-[#8446A8] shadow-sm p-5 mb-4">
+         <h3 class="font-bold text-[#0B4C8C] mb-3">Supervisor overview</h3>
+         <div class="grid grid-cols-3 gap-2">
+           <button data-open="roster" class="rounded-2xl border border-zinc-200 p-3 text-left">
+             <strong id="pending-count" class="block text-2xl text-amber-700">0</strong>
+             <span class="text-xs">Pending shifts</span>
+           </button>
+           <button data-open="clients" class="rounded-2xl border border-zinc-200 p-3 text-left">
+             <strong id="client-count" class="block text-2xl text-[#2494C7]">0</strong>
+             <span class="text-xs">Active clients</span>
+           </button>
+           <button id="family-requests-home" class="rounded-2xl border border-zinc-200 p-3 text-left">
+             <strong class="block text-2xl text-[#8446A8]">0</strong>
+             <span class="text-xs">Family requests</span>
+           </button>
+         </div>
+       </div>
+ 
+       <div class="bg-white rounded-3xl border border-zinc-200 shadow-sm p-5 mb-4">
+         <h3 class="font-bold text-[#0B4C8C] mb-3">My next shift</h3>
+         <div id="next-shift"><p class="text-zinc-500 text-sm">Loading roster…</p></div>
+       </div>
+ 
+       <div id="supervisor-quick-actions" class="hidden mb-4">
+         <h3 class="font-bold text-[#0B4C8C] mb-3">Quick actions</h3>
+         <div class="grid grid-cols-2 gap-3">
+           <button data-open="clients" id="home-add-client"
+                   class="bg-[#2494C7] text-white rounded-2xl py-4 font-bold">+ Add client</button>
+           <button data-open="roster" id="home-create-shift"
+                   class="bg-[#8446A8] text-white rounded-2xl py-4 font-bold">+ Create shift</button>
+         </div>
+       </div>
+ 
+       <div class="grid grid-cols-2 gap-3">
+         <button data-open="clients" class="bg-[#2494C7] text-white rounded-2xl py-4 font-semibold">Open clients</button>
+         <button data-open="roster" class="bg-[#8446A8] text-white rounded-2xl py-4 font-semibold">Open roster</button>
+         <button data-open="meds" class="bg-[#0B4C8C] text-white rounded-2xl py-4 font-semibold">Medication</button>
+         <button data-open="notes" class="bg-emerald-700 text-white rounded-2xl py-4 font-semibold">Progress notes</button>
+       </div>
+     </section>
+ 
+     <!-- CLIENTS -->
+     <section id="clients-panel" class="hidden p-4">
+       <div class="flex items-center justify-between mb-4">
+         <div>
+           <h2 class="text-2xl font-bold text-[#0B4C8C]">Clients</h2>
+           <p class="text-zinc-500 text-sm">Each participant has a separate record</p>
+         </div>
+         <button id="show-client-form"
+                 class="hidden bg-[#2494C7] text-white rounded-2xl px-4 py-3 font-bold">
+           + Client
+         </button>
+       </div>
+ 
+       <div id="client-form"
+            class="hidden bg-white rounded-3xl border border-zinc-200 shadow-sm p-5 mb-4">
+         <h3 class="font-bold text-[#0B4C8C] mb-3">Add new client</h3>
+         <div class="space-y-3">
+           <input id="client-preferred-name" class="w-full border border-zinc-300 rounded-2xl p-3"
+                  placeholder="Preferred name">
+           <input id="client-legal-name" class="w-full border border-zinc-300 rounded-2xl p-3"
+                  placeholder="Legal name">
+           <input id="client-dob" type="date" class="w-full border border-zinc-300 rounded-2xl p-3">
+           <input id="client-ndis" class="w-full border border-zinc-300 rounded-2xl p-3"
+                  placeholder="NDIS number (optional)">
+           <input id="client-address" class="w-full border border-zinc-300 rounded-2xl p-3"
+                  placeholder="Address (optional)">
+           <input id="client-emergency-name" class="w-full border border-zinc-300 rounded-2xl p-3"
+                  placeholder="Emergency contact name">
+           <input id="client-emergency-phone" class="w-full border border-zinc-300 rounded-2xl p-3"
+                  placeholder="Emergency contact phone">
+           <textarea id="client-health-alerts" rows="3"
+                     class="w-full border border-zinc-300 rounded-2xl p-3"
+                     placeholder="Health alerts, allergies or important information"></textarea>
+ 
+           <p id="client-form-message" class="text-sm min-h-5"></p>
+ 
+           <button id="save-client"
+                   class="w-full bg-[#2494C7] text-white rounded-2xl py-4 font-bold">
+             Save client
+           </button>
+         </div>
+       </div>
+ 
+       <input id="client-search" type="search"
+              class="w-full border border-zinc-300 rounded-2xl p-3 mb-4"
+              placeholder="Search clients">
+ 
+       <div id="clients-list" class="space-y-3">
+         <div class="bg-white rounded-3xl p-5 text-zinc-500">Loading clients…</div>
+       </div>
+     </section>
+ 
+     <!-- ROSTER -->
+     <section id="roster-panel" class="hidden p-4">
+       <div class="mb-4">
+         <h2 class="text-2xl font-bold text-[#0B4C8C]">Roster</h2>
+         <p class="text-zinc-500 text-sm">Seven-day shift view</p>
+       </div>
+ 
+       <div id="supervisor-roster-tools"
+            class="hidden bg-white rounded-3xl border-l-4 border-[#8446A8] shadow-sm p-5 mb-4">
+         <h3 class="font-bold text-[#0B4C8C] mb-3">Supervisor tools</h3>
+         <button id="show-create-shift"
+                 class="w-full bg-[#8446A8] text-white rounded-2xl py-3 font-bold">
+           Create shift
+         </button>
+       </div>
+ 
+       <div id="create-shift-form"
+            class="hidden bg-white rounded-3xl border border-zinc-200 shadow-sm p-5 mb-4">
+         <div class="space-y-3">
+           <select id="shift-client" class="w-full border border-zinc-300 rounded-2xl p-3">
+             <option value="">Select client</option>
+           </select>
+ 
+           <select id="shift-worker" class="w-full border border-zinc-300 rounded-2xl p-3">
+             <option value="">Select worker</option>
+           </select>
+ 
+           <label class="block text-sm font-semibold text-[#0B4C8C]">Start</label>
+           <input id="shift-start" type="datetime-local"
+                  class="w-full border border-zinc-300 rounded-2xl p-3">
+ 
+           <label class="block text-sm font-semibold text-[#0B4C8C]">Finish</label>
+           <input id="shift-end" type="datetime-local"
+                  class="w-full border border-zinc-300 rounded-2xl p-3">
+ 
+           <select id="shift-type" class="w-full border border-zinc-300 rounded-2xl p-3">
+             <option value="SIL">SIL</option>
+             <option value="Sleepover">Sleepover</option>
+             <option value="Active overnight">Active overnight</option>
+             <option value="Community access">Community access</option>
+             <option value="Social support">Social support</option>
+             <option value="Domestic assistance">Domestic assistance</option>
+             <option value="Cleaning">Cleaning</option>
+             <option value="Transport">Transport</option>
+             <option value="Shopping">Shopping</option>
+             <option value="Respite">Respite</option>
+             <option value="Administration">Administration</option>
+             <option value="Meeting">Meeting</option>
+             <option value="Training">Training</option>
+             <option value="Other">Other</option>
+           </select>
+ 
+           <textarea id="shift-instructions" rows="3"
+                     placeholder="Shift instructions"
+                     class="w-full border border-zinc-300 rounded-2xl p-3"></textarea>
+ 
+           <p id="shift-form-message" class="text-sm min-h-5"></p>
+ 
+           <button id="save-shift"
+                   class="w-full bg-[#8446A8] text-white rounded-2xl py-4 font-bold">
+             Publish shift
+           </button>
+         </div>
+       </div>
+ 
+       <div id="roster-list" class="space-y-3">
+         <div class="bg-white rounded-3xl p-5 text-zinc-500">Loading shifts…</div>
+       </div>
+     </section>
+ 
+     <!-- MEDICATION -->
+     <section id="meds-panel" class="hidden p-4">
+       <div class="mb-4">
+         <h2 class="text-2xl font-bold text-[#0B4C8C]">Medication & MAR</h2>
+         <p class="text-zinc-500 text-sm">Live medication rounds are the next build.</p>
+       </div>
+       <div class="bg-white rounded-3xl border border-zinc-200 shadow-sm p-5">
+         <p class="text-sm text-zinc-600">
+           The database is ready for regular, PRN and Schedule 8 medications.
+           The next update will display daily rounds and allow authorised workers to sign each dose.
+         </p>
+       </div>
+     </section>
+ 
+     <!-- NOTES -->
+     <section id="notes-panel" class="hidden p-4">
+       <div class="mb-4">
+         <h2 class="text-2xl font-bold text-[#0B4C8C]">Progress Notes</h2>
+         <p class="text-zinc-500 text-sm">Live signed notes are the next build.</p>
+       </div>
+       <div class="bg-white rounded-3xl border border-zinc-200 shadow-sm p-5">
+         <p class="text-sm text-zinc-600">
+           Progress notes and handovers are ready in Supabase.
+           The next update will add the live form and note history.
+         </p>
+       </div>
+     </section>
+   </main>
+ 
+   <nav class="fixed left-0 right-0 bottom-0 bg-white border-t border-zinc-200 px-2 pt-2 pb-[max(8px,env(safe-area-inset-bottom))] z-30">
+     <div class="max-w-md mx-auto grid grid-cols-5 gap-1">
+       <button data-tab="home" class="nav-button active py-2 text-xs"><span class="block text-xl">🏠</span>Home</button>
+       <button data-tab="roster" class="nav-button py-2 text-xs"><span class="block text-xl">📅</span>Roster</button>
+       <button data-tab="clients" class="nav-button py-2 text-xs"><span class="block text-xl">👤</span>Clients</button>
+       <button data-tab="meds" class="nav-button py-2 text-xs"><span class="block text-xl">💊</span>Meds</button>
+       <button data-tab="notes" class="nav-button py-2 text-xs"><span class="block text-xl">📝</span>Notes</button>
+     </div>
+   </nav>
+ </div>
+ 
+ <script>
+   const SUPABASE_URL = 'https://pbbsaquwumxyrhqhnobv.supabase.co';
+   const SUPABASE_KEY = 'sb_publishable_4D2Oc8FJjOXDXgGG7GbzfA_oYRpXSU5';
+   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+ 
+   let currentSession = null;
+   let currentProfile = null;
+   let currentRole = 'support_worker';
+   let clientsCache = [];
+ 
+   const panels = ['home', 'roster', 'clients', 'meds', 'notes'];
+ 
+   function setMessage(id, text, isError = false) {
+     const el = document.getElementById(id);
+     el.textContent = text;
+     el.className = isError
+       ? 'text-sm min-h-5 text-red-600 font-semibold'
+       : 'text-sm min-h-5 text-emerald-700 font-semibold';
+   }
+ 
+   function showPanel(name) {
+     panels.forEach(panel => {
+       document.getElementById(`${panel}-panel`).classList.toggle('hidden', panel !== name);
+     });
+     document.querySelectorAll('[data-tab]').forEach(button => {
+       button.classList.toggle('active', button.dataset.tab === name);
+     });
+     window.scrollTo({ top: 0, behavior: 'smooth' });
+   }
+ 
+   document.querySelectorAll('[data-tab]').forEach(button => {
+     button.addEventListener('click', () => showPanel(button.dataset.tab));
+   });
+ 
+   document.querySelectorAll('[data-open]').forEach(button => {
+     button.addEventListener('click', () => showPanel(button.dataset.open));
+   });
+ 
+   document.getElementById('login-form').addEventListener('submit', async event => {
+     event.preventDefault();
+     const email = document.getElementById('login-email').value.trim();
+     const password = document.getElementById('login-password').value;
+     const button = document.getElementById('login-button');
+ 
+     button.disabled = true;
+     setMessage('login-message', 'Signing in…');
+ 
+     const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+     button.disabled = false;
+ 
+     if (error) setMessage('login-message', error.message, true);
+   });
+ 
+   document.getElementById('sign-out-button').addEventListener('click', async () => {
+     await supabaseClient.auth.signOut();
+   });
+ 
+   async function loadProfile() {
+     const { data, error } = await supabaseClient
+       .from('profiles')
+       .select('id, full_name, role, active')
+       .eq('id', currentSession.user.id)
+       .single();
+ 
+     if (error) throw error;
+     if (!data.active) throw new Error('This staff account is inactive.');
+ 
+     currentProfile = data;
+     currentRole = data.role;
+ 
+     const firstName = (data.full_name || 'Staff').split(' ')[0];
+     document.getElementById('welcome-name').textContent = `Welcome, ${firstName}`;
+ 
+     const label =
+       data.role === 'support_worker' ? 'Support Worker' :
+       data.role === 'supervisor' ? 'Supervisor' : 'Administrator';
+ 
+     document.getElementById('header-role').textContent = label;
+ 
+     const management = ['supervisor', 'administrator'].includes(data.role);
+     document.getElementById('supervisor-card').classList.toggle('hidden', !management);
+     document.getElementById('supervisor-roster-tools').classList.toggle('hidden', !management);
+     document.getElementById('show-client-form').classList.toggle('hidden', !management);
+     document.getElementById('supervisor-quick-actions').classList.toggle('hidden', !management);
+   }
+ 
+   function renderClients(filter = '') {
+     const list = document.getElementById('clients-list');
+     const query = filter.trim().toLowerCase();
+     const filtered = clientsCache.filter(client =>
+       (client.preferred_name || '').toLowerCase().includes(query) ||
+       (client.legal_name || '').toLowerCase().includes(query)
+     );
+ 
+     list.innerHTML = '';
+ 
+     if (!filtered.length) {
+       list.innerHTML = '<div class="bg-white rounded-3xl p-5 text-zinc-500">No clients found.</div>';
+       return;
+     }
+ 
+     filtered.forEach(client => {
+       const card = document.createElement('article');
+       card.className = 'bg-white rounded-3xl border border-zinc-200 shadow-sm overflow-hidden';
+ 
+       card.innerHTML = `
+         <div class="bg-gradient-to-r from-[#2494C7] to-[#8446A8] p-5 text-white">
+           <div class="flex justify-between gap-3">
+             <div>
+               <h3 class="text-xl font-bold client-name"></h3>
+               <p class="text-sm text-white/85">Separate client record</p>
+             </div>
+             <span class="pill pill-active">Active</span>
+           </div>
+         </div>
+         <div class="p-5">
+           <p class="text-sm text-zinc-500 mb-2 client-alert"></p>
+           <p class="text-xs text-zinc-400 mb-4 client-details"></p>
+           <div class="grid grid-cols-2 gap-2">
+             <button class="open-meds bg-[#0B4C8C] text-white rounded-xl py-3 font-semibold">Medication</button>
+             <button class="open-notes bg-[#8446A8] text-white rounded-xl py-3 font-semibold">Notes</button>
+           </div>
+         </div>`;
+ 
+       card.querySelector('.client-name').textContent = client.preferred_name;
+       card.querySelector('.client-alert').textContent =
+         client.health_alerts || 'No health alert displayed';
+       card.querySelector('.client-details').textContent =
+         client.date_of_birth ? `DOB: ${client.date_of_birth}` : 'DOB not entered';
+ 
+       card.querySelector('.open-meds').addEventListener('click', () => showPanel('meds'));
+       card.querySelector('.open-notes').addEventListener('click', () => showPanel('notes'));
+ 
+       list.appendChild(card);
+     });
+   }
+ 
+   async function loadClients() {
+     const { data, error } = await supabaseClient
+       .from('clients')
+       .select('id, preferred_name, legal_name, date_of_birth, ndis_number, address, health_alerts, active')
+       .eq('active', true)
+       .order('preferred_name');
+ 
+     if (error) {
+       document.getElementById('clients-list').innerHTML =
+         `<div class="bg-red-50 text-red-700 rounded-3xl p-5">${error.message}</div>`;
+       return;
+     }
+ 
+     clientsCache = data || [];
+     document.getElementById('client-count').textContent = clientsCache.length;
+     renderClients(document.getElementById('client-search').value);
+ 
+     const select = document.getElementById('shift-client');
+     select.innerHTML = '<option value="">Select client</option>';
+     clientsCache.forEach(client => {
+       const option = document.createElement('option');
+       option.value = client.id;
+       option.textContent = client.preferred_name;
+       select.appendChild(option);
+     });
+   }
+ 
+   document.getElementById('client-search').addEventListener('input', event => {
+     renderClients(event.target.value);
+   });
+ 
+   document.getElementById('show-client-form').addEventListener('click', () => {
+     document.getElementById('client-form').classList.toggle('hidden');
+   });
+ 
+   document.getElementById('home-add-client').addEventListener('click', () => {
+     showPanel('clients');
+     document.getElementById('client-form').classList.remove('hidden');
+   });
+ 
+   document.getElementById('save-client').addEventListener('click', async () => {
+     const preferredName = document.getElementById('client-preferred-name').value.trim();
+     const legalName = document.getElementById('client-legal-name').value.trim();
+ 
+     if (!preferredName) {
+       setMessage('client-form-message', 'Please enter the client’s preferred name.', true);
+       return;
+     }
+ 
+     const payload = {
+       preferred_name: preferredName,
+       legal_name: legalName || preferredName,
+       date_of_birth: document.getElementById('client-dob').value || null,
+       ndis_number: document.getElementById('client-ndis').value.trim() || null,
+       address: document.getElementById('client-address').value.trim() || null,
+       emergency_contact_name: document.getElementById('client-emergency-name').value.trim() || null,
+       emergency_contact_phone: document.getElementById('client-emergency-phone').value.trim() || null,
+       health_alerts: document.getElementById('client-health-alerts').value.trim() || null,
+       active: true
+     };
+ 
+     const { error } = await supabaseClient.from('clients').insert(payload);
+ 
+     if (error) {
+       setMessage('client-form-message', error.message, true);
+       return;
+     }
+ 
+     setMessage('client-form-message', `${preferredName} has been added.`);
+     ['client-preferred-name','client-legal-name','client-dob','client-ndis','client-address',
+      'client-emergency-name','client-emergency-phone','client-health-alerts']
+       .forEach(id => document.getElementById(id).value = '');
+ 
+     await loadClients();
+   });
+ 
+   async function loadWorkers() {
+     if (!['supervisor', 'administrator'].includes(currentRole)) return;
+ 
+     const { data, error } = await supabaseClient
+       .from('profiles')
+       .select('id, full_name, active')
+       .eq('active', true)
+       .order('full_name');
+ 
+     if (error) return;
+ 
+     const select = document.getElementById('shift-worker');
+     select.innerHTML = '<option value="">Select worker</option>';
+ 
+     data.forEach(worker => {
+       const option = document.createElement('option');
+       option.value = worker.id;
+       option.textContent = worker.full_name;
+       select.appendChild(option);
+     });
+   }
+ 
+   function formatDateTime(value) {
+     return new Intl.DateTimeFormat('en-AU', {
+       weekday: 'short', day: 'numeric', month: 'short',
+       hour: 'numeric', minute: '2-digit'
+     }).format(new Date(value));
+   }
+ 
+   async function loadRoster() {
+     const now = new Date();
+     const weekLater = new Date();
+     weekLater.setDate(weekLater.getDate() + 7);
+ 
+     const { data, error } = await supabaseClient
+       .from('roster_shifts')
+       .select(`
+         id, start_time, end_time, shift_status, shift_type, instructions, cancelled_reason,
+         client:clients(preferred_name),
+         staff:profiles!roster_shifts_staff_id_fkey(full_name)
+       `)
+       .gte('start_time', now.toISOString())
+       .lt('start_time', weekLater.toISOString())
+       .order('start_time');
+ 
+     const list = document.getElementById('roster-list');
+ 
+     if (error) {
+       list.innerHTML = `<div class="bg-red-50 text-red-700 rounded-3xl p-5">${error.message}</div>`;
+       return;
+     }
+ 
+     const shifts = data || [];
+     document.getElementById('pending-count').textContent =
+       shifts.filter(item => item.shift_status === 'pending').length;
+ 
+     list.innerHTML = '';
+ 
+     if (!shifts.length) {
+       list.innerHTML =
+         '<div class="bg-white rounded-3xl p-5 text-zinc-500">No shifts scheduled in the next seven days.</div>';
+       document.getElementById('next-shift').innerHTML =
+         '<p class="text-zinc-500 text-sm">No upcoming shift found.</p>';
+       return;
+     }
+ 
+     const next = shifts[0];
+     document.getElementById('next-shift').innerHTML = `
+       <strong class="block text-[#0B4C8C]">${next.client?.preferred_name || 'Client'}</strong>
+       <span class="text-sm text-zinc-500">${formatDateTime(next.start_time)}</span>
+       <span class="block text-xs text-zinc-400 mt-1">${next.shift_type}</span>`;
+ 
+     shifts.forEach(shift => {
+       const card = document.createElement('article');
+       card.className = 'bg-white rounded-3xl border border-zinc-200 shadow-sm p-5';
+ 
+       const statusClass = ['accepted','pending','declined','cancelled'].includes(shift.shift_status)
+         ? `pill-${shift.shift_status}` : 'pill-pending';
+ 
+       card.innerHTML = `
+         <div class="flex justify-between gap-3">
+           <div>
+             <h3 class="font-bold text-[#0B4C8C] client"></h3>
+             <p class="text-sm text-zinc-500 time"></p>
+             <p class="text-sm text-zinc-500 worker"></p>
+             <p class="text-xs text-zinc-400 mt-1 type"></p>
+           </div>
+           <span class="pill ${statusClass}">${shift.shift_status}</span>
+         </div>
+         <div class="actions grid grid-cols-2 gap-2 mt-3"></div>`;
+ 
+       card.querySelector('.client').textContent = shift.client?.preferred_name || 'Client';
+       card.querySelector('.time').textContent =
+         `${formatDateTime(shift.start_time)} – ${new Intl.DateTimeFormat('en-AU', {
+           hour: 'numeric', minute: '2-digit'
+         }).format(new Date(shift.end_time))}`;
+       card.querySelector('.worker').textContent = shift.staff?.full_name || 'Unassigned';
+       card.querySelector('.type').textContent = shift.shift_type;
+ 
+       const actions = card.querySelector('.actions');
+ 
+       if (shift.shift_status === 'pending') {
+         const accept = document.createElement('button');
+         accept.className = 'bg-green-600 text-white rounded-xl py-2 font-semibold';
+         accept.textContent = 'Accept';
+         accept.addEventListener('click', async () => {
+           const { error } = await supabaseClient
+             .from('roster_shifts')
+             .update({ shift_status: 'accepted', accepted_at: new Date().toISOString() })
+             .eq('id', shift.id);
+           if (error) alert(error.message); else await loadRoster();
+         });
+ 
+         const decline = document.createElement('button');
+         decline.className = 'bg-red-600 text-white rounded-xl py-2 font-semibold';
+         decline.textContent = 'Decline';
+         decline.addEventListener('click', async () => {
+           const { error } = await supabaseClient
+             .from('roster_shifts')
+             .update({ shift_status: 'declined', declined_at: new Date().toISOString() })
+             .eq('id', shift.id);
+           if (error) alert(error.message); else await loadRoster();
+         });
+         actions.append(accept, decline);
+       }
+ 
+       if (['supervisor','administrator'].includes(currentRole) && shift.shift_status !== 'cancelled') {
+         const cancel = document.createElement('button');
+         cancel.className = 'col-span-2 border border-red-300 text-red-600 rounded-xl py-2 font-semibold';
+         cancel.textContent = 'Cancel shift';
+         cancel.addEventListener('click', async () => {
+           const reason = prompt('Cancellation reason:');
+           if (reason === null) return;
+           if (!reason.trim()) {
+             alert('A cancellation reason is required.');
+             return;
+           }
+           const { error } = await supabaseClient
+             .from('roster_shifts')
+             .update({ shift_status: 'cancelled', cancelled_reason: reason.trim() })
+             .eq('id', shift.id);
+           if (error) alert(error.message); else await loadRoster();
+         });
+         actions.appendChild(cancel);
+       }
+ 
+       list.appendChild(card);
+     });
+   }
+ 
+   document.getElementById('show-create-shift').addEventListener('click', () => {
+     document.getElementById('create-shift-form').classList.toggle('hidden');
+   });
+ 
+   document.getElementById('home-create-shift').addEventListener('click', () => {
+     showPanel('roster');
+     document.getElementById('create-shift-form').classList.remove('hidden');
+   });
+ 
+   document.getElementById('save-shift').addEventListener('click', async () => {
+     const clientId = document.getElementById('shift-client').value;
+     const staffId = document.getElementById('shift-worker').value;
+     const start = document.getElementById('shift-start').value;
+     const end = document.getElementById('shift-end').value;
+ 
+     if (!clientId || !staffId || !start || !end) {
+       setMessage('shift-form-message', 'Please complete the client, worker and shift times.', true);
+       return;
+     }
+ 
+     if (new Date(end) <= new Date(start)) {
+       setMessage('shift-form-message', 'The finish time must be after the start time.', true);
+       return;
+     }
+ 
+     const { error } = await supabaseClient.from('roster_shifts').insert({
+       client_id: clientId,
+       staff_id: staffId,
+       start_time: new Date(start).toISOString(),
+       end_time: new Date(end).toISOString(),
+       shift_type: document.getElementById('shift-type').value,
+       instructions: document.getElementById('shift-instructions').value.trim() || null,
+       shift_status: 'pending',
+       created_by: currentSession.user.id
+     });
+ 
+     if (error) {
+       setMessage('shift-form-message', error.message, true);
+       return;
+     }
+ 
+     setMessage('shift-form-message', 'Shift published successfully.');
+     await loadRoster();
+   });
+ 
+   document.getElementById('family-requests-home').addEventListener('click', () => {
+     alert('The Participant & Family Portal database is ready. The live request screen is coming after medication and notes.');
+   });
+ 
+   async function startApp(session) {
+     currentSession = session;
+     document.getElementById('login-screen').classList.add('hidden');
+     document.getElementById('app-shell').classList.remove('hidden');
+ 
+     try {
+       await loadProfile();
+       await Promise.all([loadClients(), loadWorkers(), loadRoster()]);
+     } catch (error) {
+       alert(error.message);
+       await supabaseClient.auth.signOut();
+     }
+   }
+ 
+   function stopApp() {
+     currentSession = null;
+     currentProfile = null;
+     clientsCache = [];
+     document.getElementById('app-shell').classList.add('hidden');
+     document.getElementById('login-screen').classList.remove('hidden');
+     document.getElementById('login-password').value = '';
+     setMessage('login-message', '');
+   }
+ 
+   supabaseClient.auth.onAuthStateChange((_event, session) => {
+     if (session) startApp(session);
+     else stopApp();
+   });
+ 
+   async function initialise() {
+     const { data } = await supabaseClient.auth.getSession();
+     if (data.session) await startApp(data.session);
+     else stopApp();
+   }
+ 
+   initialise();
+ </script>
+</body>
+</html>
