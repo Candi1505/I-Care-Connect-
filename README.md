@@ -23,11 +23,13 @@ index.html
 
         <!-- Tabs -->
         <div class="flex border-b border-zinc-800 bg-zinc-950 text-sm">
-            <button onclick="showTab('meds')" id="tab-meds"
-                    class="flex-1 py-3 font-medium border-b-2 border-blue-500">Log Meds</button>
-            <button onclick="showTab('notes')" id="tab-notes"
-                    class="flex-1 py-3 font-medium">Progress Notes</button>
-        </div>
+    <button onclick="showTab('meds')" id="tab-meds"
+            class="flex-1 py-3 font-medium">Log Meds</button>
+    <button onclick="showTab('notes')" id="tab-notes"
+            class="flex-1 py-3 font-medium">Progress Notes</button>
+    <button onclick="showTab('roster')" id="tab-roster"
+            class="flex-1 py-3 font-medium">Roster</button>
+</div>
 
         <!-- Medication Log -->
         <div id="meds-tab" class="p-4">
