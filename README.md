@@ -68,6 +68,123 @@ index.html
                 </button>
             </div>
         </div>
+        <!-- Roster Tab -->
+<div id="roster-tab" class="p-4 hidden">
+    <h2 class="font-semibold mb-3">Add Shift</h2>
+    
+    <div class="space-y-3 mb-6">
+        <input type="date" id="shift-date" class="w-full bg-zinc-800 border border-zinc-700 rounded-2xl p-3 text-sm">
+        
+        <div class="grid grid-cols-2 gap-3">
+            <input type="time" id="shift-start" class="bg-zinc-800 border border-zinc-700 rounded-2xl p-3 text-sm">
+            <input type="time" id="shift-end" class="bg-zinc-800 border border-zinc-700 rounded-2xl p-3 text-sm">
+        </div>
+        
+        <input type="text" id="shift-staff" placeholder="Staff name" 
+               class="w-full bg-zinc-800 border border-zinc-700 rounded-2xl p-3 text-sm">
+        
+        <textarea id="shift-notes" placeholder="Shift notes / handover points" rows="2"
+                  class="w-full bg-zinc-800 border border-zinc-700 rounded-2xl p-3 text-sm"></textarea>
+        
+        <button onclick="addShift()"
+                class="w-full bg-purple-600 active:bg-purple-700 py-4 rounded-2xl font-semibold">
+            Add Shift
+        </button>
+    </div>
+
+    <h3 class="font-semibold mb-2">Upcoming Shifts</h3>
+    <div id="shifts-list" class="space-y-2 text-sm">
+        <!-- Shifts will load here -->
+    </div>
+</div>
+// ================== ROSTERING ==================
+async function addShift() {
+    const date = document.getElementById('shift-date').value;
+    const start = document.getElementById('shift-start').value;
+    const end = document.getElementById('shift-end').value;
+    const staff = document.getElementById('shift-staff').value;
+    const notes = document.getElementById('shift-notes').value;
+
+    if (!date || !start || !end || !staff) {
+        alert("Please fill in date, times and staff name");
+        return;
+    }
+
+    const { error } = await supabase.from('shifts').insert({
+        shift_date: date,
+        start_time: start,
+        end_time: end,
+        staff_name: staff,
+        notes: notes
+    });
+
+    if (error) {
+        alert("Error adding shift: " + error.message);
+    } else {
+        alert("Shift added!");
+        document.getElementById('shift-staff').value = '';
+        document.getElementById('shift-notes').value = '';
+        loadShifts();
+    }
+}
+
+async function loadShifts() {
+    const container = document.getElementById('shifts-list');
+    container.innerHTML = '<p class="text-zinc-500">Loading shifts...</p>';
+
+    const { data, error } = await supabase
+        .from('shifts')
+        .select('*')
+        .gte('shift_date', new Date().toISOString().split('T')[0])
+        .order('shift_date', { ascending: true })
+        .limit(10);
+
+    if (error) {
+        container.innerHTML = '<p class="text-red-400">Error loading shifts</p>';
+        return;
+    }
+
+    if (!data || data.length === 0) {
+        container.innerHTML = '<p class="text-zinc-500">No upcoming shifts</p>';
+        return;
+    }
+
+    let html = '';
+    data.forEach(shift => {
+        html += `
+            <div class="bg-zinc-800 p-3 rounded-2xl">
+                <div class="font-medium">${shift.shift_date} • ${shift.start_time} - ${shift.end_time}</div>
+                <div class="text-zinc-400">${shift.staff_name}</div>
+                ${shift.notes ? `<div class="text-xs text-zinc-500 mt-1">${shift.notes}</div>` : ''}
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+// Update showTab function to handle roster tab
+function showTab(tab) {
+    document.getElementById('meds-tab').classList.add('hidden');
+    document.getElementById('notes-tab').classList.add('hidden');
+    document.getElementById('roster-tab').classList.add('hidden');
+
+    document.getElementById('tab-meds').classList.remove('border-b-2', 'border-blue-500');
+    document.getElementById('tab-notes').classList.remove('border-b-2', 'border-blue-500');
+    document.getElementById('tab-roster').classList.remove('border-b-2', 'border-blue-500');
+
+    if (tab === 'meds') {
+        document.getElementById('meds-tab').classList.remove('hidden');
+        document.getElementById('tab-meds').classList.add('border-b-2', 'border-blue-500');
+    } else if (tab === 'notes') {
+        document.getElementById('notes-tab').classList.remove('hidden');
+        document.getElementById('tab-notes').classList.add('border-b-2', 'border-blue-500');
+    } else if (tab === 'roster') {
+        document.getElementById('roster-tab').classList.remove('hidden');
+        document.getElementById('tab-roster').classList.add('border-b-2', 'border-blue-500');
+        loadShifts();
+    }
+}
 
         <!-- Progress Notes -->
         <div id="notes-tab" class="p-4 hidden">
