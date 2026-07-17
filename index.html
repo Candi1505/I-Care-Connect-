@@ -1255,6 +1255,579 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
+<!-- ==========================================================
+ FLORENCE ONE — VJ DEMO FUNCTIONALITY HOTFIX
+ Paste this entire block immediately BEFORE </body>,
+ AFTER the previous Florence One patch.
+========================================================== -->
+ 
+<style>
+  .fl-demo-toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(98px + env(safe-area-inset-bottom));
+    transform: translateX(-50%) translateY(12px);
+    width: min(88vw, 360px);
+    z-index: 120;
+    background: #2F3E34;
+    color: white;
+    border-radius: 18px;
+    padding: 13px 16px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    box-shadow: 0 18px 42px rgba(47,62,52,.28);
+    opacity: 0;
+    pointer-events: none;
+    transition: .22s ease;
+  }
+  .fl-demo-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  .fl-demo-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 110;
+    background: rgba(33,45,37,.48);
+    padding: max(22px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+    overflow-y: auto;
+  }
+  .fl-demo-modal-card {
+    width: min(100%, 430px);
+    margin: 24px auto;
+    background: #FCFBF7;
+    border: 1px solid #DDE7DC;
+    border-radius: 30px;
+    box-shadow: 0 24px 70px rgba(47,62,52,.24);
+    overflow: hidden;
+  }
+  .fl-demo-modal-head {
+    padding: 20px;
+    color: white;
+    background: linear-gradient(145deg,#5F8F72,#496A55);
+  }
+  .fl-demo-list-row {
+    background: white;
+    border: 1px solid #DDE7DC;
+    border-radius: 18px;
+    padding: 14px;
+  }
+  .fl-note-card {
+    background: white;
+    border: 1px solid #DDE7DC;
+    border-radius: 22px;
+    padding: 16px;
+    box-shadow: 0 8px 22px rgba(73,106,85,.06);
+  }
+  .fl-note-type {
+    display: inline-flex;
+    border-radius: 999px;
+    padding: 5px 9px;
+    background: #EEF4ED;
+    color: #496A55;
+    font-size: 11px;
+    font-weight: 800;
+  }
+  #client-dob-label {
+    display: block;
+    color: #718078;
+    font-size: 12px;
+    font-weight: 800;
+    margin: 2px 0 -4px 4px;
+  }
+</style>
+ 
+<script>
+(() => {
+  const ready = (callback) => {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', callback, { once: true });
+    } else {
+      callback();
+    }
+  };
+ 
+  ready(() => {
+    let demoParticipantId = null;
+    let toastTimer = null;
+ 
+    const toast = document.createElement('div');
+    toast.className = 'fl-demo-toast';
+    document.body.appendChild(toast);
+ 
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+    }
+ 
+    function getParticipant(clientId) {
+      return (window.clientsCache || (typeof clientsCache !== 'undefined' ? clientsCache : []))
+        .find(client => client.id === clientId);
+    }
+ 
+    function getAllParticipants() {
+      return window.clientsCache || (typeof clientsCache !== 'undefined' ? clientsCache : []);
+    }
+ 
+    function revealParticipantPanel() {
+      ['home','roster','clients','meds','notes'].forEach(name => {
+        const panel = document.getElementById(`${name}-panel`);
+        if (panel) panel.classList.add('hidden');
+      });
+      const participant = document.getElementById('participant-panel');
+      if (participant) participant.classList.remove('hidden');
+      document.querySelectorAll('[data-tab]').forEach(button => button.classList.remove('active'));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+ 
+    function populateParticipant(clientId) {
+      const client = getParticipant(clientId);
+      const panel = document.getElementById('participant-panel');
+      if (!client || !panel) return false;
+ 
+      demoParticipantId = clientId;
+      const setText = (id, value) => {
+        const element = document.getElementById(id);
+        if (element) element.textContent = value;
+      };
+ 
+      setText('participant-page-title', client.preferred_name || 'Participant');
+      setText('participant-hero-name', client.preferred_name || 'Participant');
+      setText(
+        'participant-hero-details',
+        client.date_of_birth ? `Born ${client.date_of_birth}` : 'Participant profile'
+      );
+      setText('participant-health-alerts', client.health_alerts || 'No health alerts displayed.');
+      setText('participant-legal-name', client.legal_name || client.preferred_name || 'Not entered');
+      setText('participant-dob', client.date_of_birth || 'Not entered');
+      setText('participant-ndis', client.ndis_number || 'Not entered');
+      setText('participant-address', client.address || 'Not entered');
+ 
+      const emergency = [client.emergency_contact_name, client.emergency_contact_phone]
+        .filter(Boolean).join(' · ');
+      setText('participant-emergency-contact', emergency || 'Not entered');
+ 
+      const aboutKey = `florence-about-me-${clientId}`;
+      const about = JSON.parse(localStorage.getItem(aboutKey) || '{}');
+      const aboutFields = {
+        'about-likes': about.likes,
+        'about-dislikes': about.dislikes,
+        'about-routines': about.routines,
+        'about-communication': about.communication,
+        'about-safety': about.safety,
+        'about-matters': about.matters
+      };
+      Object.entries(aboutFields).forEach(([id, value]) => {
+        const input = document.getElementById(id);
+        if (input) input.value = value || '';
+      });
+ 
+      document.querySelectorAll('.participant-tab').forEach(button => {
+        button.classList.toggle('active', button.dataset.participantTab === 'overview');
+      });
+      document.querySelectorAll('.participant-tab-panel').forEach(section => {
+        section.classList.toggle('hidden', section.id !== 'participant-tab-overview');
+      });
+ 
+      revealParticipantPanel();
+      return true;
+    }
+ 
+    // Guaranteed participant profile opening, even if earlier click handlers failed.
+    document.addEventListener('click', event => {
+      const profileButton = event.target.closest('#clients-list .view-profile');
+      if (!profileButton) return;
+ 
+      event.preventDefault();
+      event.stopImmediatePropagation();
+ 
+      const card = profileButton.closest('article');
+      const cards = [...document.querySelectorAll('#clients-list article')];
+      const index = cards.indexOf(card);
+      const query = (document.getElementById('client-search')?.value || '').trim().toLowerCase();
+      const filtered = getAllParticipants().filter(client =>
+        !query ||
+        (client.preferred_name || '').toLowerCase().includes(query) ||
+        (client.legal_name || '').toLowerCase().includes(query)
+      );
+      const client = filtered[index];
+ 
+      if (!client || !populateParticipant(client.id)) {
+        showToast('Participant profile is still loading. Please try again.');
+      }
+    }, true);
+ 
+    // Save About Me with an obvious success confirmation.
+    const saveAboutButton = document.getElementById('save-about-me');
+    if (saveAboutButton) {
+      saveAboutButton.addEventListener('click', event => {
+        event.stopImmediatePropagation();
+        const clientId = demoParticipantId;
+        if (!clientId) return showToast('Open a participant first.');
+ 
+        const payload = {
+          likes: document.getElementById('about-likes')?.value.trim() || '',
+          dislikes: document.getElementById('about-dislikes')?.value.trim() || '',
+          routines: document.getElementById('about-routines')?.value.trim() || '',
+          communication: document.getElementById('about-communication')?.value.trim() || '',
+          safety: document.getElementById('about-safety')?.value.trim() || '',
+          matters: document.getElementById('about-matters')?.value.trim() || '',
+          updated_at: new Date().toISOString()
+        };
+        localStorage.setItem(`florence-about-me-${clientId}`, JSON.stringify(payload));
+        const message = document.getElementById('about-message');
+        if (message) {
+          message.textContent = 'Saved successfully';
+          message.className = 'text-sm min-h-5 text-emerald-700 font-semibold';
+        }
+        showToast('About Me saved successfully 🌿');
+      }, true);
+    }
+ 
+    // Make the participant Medication and Notes tiles reliable.
+    document.getElementById('participant-open-medication')?.addEventListener('click', async event => {
+      event.stopImmediatePropagation();
+      if (!demoParticipantId) return showToast('Open a participant first.');
+      if (typeof window.openParticipantMedication === 'function') {
+        await window.openParticipantMedication(demoParticipantId);
+      } else {
+        showPanel('meds');
+        const filter = document.getElementById('medication-client-filter');
+        if (filter) {
+          filter.value = demoParticipantId;
+          filter.dispatchEvent(new Event('change'));
+        }
+      }
+    }, true);
+ 
+    document.getElementById('participant-open-notes')?.addEventListener('click', event => {
+      event.stopImmediatePropagation();
+      openNotesForParticipant(demoParticipantId);
+    }, true);
+ 
+    // Add a clearly labelled date field to the client form.
+    const dob = document.getElementById('client-dob');
+    if (dob && !document.getElementById('client-dob-label')) {
+      const label = document.createElement('label');
+      label.id = 'client-dob-label';
+      label.htmlFor = 'client-dob';
+      label.textContent = 'Date of birth';
+      dob.insertAdjacentElement('beforebegin', label);
+    }
+ 
+    // Functional progress notes demo, saved per participant on the device.
+    const notesPanel = document.getElementById('notes-panel');
+    if (notesPanel) {
+      notesPanel.innerHTML = `
+        <div class="mb-4">
+          <h2 class="text-2xl font-bold text-[#496A55]" id="notes-page-heading">Progress Notes</h2>
+          <p class="text-zinc-500 text-sm">Write and review participant support notes.</p>
+        </div>
+ 
+        <div class="bg-white rounded-3xl border border-[#DDE7DC] shadow-sm p-5 mb-4">
+          <label class="section-label">Participant</label>
+          <select id="note-client" class="w-full border rounded-2xl p-3 mt-1 mb-3">
+            <option value="">Select participant</option>
+          </select>
+ 
+          <label class="section-label">Note type</label>
+          <select id="note-type" class="w-full border rounded-2xl p-3 mt-1 mb-3">
+            <option>General progress note</option>
+            <option>Community access</option>
+            <option>Personal care</option>
+            <option>Health and wellbeing</option>
+            <option>Medication observation</option>
+            <option>Behaviour and emotional wellbeing</option>
+            <option>Handover</option>
+          </select>
+ 
+          <label class="section-label">Progress note</label>
+          <textarea id="note-body" rows="6" class="w-full border rounded-2xl p-3 mt-1" placeholder="Record factual, respectful and participant-centred information..."></textarea>
+ 
+          <label class="flex items-start gap-3 mt-3 text-sm text-zinc-600">
+            <input id="note-confirm" type="checkbox" class="mt-1">
+            <span>I confirm this note is accurate, respectful and relates to the selected participant.</span>
+          </label>
+ 
+          <p id="note-message" class="text-sm min-h-5 mt-2"></p>
+          <button id="save-progress-note" class="w-full py-4 mt-2 text-white rounded-2xl font-bold bg-gradient-to-r from-[#5F8F72] to-[#496A55]" type="button">
+            Save progress note
+          </button>
+        </div>
+ 
+        <div class="mb-3 flex items-center justify-between">
+          <div>
+            <p class="section-label">Recent entries</p>
+            <h3 class="font-bold text-lg text-[#496A55]">Note history</h3>
+          </div>
+          <span id="note-count" class="pill bg-[#EEF4ED] text-[#496A55]">0 notes</span>
+        </div>
+        <div id="progress-note-list" class="space-y-3">
+          <div class="fl-note-card text-sm text-zinc-500">Select a participant to view notes.</div>
+        </div>`;
+    }
+ 
+    function populateNoteParticipants() {
+      const select = document.getElementById('note-client');
+      if (!select) return;
+      const current = select.value;
+      select.innerHTML = '<option value="">Select participant</option>';
+      getAllParticipants().forEach(client => {
+        const option = document.createElement('option');
+        option.value = client.id;
+        option.textContent = client.preferred_name;
+        select.appendChild(option);
+      });
+      if (current) select.value = current;
+    }
+ 
+    function noteStorageKey(clientId) {
+      return `florence-progress-notes-${clientId}`;
+    }
+ 
+    function renderNotes(clientId) {
+      const list = document.getElementById('progress-note-list');
+      const count = document.getElementById('note-count');
+      if (!list || !count) return;
+ 
+      if (!clientId) {
+        count.textContent = '0 notes';
+        list.innerHTML = '<div class="fl-note-card text-sm text-zinc-500">Select a participant to view notes.</div>';
+        return;
+      }
+ 
+      const notes = JSON.parse(localStorage.getItem(noteStorageKey(clientId)) || '[]');
+      count.textContent = `${notes.length} note${notes.length === 1 ? '' : 's'}`;
+      list.innerHTML = '';
+ 
+      if (!notes.length) {
+        list.innerHTML = '<div class="fl-note-card text-sm text-zinc-500">No progress notes have been saved for this participant yet.</div>';
+        return;
+      }
+ 
+      notes.forEach(note => {
+        const card = document.createElement('article');
+        card.className = 'fl-note-card';
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <span class="fl-note-type"></span>
+              <p class="text-xs text-zinc-400 mt-2 note-date"></p>
+            </div>
+            <span class="text-xl">📝</span>
+          </div>
+          <p class="text-sm text-zinc-700 mt-3 whitespace-pre-wrap note-body"></p>
+          <p class="text-xs text-zinc-400 mt-3 note-author"></p>`;
+        card.querySelector('.fl-note-type').textContent = note.type;
+        card.querySelector('.note-date').textContent = new Date(note.created_at).toLocaleString('en-AU');
+        card.querySelector('.note-body').textContent = note.body;
+        card.querySelector('.note-author').textContent = `Recorded by ${note.author}`;
+        list.appendChild(card);
+      });
+    }
+ 
+    function openNotesForParticipant(clientId) {
+      showPanel('notes');
+      populateNoteParticipants();
+      const select = document.getElementById('note-client');
+      if (select && clientId) select.value = clientId;
+      const participant = getParticipant(clientId);
+      const heading = document.getElementById('notes-page-heading');
+      if (heading) heading.textContent = participant ? `${participant.preferred_name} · Progress Notes` : 'Progress Notes';
+      renderNotes(clientId || '');
+    }
+ 
+    document.getElementById('note-client')?.addEventListener('change', event => {
+      const participant = getParticipant(event.target.value);
+      const heading = document.getElementById('notes-page-heading');
+      if (heading) heading.textContent = participant ? `${participant.preferred_name} · Progress Notes` : 'Progress Notes';
+      renderNotes(event.target.value);
+    });
+ 
+    document.getElementById('save-progress-note')?.addEventListener('click', () => {
+      const clientId = document.getElementById('note-client')?.value;
+      const body = document.getElementById('note-body')?.value.trim();
+      const confirmed = document.getElementById('note-confirm')?.checked;
+      const message = document.getElementById('note-message');
+ 
+      if (!clientId) {
+        if (message) message.textContent = 'Please select a participant.';
+        return;
+      }
+      if (!body) {
+        if (message) message.textContent = 'Please write the progress note.';
+        return;
+      }
+      if (!confirmed) {
+        if (message) message.textContent = 'Please confirm the note before saving.';
+        return;
+      }
+ 
+      const notes = JSON.parse(localStorage.getItem(noteStorageKey(clientId)) || '[]');
+      notes.unshift({
+        id: String(Date.now()),
+        type: document.getElementById('note-type').value,
+        body,
+        created_at: new Date().toISOString(),
+        author: currentProfile?.full_name || 'Staff member'
+      });
+      localStorage.setItem(noteStorageKey(clientId), JSON.stringify(notes));
+ 
+      document.getElementById('note-body').value = '';
+      document.getElementById('note-confirm').checked = false;
+      if (message) {
+        message.textContent = 'Progress note saved and added to history.';
+        message.className = 'text-sm min-h-5 mt-2 text-emerald-700 font-semibold';
+      }
+      renderNotes(clientId);
+      showToast('Progress note saved 📝');
+    });
+ 
+    // Replace placeholder side-menu alerts with useful demonstration screens.
+    function closeDrawerQuietly() {
+      document.getElementById('side-drawer')?.classList.remove('open');
+      document.getElementById('drawer-overlay')?.classList.remove('open');
+    }
+ 
+    function openDemoModal(title, subtitle, bodyHtml) {
+      document.getElementById('fl-demo-modal')?.remove();
+      const modal = document.createElement('section');
+      modal.id = 'fl-demo-modal';
+      modal.className = 'fl-demo-modal';
+      modal.innerHTML = `
+        <div class="fl-demo-modal-card">
+          <div class="fl-demo-modal-head">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <h2 class="text-2xl font-bold">${title}</h2>
+                <p class="text-sm text-white/80 mt-1">${subtitle}</p>
+              </div>
+              <button id="close-demo-modal" class="w-11 h-11 rounded-2xl bg-white/15 border border-white/20 text-xl" type="button">×</button>
+            </div>
+          </div>
+          <div class="p-4">${bodyHtml}</div>
+        </div>`;
+      document.body.appendChild(modal);
+      modal.querySelector('#close-demo-modal').addEventListener('click', () => modal.remove());
+      modal.addEventListener('click', event => {
+        if (event.target === modal) modal.remove();
+      });
+      closeDrawerQuietly();
+    }
+ 
+    document.getElementById('menu-staff')?.addEventListener('click', async event => {
+      event.stopImmediatePropagation();
+      let staff = [];
+      try {
+        const { data } = await supabaseClient
+          .from('profiles')
+          .select('full_name, role, active')
+          .order('full_name');
+        staff = data || [];
+      } catch (_) {}
+ 
+      const rows = staff.length
+        ? staff.map(person => `
+            <div class="fl-demo-list-row flex items-center gap-3">
+              <div class="w-12 h-12 rounded-2xl bg-[#EEF4ED] flex items-center justify-center text-2xl">👤</div>
+              <div class="flex-1">
+                <strong class="block text-[#496A55]">${person.full_name || 'Staff member'}</strong>
+                <span class="text-sm text-zinc-500">${String(person.role || 'support worker').replaceAll('_',' ')}</span>
+              </div>
+              <span class="pill ${person.active ? 'pill-active' : 'pill-cancelled'}">${person.active ? 'Active' : 'Inactive'}</span>
+            </div>`).join('')
+        : '<div class="fl-demo-list-row text-sm text-zinc-500">Staff records will appear here when available.</div>';
+ 
+      openDemoModal('Staff', 'Team overview', `<div class="space-y-3">${rows}</div>`);
+    }, true);
+ 
+    document.getElementById('menu-documents')?.addEventListener('click', event => {
+      event.stopImmediatePropagation();
+      closeDrawerQuietly();
+ 
+      const participants = getAllParticipants();
+      if (!participants.length) return showToast('Add a participant first.');
+ 
+      const chosen = demoParticipantId || participants[0].id;
+      populateParticipant(chosen);
+ 
+      setTimeout(() => {
+        document.querySelector('[data-participant-tab="documents"]')?.click();
+      }, 80);
+    }, true);
+ 
+    document.getElementById('menu-reports')?.addEventListener('click', event => {
+      event.stopImmediatePropagation();
+      const participantCount = getAllParticipants().length;
+      const pending = document.getElementById('pending-count')?.textContent || '0';
+      openDemoModal(
+        'Reports',
+        'Live operational snapshot',
+        `<div class="grid grid-cols-2 gap-3">
+          <div class="fl-demo-list-row"><strong class="block text-3xl text-[#496A55]">${participantCount}</strong><span class="text-sm text-zinc-500">Active participants</span></div>
+          <div class="fl-demo-list-row"><strong class="block text-3xl text-[#C98A38]">${pending}</strong><span class="text-sm text-zinc-500">Pending shifts</span></div>
+          <div class="fl-demo-list-row"><strong class="block text-3xl text-[#496A55]">${getAllParticipants().length ? 'Live' : 'Ready'}</strong><span class="text-sm text-zinc-500">Medication module</span></div>
+          <div class="fl-demo-list-row"><strong class="block text-3xl text-[#496A55]">PDF</strong><span class="text-sm text-zinc-500">Document Centre</span></div>
+        </div>
+        <div class="fl-demo-list-row mt-3 text-sm text-zinc-600">Detailed compliance, medication, incident and workforce reporting will build from these live Florence records.</div>`
+      );
+    }, true);
+ 
+    document.getElementById('menu-settings')?.addEventListener('click', event => {
+      event.stopImmediatePropagation();
+      openDemoModal(
+        'Settings',
+        'Florence preferences',
+        `<div class="space-y-3">
+          <div class="fl-demo-list-row flex justify-between gap-3"><div><strong class="block">Organisation</strong><span class="text-sm text-zinc-500">I-Care Connect</span></div><span>🌿</span></div>
+          <div class="fl-demo-list-row flex justify-between gap-3"><div><strong class="block">Signed-in role</strong><span class="text-sm text-zinc-500">${currentProfile?.role?.replaceAll('_',' ') || 'Supervisor'}</span></div><span>🔐</span></div>
+          <div class="fl-demo-list-row flex justify-between gap-3"><div><strong class="block">App version</strong><span class="text-sm text-zinc-500">Florence One · VJ demonstration</span></div><span>📱</span></div>
+        </div>`
+      );
+    }, true);
+ 
+    document.getElementById('menu-help')?.addEventListener('click', event => {
+      event.stopImmediatePropagation();
+      openDemoModal(
+        'Help',
+        'Supporting those who support others',
+        `<div class="space-y-3">
+          <div class="fl-demo-list-row"><strong class="block text-[#496A55]">Participants</strong><span class="text-sm text-zinc-500">Open a participant to access their About Me, medication, notes, documents and contacts.</span></div>
+          <div class="fl-demo-list-row"><strong class="block text-[#496A55]">Roster</strong><span class="text-sm text-zinc-500">Supervisors can publish shifts and workers can accept or decline them.</span></div>
+          <div class="fl-demo-list-row"><strong class="block text-[#496A55]">Medication</strong><span class="text-sm text-zinc-500">Create medication profiles and securely complete scheduled MAR rounds.</span></div>
+        </div>`
+      );
+    }, true);
+ 
+    // Participant & Family Portal now shows a useful preview instead of an alert.
+    document.getElementById('menu-family')?.addEventListener('click', event => {
+      event.stopImmediatePropagation();
+      openDemoModal(
+        'Participant & Family Portal',
+        'Prepared for secure family collaboration',
+        `<div class="space-y-3">
+          <div class="fl-demo-list-row"><strong class="block text-[#496A55]">Family requests</strong><span class="text-sm text-zinc-500">Families will be able to submit requests without altering clinical or staff-only records.</span></div>
+          <div class="fl-demo-list-row"><strong class="block text-[#496A55]">Approved updates</strong><span class="text-sm text-zinc-500">Share selected support updates and documents through controlled permissions.</span></div>
+          <div class="fl-demo-list-row"><strong class="block text-[#496A55]">Participant choice</strong><span class="text-sm text-zinc-500">Access will remain participant-led and consent-based.</span></div>
+        </div>`
+      );
+    }, true);
+ 
+    // Refresh notes participant list after app data has loaded.
+    setTimeout(populateNoteParticipants, 900);
+    setTimeout(() => {
+      const profileButtons = document.querySelectorAll('#clients-list .view-profile');
+      profileButtons.forEach(button => button.textContent = 'Open participant profile');
+    }, 1100);
+ 
+    showToast('VJ demonstration features are ready 🌿');
+  });
+})();
+</script>
+
 <body>
 <!-- LOGIN -->
 <section class="min-h-screen safe-top px-5 flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50" id="login-screen">
