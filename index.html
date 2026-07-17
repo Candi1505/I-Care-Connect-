@@ -1,15 +1,14 @@
-<!DOCTYPE html>
+html>
+
 <html lang="en-AU">
 <head>
- <meta charset="UTF-8">
- <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
- <meta name="theme-color" content="#0B4C8C">
- <title>I-Care Connect Hub</title>
-
- <script src="https://cdn.tailwindcss.com"></script>
- <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
- <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
+<meta content="#0B4C8C" name="theme-color"/>
+<title>I-Care Connect Hub · Florence 8.2</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
    :root {
      --navy: #0B4C8C;
      --blue: #2494C7;
@@ -172,482 +171,401 @@
   .mar-progress-fill { height: 100%; background: linear-gradient(90deg, #2494C7, #8446A8); transition: width .2s ease; }
 </style>
 </head>
-
 <body>
- <!-- LOGIN -->
- <section id="login-screen"
-          class="min-h-screen safe-top px-5 flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
-   <div class="w-full max-w-sm bg-white rounded-[32px] shadow-xl border-t-8 border-[#8446A8] p-6">
-     <div class="text-center mb-6">
-       <div class="mx-auto w-24 h-24 rounded-[28px] bg-gradient-to-br from-[#2494C7] to-[#8446A8] text-white flex items-center justify-center text-5xl font-bold mb-4">
+<!-- LOGIN -->
+<section class="min-h-screen safe-top px-5 flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50" id="login-screen">
+<div class="w-full max-w-sm bg-white rounded-[32px] shadow-xl border-t-8 border-[#8446A8] p-6">
+<div class="text-center mb-6">
+<div class="mx-auto w-24 h-24 rounded-[28px] bg-gradient-to-br from-[#2494C7] to-[#8446A8] text-white flex items-center justify-center text-5xl font-bold mb-4">
          ∞
        </div>
-       <h1 class="text-3xl font-bold text-[#0B4C8C]">I-Care Connect Hub</h1>
-       <p class="text-zinc-500 text-sm mt-1">Connecting care, creating independence</p>
-     </div>
-
-     <form id="login-form" class="space-y-3">
-       <label class="block text-sm font-semibold text-[#0B4C8C]" for="login-email">Email address</label>
-       <input id="login-email" type="email" autocomplete="email" required
-              class="w-full border border-zinc-300 rounded-2xl p-4"
-              placeholder="staff@example.com">
-
-       <label class="block text-sm font-semibold text-[#0B4C8C]" for="login-password">Password</label>
-       <input id="login-password" type="password" autocomplete="current-password" minlength="8" required
-              class="w-full border border-zinc-300 rounded-2xl p-4"
-              placeholder="Password">
-
-       <p id="login-message" class="text-sm min-h-5" role="status"></p>
-
-       <button id="login-button" type="submit"
-               class="w-full bg-gradient-to-r from-[#0B4C8C] to-[#8446A8] text-white rounded-2xl py-4 font-bold">
+<h1 class="text-3xl font-bold text-[#0B4C8C]">I-Care Connect Hub</h1>
+<p class="text-zinc-500 text-sm mt-1">Connecting care, creating independence</p>
+</div>
+<form class="space-y-3" id="login-form">
+<label class="block text-sm font-semibold text-[#0B4C8C]" for="login-email">Email address</label>
+<input autocomplete="email" class="w-full border border-zinc-300 rounded-2xl p-4" id="login-email" placeholder="staff@example.com" required="" type="email"/>
+<label class="block text-sm font-semibold text-[#0B4C8C]" for="login-password">Password</label>
+<input autocomplete="current-password" class="w-full border border-zinc-300 rounded-2xl p-4" id="login-password" minlength="8" placeholder="Password" required="" type="password"/>
+<p class="text-sm min-h-5" id="login-message" role="status"></p>
+<button class="w-full bg-gradient-to-r from-[#0B4C8C] to-[#8446A8] text-white rounded-2xl py-4 font-bold" id="login-button" type="submit">
          Sign in
        </button>
-     </form>
-   </div>
- </section>
-
- <!-- APP -->
- <div id="app-shell" class="hidden">
-   <main class="max-w-md mx-auto min-h-screen bg-[#F8F6F3] safe-bottom">
-     <header class="safe-top px-4 pb-5 text-white bg-gradient-to-br from-[#0B4C8C] via-[#2494C7] to-[#8446A8] shadow-lg">
-       <div class="flex items-center justify-between gap-3">
-         <button type="button" id="menu-button" class="header-icon" aria-label="Open menu">☰</button>
-
-         <div class="text-center flex-1 min-w-0">
-           <h1 class="text-xl font-extrabold truncate">I-Care Connect Hub</h1>
-           <p id="header-role" class="text-blue-100 text-sm mt-1">Loading profile…</p>
-         </div>
-
-         <button type="button" id="notification-button" class="header-icon relative" aria-label="Open notifications">
+</form>
+</div>
+</section>
+<!-- APP -->
+<div class="hidden" id="app-shell">
+<main class="max-w-md mx-auto min-h-screen bg-[#F8F6F3] safe-bottom">
+<header class="safe-top px-4 pb-5 text-white bg-gradient-to-br from-[#0B4C8C] via-[#2494C7] to-[#8446A8] shadow-lg">
+<div class="flex items-center justify-between gap-3">
+<button aria-label="Open menu" class="header-icon" id="menu-button" type="button">☰</button>
+<div class="text-center flex-1 min-w-0">
+<h1 class="text-xl font-extrabold truncate">I-Care Connect Hub</h1>
+<p class="text-blue-100 text-sm mt-1" id="header-role">Loading profile…</p>
+</div>
+<button aria-label="Open notifications" class="header-icon relative" id="notification-button" type="button">
            🔔
-           <span id="notification-badge"
-                 class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-[10px] min-w-5 h-5 px-1 flex items-center justify-center font-bold">2</span>
-         </button>
-       </div>
-     </header>
-
-     <!-- HOME -->
-     <section id="home-panel" class="p-4">
-       <div class="mb-4">
-         <h2 id="welcome-name" class="text-2xl font-bold text-[#0B4C8C]">Welcome</h2>
-         <p class="text-zinc-500 text-sm">Today at a glance</p>
-       </div>
-
-       <div id="supervisor-card"
-            class="hidden bg-white rounded-3xl border-l-4 border-[#8446A8] shadow-sm p-5 mb-4">
-         <h3 class="font-bold text-[#0B4C8C] mb-3">Supervisor overview</h3>
-         <div class="grid grid-cols-3 gap-2">
-           <button data-open="roster" class="dashboard-stat rounded-2xl border border-zinc-200 p-3 text-left">
-             <strong id="pending-count" class="block text-2xl text-amber-700">0</strong>
-             <span class="text-xs">Pending shifts</span>
-           </button>
-           <button data-open="clients" class="dashboard-stat rounded-2xl border border-zinc-200 p-3 text-left">
-             <strong id="client-count" class="block text-2xl text-[#2494C7]">0</strong>
-             <span class="text-xs">Active clients</span>
-           </button>
-           <button id="family-requests-home" class="dashboard-stat rounded-2xl border border-zinc-200 p-3 text-left">
-             <strong class="block text-2xl text-[#8446A8]">0</strong>
-             <span class="text-xs">Family requests</span>
-           </button>
-         </div>
-       </div>
-
-       <div class="bg-white rounded-3xl border border-zinc-200 shadow-sm p-5 mb-4">
-         <h3 class="font-bold text-[#0B4C8C] mb-3">My next shift</h3>
-         <div id="next-shift"><p class="text-zinc-500 text-sm">Loading roster…</p></div>
-       </div>
-
-       <div id="supervisor-quick-actions" class="hidden mb-4">
-         <h3 class="font-bold text-[#0B4C8C] mb-3">Quick actions</h3>
-         <div class="grid grid-cols-2 gap-3">
-           <button data-open="clients" id="home-add-client"
-                   class="quick-action bg-gradient-to-br from-[#2494C7] to-[#0B4C8C] text-white rounded-3xl py-4 font-bold">👤<span class="block mt-1">+ Add client</span></button>
-           <button data-open="roster" id="home-create-shift"
-                   class="quick-action bg-gradient-to-br from-[#8446A8] to-[#67328B] text-white rounded-3xl py-4 font-bold">📅<span class="block mt-1">+ Create shift</span></button>
-         </div>
-       </div>
+           <span class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-[10px] min-w-5 h-5 px-1 flex items-center justify-center font-bold" id="notification-badge">2</span>
+</button>
+</div>
+</header>
+<!-- HOME -->
+<section class="p-4" id="home-panel">
+<div class="mb-4">
+<h2 class="text-2xl font-bold text-[#0B4C8C]" id="welcome-name">Welcome</h2>
+<p class="text-zinc-500 text-sm">Today at a glance</p>
+</div>
+<div class="hidden bg-white rounded-3xl border-l-4 border-[#8446A8] shadow-sm p-5 mb-4" id="supervisor-card">
+<h3 class="font-bold text-[#0B4C8C] mb-3">Supervisor overview</h3>
+<div class="grid grid-cols-3 gap-2">
+<button class="dashboard-stat rounded-2xl border border-zinc-200 p-3 text-left" data-open="roster">
+<strong class="block text-2xl text-amber-700" id="pending-count">0</strong>
+<span class="text-xs">Pending shifts</span>
+</button>
+<button class="dashboard-stat rounded-2xl border border-zinc-200 p-3 text-left" data-open="clients">
+<strong class="block text-2xl text-[#2494C7]" id="client-count">0</strong>
+<span class="text-xs">Active clients</span>
+</button>
+<button class="dashboard-stat rounded-2xl border border-zinc-200 p-3 text-left" id="family-requests-home">
+<strong class="block text-2xl text-[#8446A8]">0</strong>
+<span class="text-xs">Family requests</span>
+</button>
+</div>
+</div>
+<div class="bg-white rounded-3xl border border-zinc-200 shadow-sm p-5 mb-4">
+<h3 class="font-bold text-[#0B4C8C] mb-3">My next shift</h3>
+<div id="next-shift"><p class="text-zinc-500 text-sm">Loading roster…</p></div>
+</div>
+<div class="hidden mb-4" id="supervisor-quick-actions">
+<h3 class="font-bold text-[#0B4C8C] mb-3">Quick actions</h3>
 <div class="grid grid-cols-2 gap-3">
-         <button data-open="clients" class="bg-[#2494C7] text-white rounded-2xl py-4 font-semibold">Open clients</button>
-         <button data-open="roster" class="bg-[#8446A8] text-white rounded-2xl py-4 font-semibold">Open roster</button>
-         <button data-open="meds" class="bg-[#0B4C8C] text-white rounded-2xl py-4 font-semibold">Medication</button>
-         <button data-open="notes" class="bg-emerald-700 text-white rounded-2xl py-4 font-semibold">Progress notes</button>
-       </div>
-     </section>
-
-     <!-- CLIENTS -->
-     <section id="clients-panel" class="hidden p-4">
-       <div class="flex items-center justify-between mb-4">
-         <div>
-           <h2 class="text-2xl font-bold text-[#0B4C8C]">Clients</h2>
-           <p class="text-zinc-500 text-sm">Each participant has a separate record</p>
-         </div>
-         <button id="show-client-form"
-                 class="hidden bg-[#2494C7] text-white rounded-2xl px-4 py-3 font-bold">
+<button class="quick-action bg-gradient-to-br from-[#2494C7] to-[#0B4C8C] text-white rounded-3xl py-4 font-bold" data-open="clients" id="home-add-client">👤<span class="block mt-1">+ Add client</span></button>
+<button class="quick-action bg-gradient-to-br from-[#8446A8] to-[#67328B] text-white rounded-3xl py-4 font-bold" data-open="roster" id="home-create-shift">📅<span class="block mt-1">+ Create shift</span></button>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<button class="bg-[#2494C7] text-white rounded-2xl py-4 font-semibold" data-open="clients">Open clients</button>
+<button class="bg-[#8446A8] text-white rounded-2xl py-4 font-semibold" data-open="roster">Open roster</button>
+<button class="bg-[#0B4C8C] text-white rounded-2xl py-4 font-semibold" data-open="meds">Medication</button>
+<button class="bg-emerald-700 text-white rounded-2xl py-4 font-semibold" data-open="notes">Progress notes</button>
+</div>
+</section>
+<!-- CLIENTS -->
+<section class="hidden p-4" id="clients-panel">
+<div class="flex items-center justify-between mb-4">
+<div>
+<h2 class="text-2xl font-bold text-[#0B4C8C]">Clients</h2>
+<p class="text-zinc-500 text-sm">Each participant has a separate record</p>
+</div>
+<button class="hidden bg-[#2494C7] text-white rounded-2xl px-4 py-3 font-bold" id="show-client-form">
            + Client
          </button>
-       </div>
-
-       <div id="client-form"
-            class="hidden bg-white rounded-3xl border border-zinc-200 shadow-sm p-5 mb-4">
-         <h3 class="font-bold text-[#0B4C8C] mb-3">Add new client</h3>
-         <div class="space-y-3">
-           <input id="client-preferred-name" class="w-full border border-zinc-300 rounded-2xl p-3"
-                  placeholder="Preferred name">
-           <input id="client-legal-name" class="w-full border border-zinc-300 rounded-2xl p-3"
-                  placeholder="Legal name">
-           <input id="client-dob" type="date" class="w-full border border-zinc-300 rounded-2xl p-3">
-           <input id="client-ndis" class="w-full border border-zinc-300 rounded-2xl p-3"
-                  placeholder="NDIS number (optional)">
-           <input id="client-address" class="w-full border border-zinc-300 rounded-2xl p-3"
-                  placeholder="Address (optional)">
-           <input id="client-emergency-name" class="w-full border border-zinc-300 rounded-2xl p-3"
-                  placeholder="Emergency contact name">
-           <input id="client-emergency-phone" class="w-full border border-zinc-300 rounded-2xl p-3"
-                  placeholder="Emergency contact phone">
-           <textarea id="client-health-alerts" rows="3"
-                     class="w-full border border-zinc-300 rounded-2xl p-3"
-                     placeholder="Health alerts, allergies or important information"></textarea>
-
-           <p id="client-form-message" class="text-sm min-h-5"></p>
-
-           <button id="save-client"
-                   class="w-full bg-[#2494C7] text-white rounded-2xl py-4 font-bold">
+</div>
+<div class="hidden bg-white rounded-3xl border border-zinc-200 shadow-sm p-5 mb-4" id="client-form">
+<h3 class="font-bold text-[#0B4C8C] mb-3">Add new client</h3>
+<div class="space-y-3">
+<input class="w-full border border-zinc-300 rounded-2xl p-3" id="client-preferred-name" placeholder="Preferred name"/>
+<input class="w-full border border-zinc-300 rounded-2xl p-3" id="client-legal-name" placeholder="Legal name"/>
+<input class="w-full border border-zinc-300 rounded-2xl p-3" id="client-dob" type="date"/>
+<input class="w-full border border-zinc-300 rounded-2xl p-3" id="client-ndis" placeholder="NDIS number (optional)"/>
+<input class="w-full border border-zinc-300 rounded-2xl p-3" id="client-address" placeholder="Address (optional)"/>
+<input class="w-full border border-zinc-300 rounded-2xl p-3" id="client-emergency-name" placeholder="Emergency contact name"/>
+<input class="w-full border border-zinc-300 rounded-2xl p-3" id="client-emergency-phone" placeholder="Emergency contact phone"/>
+<textarea class="w-full border border-zinc-300 rounded-2xl p-3" id="client-health-alerts" placeholder="Health alerts, allergies or important information" rows="3"></textarea>
+<p class="text-sm min-h-5" id="client-form-message"></p>
+<button class="w-full bg-[#2494C7] text-white rounded-2xl py-4 font-bold" id="save-client">
              Save client
            </button>
-         </div>
-       </div>
-
-       <input id="client-search" type="search"
-              class="w-full border border-zinc-300 rounded-2xl p-3 mb-4"
-              placeholder="Search clients">
-
-       <div id="clients-list" class="space-y-3">
-         <div class="bg-white rounded-3xl p-5 text-zinc-500">Loading clients…</div>
-       </div>
-     </section>
-
-     <!-- ROSTER -->
-     <section id="roster-panel" class="hidden p-4">
-       <div class="mb-4">
-         <h2 class="text-2xl font-bold text-[#0B4C8C]">Roster</h2>
-         <p class="text-zinc-500 text-sm">Seven-day shift view</p>
-       </div>
-
-       <div id="supervisor-roster-tools"
-            class="hidden bg-white rounded-3xl border-l-4 border-[#8446A8] shadow-sm p-5 mb-4">
-         <h3 class="font-bold text-[#0B4C8C] mb-3">Supervisor tools</h3>
-         <button id="show-create-shift"
-                 class="w-full bg-[#8446A8] text-white rounded-2xl py-3 font-bold">
+</div>
+</div>
+<input class="w-full border border-zinc-300 rounded-2xl p-3 mb-4" id="client-search" placeholder="Search clients" type="search"/>
+<div class="space-y-3" id="clients-list">
+<div class="bg-white rounded-3xl p-5 text-zinc-500">Loading clients…</div>
+</div>
+</section>
+<!-- ROSTER -->
+<section class="hidden p-4" id="roster-panel">
+<div class="mb-4">
+<h2 class="text-2xl font-bold text-[#0B4C8C]">Roster</h2>
+<p class="text-zinc-500 text-sm">Seven-day shift view</p>
+</div>
+<div class="hidden bg-white rounded-3xl border-l-4 border-[#8446A8] shadow-sm p-5 mb-4" id="supervisor-roster-tools">
+<h3 class="font-bold text-[#0B4C8C] mb-3">Supervisor tools</h3>
+<button class="w-full bg-[#8446A8] text-white rounded-2xl py-3 font-bold" id="show-create-shift">
            Create shift
          </button>
-       </div>
-
-       <div id="create-shift-form"
-            class="hidden bg-white rounded-3xl border border-zinc-200 shadow-sm p-5 mb-4">
-         <div class="space-y-3">
-           <select id="shift-client" class="w-full border border-zinc-300 rounded-2xl p-3">
-             <option value="">Select client</option>
-           </select>
-
-           <select id="shift-worker" class="w-full border border-zinc-300 rounded-2xl p-3">
-             <option value="">Select worker</option>
-           </select>
-
-           <label class="block text-sm font-semibold text-[#0B4C8C]">Start</label>
-           <input id="shift-start" type="datetime-local"
-                  class="w-full border border-zinc-300 rounded-2xl p-3">
-
-           <label class="block text-sm font-semibold text-[#0B4C8C]">Finish</label>
-           <input id="shift-end" type="datetime-local"
-                  class="w-full border border-zinc-300 rounded-2xl p-3">
-
-           <select id="shift-type" class="w-full border border-zinc-300 rounded-2xl p-3">
-             <option value="SIL">SIL</option>
-             <option value="Sleepover">Sleepover</option>
-             <option value="Active overnight">Active overnight</option>
-             <option value="Community access">Community access</option>
-             <option value="Social support">Social support</option>
-             <option value="Domestic assistance">Domestic assistance</option>
-             <option value="Cleaning">Cleaning</option>
-             <option value="Transport">Transport</option>
-             <option value="Shopping">Shopping</option>
-             <option value="Respite">Respite</option>
-             <option value="Administration">Administration</option>
-             <option value="Meeting">Meeting</option>
-             <option value="Training">Training</option>
-             <option value="Other">Other</option>
-           </select>
-
-           <textarea id="shift-instructions" rows="3"
-                     placeholder="Shift instructions"
-                     class="w-full border border-zinc-300 rounded-2xl p-3"></textarea>
-
-           <p id="shift-form-message" class="text-sm min-h-5"></p>
-
-           <button id="save-shift"
-                   class="w-full bg-[#8446A8] text-white rounded-2xl py-4 font-bold">
+</div>
+<div class="hidden bg-white rounded-3xl border border-zinc-200 shadow-sm p-5 mb-4" id="create-shift-form">
+<div class="space-y-3">
+<select class="w-full border border-zinc-300 rounded-2xl p-3" id="shift-client">
+<option value="">Select client</option>
+</select>
+<select class="w-full border border-zinc-300 rounded-2xl p-3" id="shift-worker">
+<option value="">Select worker</option>
+</select>
+<label class="block text-sm font-semibold text-[#0B4C8C]">Start</label>
+<input class="w-full border border-zinc-300 rounded-2xl p-3" id="shift-start" type="datetime-local"/>
+<label class="block text-sm font-semibold text-[#0B4C8C]">Finish</label>
+<input class="w-full border border-zinc-300 rounded-2xl p-3" id="shift-end" type="datetime-local"/>
+<select class="w-full border border-zinc-300 rounded-2xl p-3" id="shift-type">
+<option value="SIL">SIL</option>
+<option value="Sleepover">Sleepover</option>
+<option value="Active overnight">Active overnight</option>
+<option value="Community access">Community access</option>
+<option value="Social support">Social support</option>
+<option value="Domestic assistance">Domestic assistance</option>
+<option value="Cleaning">Cleaning</option>
+<option value="Transport">Transport</option>
+<option value="Shopping">Shopping</option>
+<option value="Respite">Respite</option>
+<option value="Administration">Administration</option>
+<option value="Meeting">Meeting</option>
+<option value="Training">Training</option>
+<option value="Other">Other</option>
+</select>
+<textarea class="w-full border border-zinc-300 rounded-2xl p-3" id="shift-instructions" placeholder="Shift instructions" rows="3"></textarea>
+<p class="text-sm min-h-5" id="shift-form-message"></p>
+<button class="w-full bg-[#8446A8] text-white rounded-2xl py-4 font-bold" id="save-shift">
              Publish shift
            </button>
-         </div>
-       </div>
-
-       <div id="roster-list" class="space-y-3">
-         <div class="bg-white rounded-3xl p-5 text-zinc-500">Loading shifts…</div>
-       </div>
-     </section>
-    <!-- MEDICATION -->
-    <section id="meds-panel" class="hidden p-4">
-      <div id="medication-landing">
-        <div class="flex items-start justify-between gap-3 mb-4">
-          <div>
-            <h2 class="text-2xl font-bold text-[#0B4C8C]">Medication & MAR</h2>
-            <p class="text-zinc-500 text-sm">Project Florence - enter once, use everywhere</p>
-          </div>
-          <button id="show-medication-profile-form"
-                  class="hidden bg-[#0B4C8C] text-white rounded-2xl px-4 py-3 font-bold whitespace-nowrap">
+</div>
+</div>
+<div class="space-y-3" id="roster-list">
+<div class="bg-white rounded-3xl p-5 text-zinc-500">Loading shifts…</div>
+</div>
+</section>
+<!-- MEDICATION -->
+<section class="hidden p-4" id="meds-panel">
+<div id="medication-landing">
+<div class="flex items-start justify-between gap-3 mb-4">
+<div>
+<h2 class="text-2xl font-bold text-[#0B4C8C]">Medication &amp; MAR</h2>
+<p class="text-zinc-500 text-sm">Project Florence - enter once, use everywhere</p>
+</div>
+<button aria-controls="medication-profile-form" class="hidden bg-[#0B4C8C] text-white rounded-2xl px-4 py-3 font-bold whitespace-nowrap" id="show-medication-profile-form" type="button">
             + Medication
           </button>
-        </div>
-
-        <select id="medication-client-filter"
-                class="w-full border border-zinc-300 rounded-2xl p-4 mb-4">
-          <option value="">Select client</option>
-        </select>
-
-        <div class="grid grid-cols-1 gap-3 mb-5">
-          <button id="open-scheduled-mar" class="med-choice med-card text-left p-5 med-type-regular">
-            <div class="flex items-center gap-4">
-              <div class="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-3xl">💊</div>
-              <div class="flex-1">
-                <h3 class="font-bold text-lg text-[#0B4C8C]">Scheduled Medication & MAR</h3>
-                <p class="text-sm text-zinc-500 mt-1">Complete and securely sign today's rounds</p>
-              </div>
-              <span class="text-2xl text-zinc-300">›</span>
-            </div>
-          </button>
-
-          <button id="open-prn" class="med-choice med-card text-left p-5 med-type-prn">
-            <div class="flex items-center gap-4">
-              <div class="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center text-3xl">🩹</div>
-              <div class="flex-1">
-                <h3 class="font-bold text-lg text-amber-700">PRN Administration</h3>
-                <p class="text-sm text-zinc-500 mt-1">Separate as-needed medication workflow</p>
-              </div>
-              <span class="text-2xl text-zinc-300">›</span>
-            </div>
-          </button>
-
-          <button id="open-s8" class="med-choice med-card text-left p-5 med-type-schedule8">
-            <div class="flex items-center gap-4">
-              <div class="w-14 h-14 rounded-2xl bg-purple-50 flex items-center justify-center text-3xl">🔒</div>
-              <div class="flex-1">
-                <h3 class="font-bold text-lg text-[#8446A8]">Schedule 8 Register</h3>
-                <p class="text-sm text-zinc-500 mt-1">Controlled-drug administration and stock balance</p>
-              </div>
-              <span class="text-2xl text-zinc-300">›</span>
-            </div>
-          </button>
-        </div>
-
-        <div id="medication-profile-form" class="hidden med-card p-5 mb-5">
-          <div class="flex items-center justify-between mb-4">
-            <div>
-              <p class="section-label">Supervisor setup</p>
-              <h3 class="font-bold text-xl text-[#0B4C8C]">Add medication profile</h3>
-            </div>
-            <button id="close-medication-profile-form" class="w-10 h-10 rounded-xl bg-zinc-100 text-xl">×</button>
-          </div>
-
-          <div class="space-y-3">
-            <select id="med-profile-client" class="w-full border border-zinc-300 rounded-2xl p-3"><option value="">Select client</option></select>
-            <input id="med-profile-name" class="w-full border border-zinc-300 rounded-2xl p-3" placeholder="Medication name">
-            <div class="grid grid-cols-2 gap-3">
-              <input id="med-profile-strength" class="border border-zinc-300 rounded-2xl p-3" placeholder="Strength e.g. 500 mg">
-              <select id="med-profile-form-type" class="border border-zinc-300 rounded-2xl p-3">
-                <option>Tablet</option><option>Capsule</option><option>Liquid</option><option>Cream</option><option>Patch</option>
-                <option>Eye drop</option><option>Ear drop</option><option>Inhaler</option><option>Nebuliser</option><option>Injection</option><option>Other</option>
-              </select>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-              <input id="med-profile-dose" class="border border-zinc-300 rounded-2xl p-3" placeholder="Dose e.g. 2 tablets">
-              <select id="med-profile-route" class="border border-zinc-300 rounded-2xl p-3">
-                <option>Oral</option><option>Topical</option><option>Inhaled</option><option>Eye</option><option>Ear</option>
-                <option>Transdermal</option><option>Subcutaneous</option><option>Other</option>
-              </select>
-            </div>
-            <select id="med-profile-type" class="w-full border border-zinc-300 rounded-2xl p-3">
-              <option value="regular">Regular scheduled medication</option>
-              <option value="prn">PRN medication</option>
-              <option value="schedule8">Schedule 8 medication</option>
-            </select>
-            <textarea id="med-profile-instructions" rows="3" class="w-full border border-zinc-300 rounded-2xl p-3" placeholder="Administration instructions"></textarea>
-            <input id="med-profile-doctor" class="w-full border border-zinc-300 rounded-2xl p-3" placeholder="Prescribing doctor's name">
-            <div class="grid grid-cols-2 gap-3">
-              <input id="med-profile-practice" class="border border-zinc-300 rounded-2xl p-3" placeholder="Clinic / practice">
-              <input id="med-profile-practice-phone" type="tel" class="border border-zinc-300 rounded-2xl p-3" placeholder="Clinic phone">
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-              <input id="med-profile-pharmacy" class="border border-zinc-300 rounded-2xl p-3" placeholder="Pharmacy name">
-              <input id="med-profile-pharmacy-phone" type="tel" class="border border-zinc-300 rounded-2xl p-3" placeholder="Pharmacy phone">
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-              <div><label class="section-label">Start date</label><input id="med-profile-start" type="date" class="w-full border border-zinc-300 rounded-2xl p-3 mt-1"></div>
-              <div><label class="section-label">Review date</label><input id="med-profile-review" type="date" class="w-full border border-zinc-300 rounded-2xl p-3 mt-1"></div>
-            </div>
-            <div id="scheduled-fields">
-              <label class="section-label">Scheduled round</label>
-              <div class="grid grid-cols-2 gap-3 mt-1">
-                <select id="med-profile-round" class="border border-zinc-300 rounded-2xl p-3"><option>Morning</option><option>Midday</option><option>Evening</option><option>Bedtime</option><option>Custom</option></select>
-                <input id="med-profile-time" type="time" class="border border-zinc-300 rounded-2xl p-3" value="08:00">
-              </div>
-            </div>
-            <div id="prn-fields" class="hidden rounded-2xl bg-amber-50 p-4 space-y-3">
-              <p class="font-bold text-amber-800">PRN safety limits</p>
-              <input id="med-profile-min-hours" type="number" step="0.25" min="0" class="w-full border border-amber-200 rounded-2xl p-3" placeholder="Minimum hours between doses">
-              <input id="med-profile-max-dose" class="w-full border border-amber-200 rounded-2xl p-3" placeholder="Maximum dose in 24 hours">
-            </div>
-            <p id="med-profile-message" class="text-sm min-h-5"></p>
-            <button id="save-medication-profile" class="w-full bg-gradient-to-r from-[#0B4C8C] to-[#8446A8] text-white rounded-2xl py-4 font-bold">Save medication profile</button>
-          </div>
-        </div>
-
-        <div class="flex items-center justify-between mb-3">
-          <div><p class="section-label">Current profile</p><h3 class="font-bold text-lg text-[#0B4C8C]">Client medications</h3></div>
-          <span id="medication-count" class="pill bg-blue-50 text-[#0B4C8C]">0 active</span>
-        </div>
-        <div id="medication-profile-list" class="space-y-3"><div class="bg-white rounded-3xl p-5 text-zinc-500">Select a client to view medications.</div></div>
-      </div>
-
-      <!-- FUNCTIONAL SCHEDULED MAR -->
-      <div id="scheduled-mar-workspace" class="hidden">
-        <div class="flex items-center gap-3 mb-4">
-          <button id="close-scheduled-mar" class="w-11 h-11 rounded-2xl bg-white border border-zinc-200 text-xl">‹</button>
-          <div class="flex-1">
-            <p class="section-label">Scheduled Medication & MAR</p>
-            <h2 id="mar-client-name" class="text-2xl font-bold text-[#0B4C8C]">Client</h2>
-          </div>
-          <button id="open-pin-setup" class="rounded-2xl px-3 py-2 bg-zinc-100 text-sm font-bold text-[#0B4C8C]">PIN</button>
-        </div>
-
-        <div class="med-card p-4 mb-4">
-          <div class="grid grid-cols-2 gap-3">
-            <div><label class="section-label">Date</label><input id="mar-date" type="date" class="w-full border border-zinc-300 rounded-2xl p-3 mt-1"></div>
-            <div><label class="section-label">Round</label><select id="mar-round" class="w-full border border-zinc-300 rounded-2xl p-3 mt-1"><option value="">Select round</option></select></div>
-          </div>
-          <div class="mt-4 flex items-center justify-between text-sm"><span id="mar-progress-text" class="font-semibold text-zinc-600">0 of 0 completed</span><span id="mar-round-status" class="pill bg-blue-50 text-[#0B4C8C]">Select round</span></div>
-          <div class="mar-progress-track mt-2"><div id="mar-progress-fill" class="mar-progress-fill" style="width:0%"></div></div>
-        </div>
-
-        <div id="mar-medication-list" class="space-y-3"><div class="bg-white rounded-3xl p-5 text-zinc-500">Choose a round to load medications.</div></div>
-
-        <div id="mar-sign-card" class="hidden med-card p-5 mt-4">
-          <h3 class="font-bold text-lg text-[#0B4C8C]">Confirm medication round</h3>
-          <p class="text-sm text-zinc-500 mt-1">You are confirming the correct client, medication, dose, route, time and documentation.</p>
-          <input id="mar-pin" type="password" inputmode="numeric" maxlength="6" pattern="[0-9]*" class="w-full border border-zinc-300 rounded-2xl p-4 text-center text-2xl tracking-[.5em] mt-4" placeholder="••••••">
-          <p id="mar-sign-message" class="text-sm min-h-5 mt-2"></p>
-          <button id="sign-mar-round" class="w-full bg-gradient-to-r from-[#0B4C8C] to-[#8446A8] text-white rounded-2xl py-4 font-bold mt-2">Confirm and sign round</button>
-        </div>
-      </div>
-
-      <!-- PIN SETUP MODAL -->
-      <div id="pin-setup-modal" class="hidden fixed inset-0 z-50 bg-black/50 p-4 flex items-center justify-center">
-        <div class="w-full max-w-sm bg-white rounded-[28px] p-6 shadow-2xl">
-          <div class="flex justify-between gap-3"><div><p class="section-label">Secure signing</p><h3 class="text-xl font-bold text-[#0B4C8C]">Set medication PIN</h3></div><button id="close-pin-setup" class="w-10 h-10 rounded-xl bg-zinc-100 text-xl">×</button></div>
-          <p class="text-sm text-zinc-500 mt-2">Create a private six-digit PIN. Do not share it with other workers.</p>
-          <input id="new-medication-pin" type="password" inputmode="numeric" maxlength="6" class="w-full border border-zinc-300 rounded-2xl p-4 text-center text-2xl tracking-[.5em] mt-4" placeholder="••••••">
-          <input id="confirm-medication-pin" type="password" inputmode="numeric" maxlength="6" class="w-full border border-zinc-300 rounded-2xl p-4 text-center text-2xl tracking-[.5em] mt-3" placeholder="••••••">
-          <p id="pin-setup-message" class="text-sm min-h-5 mt-2"></p>
-          <button id="save-medication-pin" class="w-full bg-[#0B4C8C] text-white rounded-2xl py-4 font-bold mt-2">Save my PIN</button>
-        </div>
-      </div>
-    </section>
-
-     <!-- NOTES -->
-     <section id="notes-panel" class="hidden p-4">
-       <div class="mb-4">
-         <h2 class="text-2xl font-bold text-[#0B4C8C]">Progress Notes</h2>
-         <p class="text-zinc-500 text-sm">Live signed notes are the next build.</p>
-       </div>
-       <div class="bg-white rounded-3xl border border-zinc-200 shadow-sm p-5">
-         <p class="text-sm text-zinc-600">
+</div>
+<select class="w-full border border-zinc-300 rounded-2xl p-4 mb-4" id="medication-client-filter">
+<option value="">Select client</option>
+</select>
+<div class="grid grid-cols-1 gap-3 mb-5">
+<button class="med-choice med-card text-left p-5 med-type-regular" id="open-scheduled-mar">
+<div class="flex items-center gap-4">
+<div class="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-3xl">💊</div>
+<div class="flex-1">
+<h3 class="font-bold text-lg text-[#0B4C8C]">Scheduled Medication &amp; MAR</h3>
+<p class="text-sm text-zinc-500 mt-1">Complete and securely sign today's rounds</p>
+</div>
+<span class="text-2xl text-zinc-300">›</span>
+</div>
+</button>
+<button class="med-choice med-card text-left p-5 med-type-prn" id="open-prn">
+<div class="flex items-center gap-4">
+<div class="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center text-3xl">🩹</div>
+<div class="flex-1">
+<h3 class="font-bold text-lg text-amber-700">PRN Administration</h3>
+<p class="text-sm text-zinc-500 mt-1">Separate as-needed medication workflow</p>
+</div>
+<span class="text-2xl text-zinc-300">›</span>
+</div>
+</button>
+<button class="med-choice med-card text-left p-5 med-type-schedule8" id="open-s8">
+<div class="flex items-center gap-4">
+<div class="w-14 h-14 rounded-2xl bg-purple-50 flex items-center justify-center text-3xl">🔒</div>
+<div class="flex-1">
+<h3 class="font-bold text-lg text-[#8446A8]">Schedule 8 Register</h3>
+<p class="text-sm text-zinc-500 mt-1">Controlled-drug administration and stock balance</p>
+</div>
+<span class="text-2xl text-zinc-300">›</span>
+</div>
+</button>
+</div>
+<div class="hidden fixed inset-0 z-[80] bg-black/50 overflow-y-auto px-4 py-6 safe-top" id="medication-profile-form"><div class="w-full max-w-md mx-auto bg-white rounded-[28px] shadow-2xl border border-zinc-200 p-5 mb-8">
+<div class="flex items-center justify-between mb-4">
+<div>
+<p class="section-label">Supervisor setup</p>
+<h3 class="font-bold text-xl text-[#0B4C8C]">Add medication profile</h3>
+</div>
+<button aria-label="Close medication form" class="w-10 h-10 rounded-xl bg-zinc-100 text-xl" id="close-medication-profile-form">×</button>
+</div>
+<div class="space-y-3">
+<select class="w-full border border-zinc-300 rounded-2xl p-3" id="med-profile-client"><option value="">Select client</option></select>
+<input class="w-full border border-zinc-300 rounded-2xl p-3" id="med-profile-name" placeholder="Medication name"/>
+<div class="grid grid-cols-2 gap-3">
+<input class="border border-zinc-300 rounded-2xl p-3" id="med-profile-strength" placeholder="Strength e.g. 500 mg"/>
+<select class="border border-zinc-300 rounded-2xl p-3" id="med-profile-form-type">
+<option>Tablet</option><option>Capsule</option><option>Liquid</option><option>Cream</option><option>Patch</option>
+<option>Eye drop</option><option>Ear drop</option><option>Inhaler</option><option>Nebuliser</option><option>Injection</option><option>Other</option>
+</select>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<input class="border border-zinc-300 rounded-2xl p-3" id="med-profile-dose" placeholder="Dose e.g. 2 tablets"/>
+<select class="border border-zinc-300 rounded-2xl p-3" id="med-profile-route">
+<option>Oral</option><option>Topical</option><option>Inhaled</option><option>Eye</option><option>Ear</option>
+<option>Transdermal</option><option>Subcutaneous</option><option>Other</option>
+</select>
+</div>
+<select class="w-full border border-zinc-300 rounded-2xl p-3" id="med-profile-type">
+<option value="regular">Regular scheduled medication</option>
+<option value="prn">PRN medication</option>
+<option value="schedule8">Schedule 8 medication</option>
+</select>
+<textarea class="w-full border border-zinc-300 rounded-2xl p-3" id="med-profile-instructions" placeholder="Administration instructions" rows="3"></textarea>
+<input class="w-full border border-zinc-300 rounded-2xl p-3" id="med-profile-doctor" placeholder="Prescribing doctor's name"/>
+<div class="grid grid-cols-2 gap-3">
+<input class="border border-zinc-300 rounded-2xl p-3" id="med-profile-practice" placeholder="Clinic / practice"/>
+<input class="border border-zinc-300 rounded-2xl p-3" id="med-profile-practice-phone" placeholder="Clinic phone" type="tel"/>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<input class="border border-zinc-300 rounded-2xl p-3" id="med-profile-pharmacy" placeholder="Pharmacy name"/>
+<input class="border border-zinc-300 rounded-2xl p-3" id="med-profile-pharmacy-phone" placeholder="Pharmacy phone" type="tel"/>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div><label class="section-label">Start date</label><input class="w-full border border-zinc-300 rounded-2xl p-3 mt-1" id="med-profile-start" type="date"/></div>
+<div><label class="section-label">Review date</label><input class="w-full border border-zinc-300 rounded-2xl p-3 mt-1" id="med-profile-review" type="date"/></div>
+</div>
+<div id="scheduled-fields">
+<label class="section-label">Scheduled round</label>
+<div class="grid grid-cols-2 gap-3 mt-1">
+<select class="border border-zinc-300 rounded-2xl p-3" id="med-profile-round"><option>Morning</option><option>Midday</option><option>Evening</option><option>Bedtime</option><option>Custom</option></select>
+<input class="border border-zinc-300 rounded-2xl p-3" id="med-profile-time" type="time" value="08:00"/>
+</div>
+</div>
+<div class="hidden rounded-2xl bg-amber-50 p-4 space-y-3" id="prn-fields">
+<p class="font-bold text-amber-800">PRN safety limits</p>
+<input class="w-full border border-amber-200 rounded-2xl p-3" id="med-profile-min-hours" min="0" placeholder="Minimum hours between doses" step="0.25" type="number"/>
+<input class="w-full border border-amber-200 rounded-2xl p-3" id="med-profile-max-dose" placeholder="Maximum dose in 24 hours"/>
+</div>
+<p class="text-sm min-h-5" id="med-profile-message"></p>
+<button class="w-full bg-gradient-to-r from-[#0B4C8C] to-[#8446A8] text-white rounded-2xl py-4 font-bold" id="save-medication-profile" type="button">Save medication profile</button>
+</div>
+</div></div>
+<div class="flex items-center justify-between mb-3">
+<div><p class="section-label">Current profile</p><h3 class="font-bold text-lg text-[#0B4C8C]">Client medications</h3></div>
+<span class="pill bg-blue-50 text-[#0B4C8C]" id="medication-count">0 active</span>
+</div>
+<div class="hidden rounded-2xl bg-blue-50 border border-blue-100 p-4 mb-4 text-sm text-[#0B4C8C]" id="medication-setup-hint">Select a client, then tap + Medication to create the medication profile and scheduled round.</div><div class="space-y-3" id="medication-profile-list"><div class="bg-white rounded-3xl p-5 text-zinc-500">Select a client to view medications.</div></div>
+</div>
+<!-- FUNCTIONAL SCHEDULED MAR -->
+<div class="hidden" id="scheduled-mar-workspace">
+<div class="flex items-center gap-3 mb-4">
+<button class="w-11 h-11 rounded-2xl bg-white border border-zinc-200 text-xl" id="close-scheduled-mar">‹</button>
+<div class="flex-1">
+<p class="section-label">Scheduled Medication &amp; MAR</p>
+<h2 class="text-2xl font-bold text-[#0B4C8C]" id="mar-client-name">Client</h2>
+</div>
+<button class="rounded-2xl px-3 py-2 bg-zinc-100 text-sm font-bold text-[#0B4C8C]" id="open-pin-setup">PIN</button>
+</div>
+<div class="med-card p-4 mb-4">
+<div class="grid grid-cols-2 gap-3">
+<div><label class="section-label">Date</label><input class="w-full border border-zinc-300 rounded-2xl p-3 mt-1" id="mar-date" type="date"/></div>
+<div><label class="section-label">Round</label><select class="w-full border border-zinc-300 rounded-2xl p-3 mt-1" id="mar-round"><option value="">Select round</option></select></div>
+</div>
+<div class="mt-4 flex items-center justify-between text-sm"><span class="font-semibold text-zinc-600" id="mar-progress-text">0 of 0 completed</span><span class="pill bg-blue-50 text-[#0B4C8C]" id="mar-round-status">Select round</span></div>
+<div class="mar-progress-track mt-2"><div class="mar-progress-fill" id="mar-progress-fill" style="width:0%"></div></div>
+</div>
+<div class="space-y-3" id="mar-medication-list"><div class="bg-white rounded-3xl p-5 text-zinc-500">Choose a round to load medications.</div></div>
+<div class="hidden med-card p-5 mt-4" id="mar-sign-card">
+<h3 class="font-bold text-lg text-[#0B4C8C]">Confirm medication round</h3>
+<p class="text-sm text-zinc-500 mt-1">You are confirming the correct client, medication, dose, route, time and documentation.</p>
+<input class="w-full border border-zinc-300 rounded-2xl p-4 text-center text-2xl tracking-[.5em] mt-4" id="mar-pin" inputmode="numeric" maxlength="6" pattern="[0-9]*" placeholder="••••••" type="password"/>
+<p class="text-sm min-h-5 mt-2" id="mar-sign-message"></p>
+<button class="w-full bg-gradient-to-r from-[#0B4C8C] to-[#8446A8] text-white rounded-2xl py-4 font-bold mt-2" id="sign-mar-round">Confirm and sign round</button>
+</div>
+</div>
+<!-- PIN SETUP MODAL -->
+<div class="hidden fixed inset-0 z-50 bg-black/50 p-4 flex items-center justify-center" id="pin-setup-modal">
+<div class="w-full max-w-sm bg-white rounded-[28px] p-6 shadow-2xl">
+<div class="flex justify-between gap-3"><div><p class="section-label">Secure signing</p><h3 class="text-xl font-bold text-[#0B4C8C]">Set medication PIN</h3></div><button class="w-10 h-10 rounded-xl bg-zinc-100 text-xl" id="close-pin-setup">×</button></div>
+<p class="text-sm text-zinc-500 mt-2">Create a private six-digit PIN. Do not share it with other workers.</p>
+<input class="w-full border border-zinc-300 rounded-2xl p-4 text-center text-2xl tracking-[.5em] mt-4" id="new-medication-pin" inputmode="numeric" maxlength="6" placeholder="••••••" type="password"/>
+<input class="w-full border border-zinc-300 rounded-2xl p-4 text-center text-2xl tracking-[.5em] mt-3" id="confirm-medication-pin" inputmode="numeric" maxlength="6" placeholder="••••••" type="password"/>
+<p class="text-sm min-h-5 mt-2" id="pin-setup-message"></p>
+<button class="w-full bg-[#0B4C8C] text-white rounded-2xl py-4 font-bold mt-2" id="save-medication-pin">Save my PIN</button>
+</div>
+</div>
+</section>
+<!-- NOTES -->
+<section class="hidden p-4" id="notes-panel">
+<div class="mb-4">
+<h2 class="text-2xl font-bold text-[#0B4C8C]">Progress Notes</h2>
+<p class="text-zinc-500 text-sm">Live signed notes are the next build.</p>
+</div>
+<div class="bg-white rounded-3xl border border-zinc-200 shadow-sm p-5">
+<p class="text-sm text-zinc-600">
            Progress notes and handovers are ready in Supabase.
            The next update will add the live form and note history.
          </p>
-       </div>
-     </section>
-
-     <footer class="px-4 pt-5 pb-2 text-center text-xs text-zinc-400">
-       I-Care Connect Hub · Build 7.1 · Test environment
+</div>
+</section>
+<footer class="px-4 pt-5 pb-2 text-center text-xs text-zinc-400">
+       I-Care Connect Hub · Florence 8.2 · Test environment
      </footer>
-   </main>
-
-   <nav class="fixed left-0 right-0 bottom-0 bg-white border-t border-zinc-200 px-2 pt-2 pb-[max(8px,env(safe-area-inset-bottom))] z-30">
-     <div class="max-w-md mx-auto grid grid-cols-5 gap-1">
-       <button data-tab="home" class="nav-button active py-2 text-xs"><span class="block text-xl">🏠</span>Home</button>
-       <button data-tab="roster" class="nav-button py-2 text-xs"><span class="block text-xl">📅</span>Roster</button>
-       <button data-tab="clients" class="nav-button py-2 text-xs"><span class="block text-xl">👤</span>Clients</button>
-       <button data-tab="meds" class="nav-button py-2 text-xs"><span class="block text-xl">💊</span>Meds</button>
-       <button data-tab="notes" class="nav-button py-2 text-xs"><span class="block text-xl">📝</span>Notes</button>
-     </div>
-   </nav>
- </div>
-
- <div id="drawer-overlay" class="drawer-overlay"></div>
-
- <aside id="side-drawer" class="side-drawer safe-top" aria-hidden="true">
-   <div class="px-5 pb-5 bg-gradient-to-br from-[#0B4C8C] to-[#8446A8] text-white">
-     <div class="flex items-center justify-between">
-       <div>
-         <p class="text-sm text-white/80">Signed in as</p>
-         <h2 id="drawer-name" class="text-xl font-bold">Staff member</h2>
-         <p id="drawer-role" class="text-sm text-white/80">Loading…</p>
-       </div>
-       <button id="close-menu-button" class="header-icon" aria-label="Close menu">✕</button>
-     </div>
-   </div>
-
-   <div class="p-3 space-y-1">
-     <button class="drawer-link" data-menu-open="home">🏠 <span>Dashboard</span></button>
-     <button class="drawer-link" data-menu-open="clients">👥 <span>Participants</span></button>
-     <button id="menu-staff" class="drawer-link management-menu hidden">👩‍💼 <span>Staff</span></button>
-     <button class="drawer-link" data-menu-open="roster">📅 <span>Roster</span></button>
-     <button class="drawer-link" data-menu-open="meds">💊 <span>Medication & MAR</span></button>
-     <button class="drawer-link" data-menu-open="notes">📝 <span>Progress notes</span></button>
-     <button id="menu-family" class="drawer-link management-menu hidden">👨‍👩‍👧 <span>Participant & Family Portal</span></button>
-     <button id="menu-documents" class="drawer-link">📂 <span>Documents</span></button>
-     <button id="menu-reports" class="drawer-link management-menu hidden">📊 <span>Reports</span></button>
-     <button id="menu-settings" class="drawer-link">⚙️ <span>Settings</span></button>
-     <button id="menu-help" class="drawer-link">❓ <span>Help</span></button>
-     <hr class="my-3 border-zinc-200">
-     <button id="sign-out-button" class="drawer-link text-red-600">🚪 <span>Sign out</span></button>
-   </div>
- </aside>
-<section id="notification-panel" class="notification-panel hidden">
-   <div class="p-4 bg-gradient-to-r from-[#0B4C8C] to-[#8446A8] text-white flex justify-between items-center">
-     <div>
-       <h2 class="font-bold text-lg">Notifications</h2>
-       <p class="text-xs text-white/80">Your operational reminders</p>
-     </div>
-     <button id="close-notifications" class="text-xl" aria-label="Close notifications">✕</button>
-   </div>
-   <div class="p-3 space-y-2">
-     <button data-open="roster" class="notification-link w-full text-left border border-zinc-200 rounded-2xl p-3">
-       <strong class="block text-[#0B4C8C]">📅 Roster update</strong>
-       <span id="notification-roster-text" class="text-sm text-zinc-500">Check pending shift responses.</span>
-     </button>
-     <button data-open="meds" class="notification-link w-full text-left border border-zinc-200 rounded-2xl p-3">
-       <strong class="block text-[#0B4C8C]">💊 Medication</strong>
-       <span class="text-sm text-zinc-500">Medication alerts will appear here when live rounds are connected.</span>
-     </button>
-     <button id="notification-family-request" class="w-full text-left border border-zinc-200 rounded-2xl p-3">
-       <strong class="block text-[#8446A8]">👨‍👩‍👧 Family requests</strong>
-       <span class="text-sm text-zinc-500">No new requests.</span>
-     </button>
-   </div>
- </section>
-
- <script>
+</main>
+<nav class="fixed left-0 right-0 bottom-0 bg-white border-t border-zinc-200 px-2 pt-2 pb-[max(8px,env(safe-area-inset-bottom))] z-30">
+<div class="max-w-md mx-auto grid grid-cols-5 gap-1">
+<button class="nav-button active py-2 text-xs" data-tab="home"><span class="block text-xl">🏠</span>Home</button>
+<button class="nav-button py-2 text-xs" data-tab="roster"><span class="block text-xl">📅</span>Roster</button>
+<button class="nav-button py-2 text-xs" data-tab="clients"><span class="block text-xl">👤</span>Clients</button>
+<button class="nav-button py-2 text-xs" data-tab="meds"><span class="block text-xl">💊</span>Meds</button>
+<button class="nav-button py-2 text-xs" data-tab="notes"><span class="block text-xl">📝</span>Notes</button>
+</div>
+</nav>
+</div>
+<div class="drawer-overlay" id="drawer-overlay"></div>
+<aside aria-hidden="true" class="side-drawer safe-top" id="side-drawer">
+<div class="px-5 pb-5 bg-gradient-to-br from-[#0B4C8C] to-[#8446A8] text-white">
+<div class="flex items-center justify-between">
+<div>
+<p class="text-sm text-white/80">Signed in as</p>
+<h2 class="text-xl font-bold" id="drawer-name">Staff member</h2>
+<p class="text-sm text-white/80" id="drawer-role">Loading…</p>
+</div>
+<button aria-label="Close menu" class="header-icon" id="close-menu-button">✕</button>
+</div>
+</div>
+<div class="p-3 space-y-1">
+<button class="drawer-link" data-menu-open="home">🏠 <span>Dashboard</span></button>
+<button class="drawer-link" data-menu-open="clients">👥 <span>Participants</span></button>
+<button class="drawer-link management-menu hidden" id="menu-staff">👩‍💼 <span>Staff</span></button>
+<button class="drawer-link" data-menu-open="roster">📅 <span>Roster</span></button>
+<button class="drawer-link" data-menu-open="meds">💊 <span>Medication &amp; MAR</span></button>
+<button class="drawer-link" data-menu-open="notes">📝 <span>Progress notes</span></button>
+<button class="drawer-link management-menu hidden" id="menu-family">👨‍👩‍👧 <span>Participant &amp; Family Portal</span></button>
+<button class="drawer-link" id="menu-documents">📂 <span>Documents</span></button>
+<button class="drawer-link management-menu hidden" id="menu-reports">📊 <span>Reports</span></button>
+<button class="drawer-link" id="menu-settings">⚙️ <span>Settings</span></button>
+<button class="drawer-link" id="menu-help">❓ <span>Help</span></button>
+<hr class="my-3 border-zinc-200"/>
+<button class="drawer-link text-red-600" id="sign-out-button">🚪 <span>Sign out</span></button>
+</div>
+</aside>
+<section class="notification-panel hidden" id="notification-panel">
+<div class="p-4 bg-gradient-to-r from-[#0B4C8C] to-[#8446A8] text-white flex justify-between items-center">
+<div>
+<h2 class="font-bold text-lg">Notifications</h2>
+<p class="text-xs text-white/80">Your operational reminders</p>
+</div>
+<button aria-label="Close notifications" class="text-xl" id="close-notifications">✕</button>
+</div>
+<div class="p-3 space-y-2">
+<button class="notification-link w-full text-left border border-zinc-200 rounded-2xl p-3" data-open="roster">
+<strong class="block text-[#0B4C8C]">📅 Roster update</strong>
+<span class="text-sm text-zinc-500" id="notification-roster-text">Check pending shift responses.</span>
+</button>
+<button class="notification-link w-full text-left border border-zinc-200 rounded-2xl p-3" data-open="meds">
+<strong class="block text-[#0B4C8C]">💊 Medication</strong>
+<span class="text-sm text-zinc-500">Medication alerts will appear here when live rounds are connected.</span>
+</button>
+<button class="w-full text-left border border-zinc-200 rounded-2xl p-3" id="notification-family-request">
+<strong class="block text-[#8446A8]">👨‍👩‍👧 Family requests</strong>
+<span class="text-sm text-zinc-500">No new requests.</span>
+</button>
+</div>
+</section>
+<script>
    const SUPABASE_URL = 'https://pbbsaquwumxyrhqhnobv.supabase.co';
    const SUPABASE_KEY = 'sb_publishable_4D2Oc8FJjOXDXgGG7GbzfA_oYRpXSU5';
    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -1068,7 +986,7 @@
          actions.append(accept, decline);
        }
 
-       if (['supervisor','administrator'].includes(currentRole) && shift.shift_status !== 'cancelled') {
+if (['supervisor','administrator'].includes(currentRole) && shift.shift_status !== 'cancelled') {
          const cancel = document.createElement('button');
          cancel.className = 'col-span-2 border border-red-300 text-red-600 rounded-xl py-2 font-semibold';
          cancel.textContent = 'Cancel shift';
@@ -1091,7 +1009,8 @@
        list.appendChild(card);
      });
    }
-document.getElementById('show-create-shift').addEventListener('click', () => {
+
+   document.getElementById('show-create-shift').addEventListener('click', () => {
      document.getElementById('create-shift-form').classList.toggle('hidden');
    });
 
@@ -1189,15 +1108,29 @@ document.getElementById('show-create-shift').addEventListener('click', () => {
   }
 
   document.getElementById('medication-client-filter').addEventListener('change', event => {
-    document.getElementById('med-profile-client').value = event.target.value;
-    loadMedicationProfiles(event.target.value);
+    const clientId = event.target.value;
+    document.getElementById('med-profile-client').value = clientId;
+    document.getElementById('medication-setup-hint').classList.toggle('hidden', !clientId);
+    loadMedicationProfiles(clientId);
   });
-  document.getElementById('show-medication-profile-form').addEventListener('click', () => {
+  function openMedicationProfileForm() {
+    const selectedClient = document.getElementById('medication-client-filter').value;
+    document.getElementById('med-profile-client').value = selectedClient;
     document.getElementById('medication-profile-form').classList.remove('hidden');
-    document.getElementById('med-profile-client').value = document.getElementById('medication-client-filter').value;
-    document.getElementById('medication-profile-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => document.getElementById('med-profile-name').focus(), 100);
+  }
+
+  function closeMedicationProfileForm() {
+    document.getElementById('medication-profile-form').classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+
+  document.getElementById('show-medication-profile-form').addEventListener('click', openMedicationProfileForm);
+  document.getElementById('close-medication-profile-form').addEventListener('click', closeMedicationProfileForm);
+  document.getElementById('medication-profile-form').addEventListener('click', event => {
+    if (event.target.id === 'medication-profile-form') closeMedicationProfileForm();
   });
-  document.getElementById('close-medication-profile-form').addEventListener('click', () => document.getElementById('medication-profile-form').classList.add('hidden'));
   document.getElementById('med-profile-type').addEventListener('change', event => {
     const isPrn = event.target.value === 'prn';
     document.getElementById('prn-fields').classList.toggle('hidden', !isPrn);
@@ -1237,6 +1170,11 @@ document.getElementById('show-create-shift').addEventListener('click', () => {
     setMessage('med-profile-message', `${medicationName} has been added to the medication profile.`);
     document.getElementById('medication-client-filter').value = clientId;
     await loadMedicationProfiles(clientId);
+    ['med-profile-name','med-profile-strength','med-profile-dose','med-profile-instructions','med-profile-doctor',
+     'med-profile-practice','med-profile-practice-phone','med-profile-pharmacy','med-profile-pharmacy-phone',
+     'med-profile-start','med-profile-review','med-profile-min-hours','med-profile-max-dose']
+      .forEach(id => { const field = document.getElementById(id); if (field) field.value = ''; });
+    setTimeout(closeMedicationProfileForm, 650);
   });
 
   let marClientId = null;
@@ -1260,7 +1198,7 @@ document.getElementById('show-create-shift').addEventListener('click', () => {
     const list = document.getElementById('mar-medication-list');
     list.innerHTML = '';
     if (!marRoundMedications.length) {
-      list.innerHTML = '<div class="bg-white rounded-3xl p-5 text-zinc-500">No active medications are scheduled for this round.</div>';
+      list.innerHTML = '<div class="bg-white rounded-3xl p-5 text-zinc-500">No active medications are scheduled for this round. Return to Medication & MAR and use + Medication to add a medication and schedule.</div>';
       updateMarProgress();
       return;
     }
@@ -1324,6 +1262,7 @@ document.getElementById('show-create-shift').addEventListener('click', () => {
   async function openScheduledMar() {
     const clientId=document.getElementById('medication-client-filter').value;
     if (!clientId) return alert('Please select a client first.');
+    if (!medicationsCache.length) await loadMedicationProfiles(clientId);
     marClientId=clientId;
     const client=clientsCache.find(item=>item.id===clientId);
     document.getElementById('mar-client-name').textContent=client?.preferred_name || 'Client';
@@ -1404,6 +1343,7 @@ document.getElementById('show-create-shift').addEventListener('click', () => {
      setMessage('login-message', '');
      closeMenu();
      closeNotifications();
+     closeMedicationProfileForm();
    }
 
    supabaseClient.auth.onAuthStateChange((_event, session) => {
