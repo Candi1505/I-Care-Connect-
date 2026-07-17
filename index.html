@@ -1,11 +1,11 @@
-html>
+<!DOCTYPE html>
 
 <html lang="en-AU">
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
 <meta content="#0B4C8C" name="theme-color"/>
-<title>I-Care Connect Hub · Florence 8.2</title>
+<title>I-Care Connect Hub · Florence 8.3</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -501,7 +501,7 @@ html>
 </div>
 </section>
 <footer class="px-4 pt-5 pb-2 text-center text-xs text-zinc-400">
-       I-Care Connect Hub · Florence 8.2 · Test environment
+       I-Care Connect Hub · Florence 8.3 · Test environment
      </footer>
 </main>
 <nav class="fixed left-0 right-0 bottom-0 bg-white border-t border-zinc-200 px-2 pt-2 pb-[max(8px,env(safe-area-inset-bottom))] z-30">
@@ -986,7 +986,7 @@ html>
          actions.append(accept, decline);
        }
 
-if (['supervisor','administrator'].includes(currentRole) && shift.shift_status !== 'cancelled') {
+       if (['supervisor','administrator'].includes(currentRole) && shift.shift_status !== 'cancelled') {
          const cancel = document.createElement('button');
          cancel.className = 'col-span-2 border border-red-300 text-red-600 rounded-xl py-2 font-semibold';
          cancel.textContent = 'Cancel shift';
@@ -1076,19 +1076,34 @@ if (['supervisor','administrator'].includes(currentRole) && shift.shift_status !
       const schedule = medication.medication_schedules?.[0];
       const card = document.createElement('article');
       card.className = `med-card p-5 ${medicationTypeClass(medication.medication_type)}`;
-      card.innerHTML = `<div class="flex items-start justify-between gap-3"><div class="flex-1"><div class="flex items-center gap-2 flex-wrap"><h4 class="font-bold text-lg text-[#0B4C8C] medication-name"></h4><span class="pill medication-type"></span></div><p class="font-semibold text-zinc-700 mt-1 medication-dose"></p><p class="text-sm text-zinc-500 mt-1 medication-route"></p><p class="text-sm text-zinc-500 mt-1 medication-schedule"></p><p class="text-xs text-zinc-400 mt-3 medication-doctor"></p></div><div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-2xl">💊</div></div>`;
-      card.querySelector('.medication-name').textContent = `${medication.medication_name}${medication.strength ? ' ' + medication.strength : ''}`;
+      card.innerHTML = `<div class="flex items-start justify-between gap-3"><div class="flex-1"><div class="flex items-center gap-2 flex-wrap"><h4 class="font-bold text-lg text-[#0B4C8C] medication-name"></h4><span class="pill medication-type"></span></div><p class="font-semibold text-zinc-700 mt-1 medication-dose"></p><p class="text-sm text-zinc-500 mt-1 medication-route"></p><p class="text-sm text-zinc-500 mt-1 medication-schedule"></p><p class="text-xs text-zinc-400 mt-3 medication-doctor"></p><p class="text-xs text-zinc-400 mt-1 medication-review"></p><button type="button" class="cease-medication hidden mt-4 border border-red-300 text-red-600 rounded-xl px-4 py-2 text-sm font-semibold">Cease medication</button></div><div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-2xl">💊</div></div>`;
+      card.querySelector('.medication-name').textContent = `${medication.medication_name || medication.name || 'Medication'}${medication.strength ? ' ' + medication.strength : ''}`;
       card.querySelector('.medication-type').textContent = medicationTypeLabel(medication.medication_type);
       card.querySelector('.medication-type').classList.add(medication.medication_type === 'prn' ? 'bg-amber-50' : medication.medication_type === 'schedule8' ? 'bg-purple-50' : 'bg-blue-50');
       card.querySelector('.medication-dose').textContent = `Give ${medication.dose}`;
       card.querySelector('.medication-route').textContent = `${medication.route || 'Route not entered'} • ${medication.form_type || 'Form not entered'}`;
       card.querySelector('.medication-schedule').textContent = medication.medication_type === 'prn' ? `PRN • minimum interval ${medication.minimum_hours_between_doses || 'not set'} hours` : schedule ? `${schedule.round_name} • ${String(schedule.scheduled_time).slice(0,5)}` : 'Schedule not entered';
       card.querySelector('.medication-doctor').textContent = medication.prescribing_doctor ? `Prescribed by ${medication.prescribing_doctor}${medication.medical_practice ? ' • ' + medication.medical_practice : ''}` : 'Prescribing doctor not entered';
+      const reviewText = medication.review_date ? `Review due ${new Intl.DateTimeFormat('en-AU',{day:'numeric',month:'short',year:'numeric'}).format(new Date(medication.review_date + 'T00:00:00'))}` : 'Review date not entered';
+      card.querySelector('.medication-review').textContent = reviewText;
+      const ceaseButton = card.querySelector('.cease-medication');
+      if (['supervisor','administrator'].includes(currentRole)) {
+        ceaseButton.classList.remove('hidden');
+        ceaseButton.addEventListener('click', async () => {
+          const reason = prompt(`Why is ${medication.medication_name || medication.name || 'this medication'} being ceased?`);
+          if (reason === null) return;
+          if (!reason.trim()) return alert('Please enter a reason before ceasing the medication.');
+          if (!confirm('Cease this medication? It will be removed from future MAR rounds but kept in the audit history.')) return;
+          const { error } = await supabaseClient.from('medications').update({active:false, ceased_at:new Date().toISOString(), ceased_by:currentSession.user.id, ceased_reason:reason.trim()}).eq('id', medication.id);
+          if (error) return alert(error.message);
+          await loadMedicationProfiles(document.getElementById('medication-client-filter').value);
+        });
+      }
       list.appendChild(card);
     });
   }
 
-  async function loadMedicationProfiles(clientId) {
+async function loadMedicationProfiles(clientId) {
     const list = document.getElementById('medication-profile-list');
     if (!clientId) {
       medicationsCache = [];
@@ -1097,7 +1112,7 @@ if (['supervisor','administrator'].includes(currentRole) && shift.shift_status !
       return;
     }
     list.innerHTML = '<div class="bg-white rounded-3xl p-5 text-zinc-500">Loading medication profile…</div>';
-    const { data, error } = await supabaseClient.from('medications').select(`id, client_id, medication_name, strength, dose, route, instructions, medication_type, form_type, prescribing_doctor, medical_practice, practice_phone, pharmacy_name, pharmacy_phone, start_date, review_date, minimum_hours_between_doses, maximum_daily_dose, active, medication_schedules(id, round_name, scheduled_time, active)`).eq('client_id', clientId).eq('active', true).order('medication_name');
+    const { data, error } = await supabaseClient.from('medications').select(`id, client_id, name, medication_name, strength, dose, route, instructions, medication_type, form_type, prescribing_doctor, medical_practice, practice_phone, pharmacy_name, pharmacy_phone, start_date, review_date, minimum_hours_between_doses, maximum_daily_dose, active, ceased_at, ceased_by, ceased_reason, medication_schedules(id, round_name, scheduled_time, active)`).eq('client_id', clientId).eq('active', true).order('medication_name');
     if (error) {
       medicationsCache = [];
       list.innerHTML = `<div class="bg-red-50 text-red-700 rounded-3xl p-5">${error.message}</div>`;
@@ -1137,6 +1152,12 @@ if (['supervisor','administrator'].includes(currentRole) && shift.shift_status !
     document.getElementById('scheduled-fields').classList.toggle('hidden', isPrn);
   });
 
+  const defaultRoundTimes = { Morning: '08:00', Midday: '12:00', Evening: '18:00', Bedtime: '20:00' };
+  document.getElementById('med-profile-round').addEventListener('change', event => {
+    const suggested = defaultRoundTimes[event.target.value];
+    if (suggested) document.getElementById('med-profile-time').value = suggested;
+  });
+
   document.getElementById('save-medication-profile').addEventListener('click', async () => {
     const clientId = document.getElementById('med-profile-client').value;
     const medicationName = document.getElementById('med-profile-name').value.trim();
@@ -1145,7 +1166,7 @@ if (['supervisor','administrator'].includes(currentRole) && shift.shift_status !
     const medicationType = document.getElementById('med-profile-type').value;
     if (!clientId || !medicationName || !dose || !startDate) return setMessage('med-profile-message', 'Please complete the client, medication name, dose and start date.', true);
     const medicationPayload = {
-      client_id: clientId, medication_name: medicationName,
+      client_id: clientId, name: medicationName, medication_name: medicationName,
       strength: document.getElementById('med-profile-strength').value.trim() || null,
       dose, route: document.getElementById('med-profile-route').value,
       form_type: document.getElementById('med-profile-form-type').value,
@@ -1207,7 +1228,7 @@ if (['supervisor','administrator'].includes(currentRole) && shift.shift_status !
       const card = document.createElement('article');
       card.className = 'med-card p-5';
       card.innerHTML = `<div class="flex items-start gap-3"><div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-2xl">💊</div><div class="flex-1"><h3 class="font-bold text-lg text-[#0B4C8C]"></h3><p class="font-semibold text-zinc-700 dose"></p><p class="text-sm text-zinc-500 route"></p><p class="text-sm text-zinc-500 instructions mt-2"></p></div></div><div class="grid grid-cols-2 gap-2 mt-4 status-grid"></div><textarea rows="2" class="hidden exception-note w-full border border-amber-300 bg-amber-50 rounded-2xl p-3 mt-3" placeholder="Required exception note"></textarea>`;
-      card.querySelector('h3').textContent = `${item.medication_name}${item.strength ? ' ' + item.strength : ''}`;
+      card.querySelector('h3').textContent = `${item.medication_name || item.name || 'Medication'}${item.strength ? ' ' + item.strength : ''}`;
       card.querySelector('.dose').textContent = `Give ${item.dose}`;
       card.querySelector('.route').textContent = `${item.route || 'Route not entered'} • Due ${String(item.scheduled_time).slice(0,5)}`;
       card.querySelector('.instructions').textContent = item.instructions || 'No special instructions';
@@ -1253,9 +1274,9 @@ if (['supervisor','administrator'].includes(currentRole) && shift.shift_status !
     }
     document.getElementById('mar-round-status').textContent='In progress';
     document.getElementById('mar-round-status').className='pill pill-pending';
-    const { data, error } = await supabaseClient.from('medication_schedules').select(`id, round_name, scheduled_time, medication:medications!inner(id,client_id,medication_name,strength,dose,route,instructions,medication_type,active)`).eq('round_name',round).eq('active',true).eq('medication.client_id',marClientId).eq('medication.active',true).eq('medication.medication_type','regular').order('scheduled_time');
+    const { data, error } = await supabaseClient.from('medication_schedules').select(`id, round_name, scheduled_time, medication:medications!inner(id,client_id,name,medication_name,strength,dose,route,instructions,medication_type,active)`).eq('round_name',round).eq('active',true).eq('medication.client_id',marClientId).eq('medication.active',true).eq('medication.medication_type','regular').order('scheduled_time');
     if (error) { marRoundMedications=[]; list.innerHTML=`<div class="bg-red-50 text-red-700 rounded-3xl p-5">${error.message}</div>`; updateMarProgress(); return; }
-    marRoundMedications=(data||[]).map(row=>({schedule_id:row.id,round_name:row.round_name,scheduled_time:row.scheduled_time,medication_id:row.medication.id,medication_name:row.medication.medication_name,strength:row.medication.strength,dose:row.medication.dose,route:row.medication.route,instructions:row.medication.instructions}));
+    marRoundMedications=(data||[]).map(row=>({schedule_id:row.id,round_name:row.round_name,scheduled_time:row.scheduled_time,medication_id:row.medication.id,medication_name:row.medication.medication_name || row.medication.name,strength:row.medication.strength,dose:row.medication.dose,route:row.medication.route,instructions:row.medication.instructions}));
     renderMarMedicationCards();
   }
 
