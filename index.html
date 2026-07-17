@@ -1,6 +1,427 @@
 <!DOCTYPE html>
 
 <html lang="en-AU">
+<!-- ==========================================================
+    FLORENCE 9.0A — THE FLORENCE EXPERIENCE
+    Supporting those who support others.
+
+    SAFE UPGRADE PATCH
+    Paste this entire block immediately BEFORE </head>
+    in the existing Florence 8.3 HTML file.
+========================================================== -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+
+<style>
+ :root {
+   --navy: #496A55;
+   --blue: #6F9278;
+   --purple: #89A886;
+   --soft: #F7F8F4;
+   --green: #5F8F72;
+   --amber: #C98A38;
+   --red: #C75C5C;
+
+   --florence-deep: #496A55;
+   --florence-primary: #5F8F72;
+   --florence-leaf: #7FA77C;
+   --florence-sage: #DDE9DC;
+   --florence-mist: #EEF4ED;
+   --florence-cream: #FCFBF7;
+   --florence-ink: #2F3E34;
+   --florence-muted: #718078;
+   --florence-border: #DDE7DC;
+ }
+
+ html {
+   background: var(--florence-cream);
+ }
+
+ body {
+   background:
+     radial-gradient(circle at 10% 0%, rgba(127,167,124,.12), transparent 34%),
+     var(--florence-cream);
+   color: var(--florence-ink);
+   font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+ }
+
+ h1, h2, h3, h4, h5, h6 {
+   font-family: "Poppins", "Inter", sans-serif;
+   letter-spacing: -.025em;
+ }
+
+ input, select, textarea {
+   border-color: var(--florence-border) !important;
+   background: rgba(255,255,255,.96) !important;
+   color: var(--florence-ink) !important;
+   box-shadow: 0 1px 0 rgba(73,106,85,.02);
+ }
+
+ input:focus, select:focus, textarea:focus {
+   outline: none;
+   border-color: var(--florence-primary) !important;
+   box-shadow: 0 0 0 4px rgba(95,143,114,.12);
+ }
+
+ button {
+   transition: transform .16s ease, box-shadow .16s ease, opacity .16s ease;
+ }
+
+ button:active {
+   transform: scale(.985);
+ }
+
+ #login-screen {
+   background:
+     radial-gradient(circle at 12% 12%, rgba(127,167,124,.26), transparent 30%),
+     radial-gradient(circle at 92% 82%, rgba(95,143,114,.18), transparent 34%),
+     linear-gradient(145deg, #F8FAF5 0%, #EAF2E8 100%) !important;
+ }
+
+ #login-screen > div {
+   border-top-color: var(--florence-primary) !important;
+   border: 1px solid rgba(95,143,114,.16);
+   box-shadow: 0 24px 70px rgba(73,106,85,.16);
+   background: rgba(255,255,255,.94);
+   backdrop-filter: blur(14px);
+ }
+
+ #login-screen .mx-auto.w-24 {
+   background: linear-gradient(145deg, var(--florence-primary), var(--florence-deep)) !important;
+   box-shadow: 0 16px 34px rgba(73,106,85,.24);
+   font-size: 0 !important;
+ }
+
+ #login-screen .mx-auto.w-24::before {
+   content: "🌿";
+   font-size: 46px;
+ }
+
+ #login-screen h1 {
+   color: var(--florence-deep) !important;
+ }
+
+ #login-button,
+ #save-client,
+ #save-shift,
+ #save-medication-profile,
+ #sign-mar-round,
+ #save-medication-pin {
+   background: linear-gradient(135deg, var(--florence-primary), var(--florence-deep)) !important;
+   box-shadow: 0 12px 28px rgba(73,106,85,.20);
+ }
+
+ #app-shell main {
+   background:
+     linear-gradient(rgba(247,248,244,.95), rgba(247,248,244,.95)),
+     radial-gradient(circle at 100% 0%, rgba(127,167,124,.16), transparent 34%) !important;
+ }
+
+ #app-shell header {
+   background:
+     radial-gradient(circle at 88% 10%, rgba(255,255,255,.16), transparent 28%),
+     linear-gradient(145deg, var(--florence-primary), var(--florence-deep)) !important;
+   box-shadow: 0 12px 30px rgba(73,106,85,.18);
+ }
+
+ .header-icon {
+   border-color: rgba(255,255,255,.24);
+   background: rgba(255,255,255,.14);
+ }
+
+ #welcome-name,
+ #home-panel h3,
+ #clients-panel h2,
+ #roster-panel h2,
+ #meds-panel h2,
+ #notes-panel h2,
+ .medication-name,
+ #mar-client-name {
+   color: var(--florence-deep) !important;
+ }
+
+ #home-panel > div:first-child {
+   padding: 8px 4px 3px;
+ }
+
+ #home-panel > div:first-child::after {
+   content: "Every small act of care makes a difference.";
+   display: block;
+   margin-top: 8px;
+   color: var(--florence-muted);
+   font-size: 14px;
+   font-style: italic;
+ }
+
+ #home-panel .bg-white,
+ #clients-panel .bg-white,
+ #roster-panel .bg-white,
+ #notes-panel .bg-white,
+ .med-card,
+ #pin-setup-modal > div,
+ #medication-profile-form > div {
+   border-color: var(--florence-border) !important;
+   background: rgba(255,255,255,.95) !important;
+   box-shadow: 0 12px 30px rgba(73,106,85,.075) !important;
+ }
+
+ .dashboard-stat {
+   background: linear-gradient(145deg, #FFFFFF, #F3F7F1) !important;
+   border-color: var(--florence-border) !important;
+   box-shadow: 0 8px 22px rgba(73,106,85,.06) !important;
+ }
+
+ #supervisor-card,
+ #supervisor-roster-tools {
+   border-left-color: var(--florence-leaf) !important;
+ }
+
+ #supervisor-quick-actions button:first-child {
+   background: linear-gradient(145deg, #729A7D, #52715C) !important;
+ }
+
+ #supervisor-quick-actions button:last-child {
+   background: linear-gradient(145deg, #90AA87, #668067) !important;
+ }
+
+ #home-panel > .grid.grid-cols-2.gap-3 button {
+   background: var(--florence-primary) !important;
+   box-shadow: 0 8px 20px rgba(73,106,85,.12);
+ }
+
+ #home-panel > .grid.grid-cols-2.gap-3 button:nth-child(2),
+ #home-panel > .grid.grid-cols-2.gap-3 button:nth-child(4) {
+   background: var(--florence-deep) !important;
+ }
+
+ .nav-button.active {
+   color: var(--florence-deep) !important;
+   background: var(--florence-mist) !important;
+ }
+
+ nav {
+   border-color: var(--florence-border) !important;
+   box-shadow: 0 -8px 24px rgba(73,106,85,.07);
+ }
+
+ .side-drawer {
+   background: #FBFCF9;
+   box-shadow: 14px 0 42px rgba(47,62,52,.20);
+ }
+
+ .side-drawer > div:first-child {
+   background:
+     radial-gradient(circle at 90% 0%, rgba(255,255,255,.16), transparent 28%),
+     linear-gradient(145deg, var(--florence-primary), var(--florence-deep)) !important;
+ }
+
+ .drawer-link {
+   color: #405048;
+ }
+
+ .drawer-link:hover,
+ .drawer-link:active {
+   background: var(--florence-mist) !important;
+   color: var(--florence-deep);
+ }
+
+ .notification-panel {
+   border-color: var(--florence-border);
+   box-shadow: 0 22px 55px rgba(47,62,52,.22);
+ }
+
+ .notification-panel > div:first-child {
+   background: linear-gradient(135deg, var(--florence-primary), var(--florence-deep)) !important;
+ }
+
+ .med-card {
+   box-shadow: 0 10px 26px rgba(73,106,85,.08) !important;
+ }
+
+ .med-type-regular {
+   border-left-color: #729A7D !important;
+ }
+
+ .med-type-prn {
+   border-left-color: #D6A55E !important;
+ }
+
+ .med-type-schedule8 {
+   border-left-color: #8A7897 !important;
+ }
+
+ .mar-progress-fill {
+   background: linear-gradient(90deg, var(--florence-leaf), var(--florence-deep)) !important;
+ }
+
+ .pill-active,
+ .pill-accepted {
+   background: #E3F0E4 !important;
+   color: #476F52 !important;
+ }
+
+ .section-label {
+   color: var(--florence-muted);
+ }
+
+ footer {
+   color: #89968F !important;
+ }
+
+ @media (prefers-reduced-motion: no-preference) {
+   #login-screen > div,
+   #home-panel > div,
+   #clients-list > article,
+   #roster-list > article,
+   .med-card {
+     animation: florence-rise .35s ease both;
+   }
+
+   @keyframes florence-rise {
+     from { opacity: 0; transform: translateY(8px); }
+     to { opacity: 1; transform: translateY(0); }
+   }
+ }
+</style>
+
+<script>
+ document.addEventListener('DOMContentLoaded', () => {
+   document.title = 'Florence · Supporting those who support others';
+
+   const themeMeta = document.querySelector('meta[name="theme-color"]');
+   if (themeMeta) themeMeta.setAttribute('content', '#5F8F72');
+
+   const loginTitle = document.querySelector('#login-screen h1');
+   const loginTagline = document.querySelector('#login-screen h1 + p');
+   const loginButton = document.getElementById('login-button');
+
+   if (loginTitle) loginTitle.textContent = 'Florence';
+   if (loginTagline) loginTagline.textContent = 'Supporting those who support others.';
+   if (loginButton) loginButton.textContent = 'Continue';
+
+   const headerTitle = document.querySelector('#app-shell header h1');
+   if (headerTitle) headerTitle.textContent = 'Florence';
+
+   const headerRole = document.getElementById('header-role');
+   if (headerRole) headerRole.textContent = 'Supporting those who support others.';
+
+   const clientsHeading = document.querySelector('#clients-panel h2');
+   if (clientsHeading) clientsHeading.textContent = 'Participants';
+
+   const medicationSubtitle = document.querySelector('#medication-landing h2 + p');
+   if (medicationSubtitle) medicationSubtitle.textContent = 'Enter once. Support safely. Document with confidence.';
+
+   const footer = document.querySelector('footer');
+   if (footer) footer.innerHTML = '🌿 Florence 9.0A · Supporting those who support others.';
+
+   const drawerHeader = document.querySelector('#side-drawer > div:first-child');
+   if (drawerHeader) {
+     const brand = document.createElement('div');
+     brand.className = 'mb-5 pb-5 border-b border-white/20';
+     brand.innerHTML = `
+       <div class="flex items-center gap-3">
+         <div class="w-12 h-12 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center text-2xl">🌿</div>
+         <div>
+           <h2 class="text-2xl font-bold">Florence</h2>
+           <p class="text-xs text-white/80 mt-1">Supporting those who support others.</p>
+         </div>
+       </div>`;
+     drawerHeader.prepend(brand);
+   }
+
+   const originalLoadProfile = window.loadProfile;
+   if (typeof originalLoadProfile === 'function') {
+     window.loadProfile = async function () {
+       await originalLoadProfile();
+
+       const firstName = (currentProfile?.full_name || 'there').split(' ')[0];
+       const hour = new Date().getHours();
+       const greeting =
+         hour < 12 ? 'Good morning' :
+         hour < 17 ? 'Good afternoon' :
+         'Good evening';
+
+       const welcome = document.getElementById('welcome-name');
+       if (welcome) welcome.textContent = `${greeting}, ${firstName}`;
+
+       const headerRoleAfterLoad = document.getElementById('header-role');
+       if (headerRoleAfterLoad) {
+         headerRoleAfterLoad.textContent = 'Supporting those who support others.';
+       }
+     };
+   }
+
+   window.openParticipantMedication = async function (clientId) {
+     showPanel('meds');
+
+     const filter = document.getElementById('medication-client-filter');
+     const profileClient = document.getElementById('med-profile-client');
+
+     filter.value = clientId;
+     profileClient.value = clientId;
+
+     document.getElementById('medication-setup-hint')
+       .classList.toggle('hidden', !clientId);
+
+     await loadMedicationProfiles(clientId);
+     window.scrollTo({ top: 0, behavior: 'smooth' });
+   };
+
+   const originalRenderClients = window.renderClients;
+   if (typeof originalRenderClients === 'function') {
+     window.renderClients = function (filter = '') {
+       originalRenderClients(filter);
+
+       const filteredClients = clientsCache.filter(client => {
+         const query = filter.trim().toLowerCase();
+         return !query ||
+           (client.preferred_name || '').toLowerCase().includes(query) ||
+           (client.legal_name || '').toLowerCase().includes(query);
+       });
+
+       document.querySelectorAll('#clients-list article').forEach((card, index) => {
+         const client = filteredClients[index];
+         if (!client) return;
+
+         const subtitle = card.querySelector('.client-name + p');
+         if (subtitle) subtitle.textContent = 'The person I support';
+
+         const medicationButton = card.querySelector('.open-meds');
+         if (medicationButton) {
+           medicationButton.textContent = 'Medication';
+           medicationButton.className =
+             'open-meds bg-[#5F8F72] text-white rounded-xl py-3 font-semibold';
+           medicationButton.onclick = async event => {
+             event.preventDefault();
+             event.stopPropagation();
+             await window.openParticipantMedication(client.id);
+           };
+         }
+
+         const notesButton = card.querySelector('.open-notes');
+         if (notesButton) {
+           notesButton.className =
+             'open-notes bg-[#496A55] text-white rounded-xl py-3 font-semibold';
+         }
+
+         const profileButton = card.querySelector('.view-profile');
+         if (profileButton) {
+           profileButton.className =
+             'view-profile w-full mb-2 border border-[#BFD1BE] text-[#496A55] bg-[#EEF4ED] rounded-xl py-3 font-bold';
+         }
+
+         const banner = card.firstElementChild;
+         if (banner) {
+           banner.style.background =
+             'linear-gradient(135deg, #6F9278, #496A55)';
+         }
+       });
+     };
+   }
+ });
+</script>
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
