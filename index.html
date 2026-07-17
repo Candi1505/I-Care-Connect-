@@ -1,4 +1,3 @@
-index.html
 <!DOCTYPE html>
 <html lang="en-AU">
 <head>
@@ -6,10 +5,10 @@ index.html
  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
  <meta name="theme-color" content="#0B4C8C">
  <title>I-Care Connect Hub</title>
- 
+
  <script src="https://cdn.tailwindcss.com"></script>
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
- 
+
  <style>
    :root {
      --navy: #0B4C8C;
@@ -20,7 +19,7 @@ index.html
      --amber: #D97706;
      --red: #C93B3B;
    }
- 
+
    * { box-sizing: border-box; }
    body {
      margin: 0;
@@ -28,11 +27,11 @@ index.html
      color: #263238;
      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
    }
- 
+
    .safe-top { padding-top: max(18px, env(safe-area-inset-top)); }
    .safe-bottom { padding-bottom: max(92px, calc(env(safe-area-inset-bottom) + 80px)); }
    .hidden { display: none !important; }
- 
+
    .nav-button {
      color: #6B7280;
      border-radius: 16px;
@@ -42,7 +41,7 @@ index.html
      background: #EAF4FA;
      font-weight: 800;
    }
- 
+
    .pill {
      display: inline-flex;
      border-radius: 999px;
@@ -54,14 +53,14 @@ index.html
    .pill-active, .pill-accepted { background: #E1F5E9; color: var(--green); }
    .pill-pending { background: #FFF0D2; color: #8B5700; }
    .pill-declined, .pill-cancelled { background: #FDE5E5; color: var(--red); }
- 
+
    input, select, textarea {
      color: #263238;
      background: white;
    }
    button:disabled { opacity: .5; cursor: not-allowed; }
- 
- 
+
+
    .header-icon {
      width: 44px;
      height: 44px;
@@ -74,7 +73,7 @@ index.html
      border: 1px solid rgba(255,255,255,.15);
      backdrop-filter: blur(8px);
    }
- 
+
    .drawer-overlay {
      position: fixed;
      inset: 0;
@@ -85,7 +84,7 @@ index.html
      transition: opacity .2s ease;
    }
    .drawer-overlay.open { opacity: 1; pointer-events: auto; }
- 
+
    .side-drawer {
      position: fixed;
      top: 0;
@@ -100,7 +99,7 @@ index.html
      overflow-y: auto;
    }
    .side-drawer.open { transform: translateX(0); }
- 
+
    .drawer-link {
      width: 100%;
      display: flex;
@@ -113,7 +112,7 @@ index.html
      color: #334155;
    }
    .drawer-link:active { background: #EEF6FB; }
- 
+
    .notification-panel {
      position: fixed;
      top: max(76px, calc(env(safe-area-inset-top) + 62px));
@@ -126,18 +125,18 @@ index.html
      border: 1px solid #E5E7EB;
      overflow: hidden;
    }
- 
+
    .dashboard-stat {
      background: linear-gradient(145deg, #ffffff, #f8fafc);
      box-shadow: 0 8px 22px rgba(15,23,42,.06);
    }
- 
+
    .quick-action {
      min-height: 92px;
      box-shadow: 0 10px 24px rgba(15,23,42,.10);
    }
- 
- 
+
+
    .med-card {
      background: white;
      border: 1px solid #E5E7EB;
@@ -157,9 +156,23 @@ index.html
      color: #6B7280;
      font-weight: 800;
    }
- </style>
+
+  .mar-status-button {
+    border: 1px solid #D4D4D8;
+    border-radius: 14px;
+    padding: 10px 8px;
+    font-size: 12px;
+    font-weight: 750;
+    background: white;
+    color: #52525B;
+  }
+  .mar-status-button.selected-given { background: #E1F5E9; border-color: #86D4A5; color: #146C43; }
+  .mar-status-button.selected-exception { background: #FFF0D2; border-color: #F4C86A; color: #8B5700; }
+  .mar-progress-track { height: 10px; border-radius: 999px; background: #E4E4E7; overflow: hidden; }
+  .mar-progress-fill { height: 100%; background: linear-gradient(90deg, #2494C7, #8446A8); transition: width .2s ease; }
+</style>
 </head>
- 
+
 <body>
  <!-- LOGIN -->
  <section id="login-screen"
@@ -172,20 +185,20 @@ index.html
        <h1 class="text-3xl font-bold text-[#0B4C8C]">I-Care Connect Hub</h1>
        <p class="text-zinc-500 text-sm mt-1">Connecting care, creating independence</p>
      </div>
- 
+
      <form id="login-form" class="space-y-3">
        <label class="block text-sm font-semibold text-[#0B4C8C]" for="login-email">Email address</label>
        <input id="login-email" type="email" autocomplete="email" required
               class="w-full border border-zinc-300 rounded-2xl p-4"
               placeholder="staff@example.com">
- 
+
        <label class="block text-sm font-semibold text-[#0B4C8C]" for="login-password">Password</label>
        <input id="login-password" type="password" autocomplete="current-password" minlength="8" required
               class="w-full border border-zinc-300 rounded-2xl p-4"
               placeholder="Password">
- 
+
        <p id="login-message" class="text-sm min-h-5" role="status"></p>
- 
+
        <button id="login-button" type="submit"
                class="w-full bg-gradient-to-r from-[#0B4C8C] to-[#8446A8] text-white rounded-2xl py-4 font-bold">
          Sign in
@@ -193,19 +206,19 @@ index.html
      </form>
    </div>
  </section>
- 
+
  <!-- APP -->
  <div id="app-shell" class="hidden">
    <main class="max-w-md mx-auto min-h-screen bg-[#F8F6F3] safe-bottom">
      <header class="safe-top px-4 pb-5 text-white bg-gradient-to-br from-[#0B4C8C] via-[#2494C7] to-[#8446A8] shadow-lg">
        <div class="flex items-center justify-between gap-3">
          <button type="button" id="menu-button" class="header-icon" aria-label="Open menu">☰</button>
- 
+
          <div class="text-center flex-1 min-w-0">
            <h1 class="text-xl font-extrabold truncate">I-Care Connect Hub</h1>
            <p id="header-role" class="text-blue-100 text-sm mt-1">Loading profile…</p>
          </div>
- 
+
          <button type="button" id="notification-button" class="header-icon relative" aria-label="Open notifications">
            🔔
            <span id="notification-badge"
@@ -213,14 +226,14 @@ index.html
          </button>
        </div>
      </header>
- 
+
      <!-- HOME -->
      <section id="home-panel" class="p-4">
        <div class="mb-4">
          <h2 id="welcome-name" class="text-2xl font-bold text-[#0B4C8C]">Welcome</h2>
          <p class="text-zinc-500 text-sm">Today at a glance</p>
        </div>
- 
+
        <div id="supervisor-card"
             class="hidden bg-white rounded-3xl border-l-4 border-[#8446A8] shadow-sm p-5 mb-4">
          <h3 class="font-bold text-[#0B4C8C] mb-3">Supervisor overview</h3>
@@ -239,12 +252,12 @@ index.html
            </button>
          </div>
        </div>
- 
+
        <div class="bg-white rounded-3xl border border-zinc-200 shadow-sm p-5 mb-4">
          <h3 class="font-bold text-[#0B4C8C] mb-3">My next shift</h3>
          <div id="next-shift"><p class="text-zinc-500 text-sm">Loading roster…</p></div>
        </div>
- 
+
        <div id="supervisor-quick-actions" class="hidden mb-4">
          <h3 class="font-bold text-[#0B4C8C] mb-3">Quick actions</h3>
          <div class="grid grid-cols-2 gap-3">
@@ -254,14 +267,14 @@ index.html
                    class="quick-action bg-gradient-to-br from-[#8446A8] to-[#67328B] text-white rounded-3xl py-4 font-bold">📅<span class="block mt-1">+ Create shift</span></button>
          </div>
        </div>
- <div class="grid grid-cols-2 gap-3">
+<div class="grid grid-cols-2 gap-3">
          <button data-open="clients" class="bg-[#2494C7] text-white rounded-2xl py-4 font-semibold">Open clients</button>
          <button data-open="roster" class="bg-[#8446A8] text-white rounded-2xl py-4 font-semibold">Open roster</button>
          <button data-open="meds" class="bg-[#0B4C8C] text-white rounded-2xl py-4 font-semibold">Medication</button>
          <button data-open="notes" class="bg-emerald-700 text-white rounded-2xl py-4 font-semibold">Progress notes</button>
        </div>
      </section>
- 
+
      <!-- CLIENTS -->
      <section id="clients-panel" class="hidden p-4">
        <div class="flex items-center justify-between mb-4">
@@ -274,7 +287,7 @@ index.html
            + Client
          </button>
        </div>
- 
+
        <div id="client-form"
             class="hidden bg-white rounded-3xl border border-zinc-200 shadow-sm p-5 mb-4">
          <h3 class="font-bold text-[#0B4C8C] mb-3">Add new client</h3>
@@ -295,32 +308,32 @@ index.html
            <textarea id="client-health-alerts" rows="3"
                      class="w-full border border-zinc-300 rounded-2xl p-3"
                      placeholder="Health alerts, allergies or important information"></textarea>
- 
+
            <p id="client-form-message" class="text-sm min-h-5"></p>
- 
+
            <button id="save-client"
                    class="w-full bg-[#2494C7] text-white rounded-2xl py-4 font-bold">
              Save client
            </button>
          </div>
        </div>
- 
+
        <input id="client-search" type="search"
               class="w-full border border-zinc-300 rounded-2xl p-3 mb-4"
               placeholder="Search clients">
- 
+
        <div id="clients-list" class="space-y-3">
          <div class="bg-white rounded-3xl p-5 text-zinc-500">Loading clients…</div>
        </div>
      </section>
- 
+
      <!-- ROSTER -->
      <section id="roster-panel" class="hidden p-4">
        <div class="mb-4">
          <h2 class="text-2xl font-bold text-[#0B4C8C]">Roster</h2>
          <p class="text-zinc-500 text-sm">Seven-day shift view</p>
        </div>
- 
+
        <div id="supervisor-roster-tools"
             class="hidden bg-white rounded-3xl border-l-4 border-[#8446A8] shadow-sm p-5 mb-4">
          <h3 class="font-bold text-[#0B4C8C] mb-3">Supervisor tools</h3>
@@ -329,26 +342,26 @@ index.html
            Create shift
          </button>
        </div>
- 
+
        <div id="create-shift-form"
             class="hidden bg-white rounded-3xl border border-zinc-200 shadow-sm p-5 mb-4">
          <div class="space-y-3">
            <select id="shift-client" class="w-full border border-zinc-300 rounded-2xl p-3">
              <option value="">Select client</option>
            </select>
- 
+
            <select id="shift-worker" class="w-full border border-zinc-300 rounded-2xl p-3">
              <option value="">Select worker</option>
            </select>
- 
+
            <label class="block text-sm font-semibold text-[#0B4C8C]">Start</label>
            <input id="shift-start" type="datetime-local"
                   class="w-full border border-zinc-300 rounded-2xl p-3">
- 
+
            <label class="block text-sm font-semibold text-[#0B4C8C]">Finish</label>
            <input id="shift-end" type="datetime-local"
                   class="w-full border border-zinc-300 rounded-2xl p-3">
- 
+
            <select id="shift-type" class="w-full border border-zinc-300 rounded-2xl p-3">
              <option value="SIL">SIL</option>
              <option value="Sleepover">Sleepover</option>
@@ -365,209 +378,191 @@ index.html
              <option value="Training">Training</option>
              <option value="Other">Other</option>
            </select>
- 
+
            <textarea id="shift-instructions" rows="3"
                      placeholder="Shift instructions"
                      class="w-full border border-zinc-300 rounded-2xl p-3"></textarea>
- 
+
            <p id="shift-form-message" class="text-sm min-h-5"></p>
- 
+
            <button id="save-shift"
                    class="w-full bg-[#8446A8] text-white rounded-2xl py-4 font-bold">
              Publish shift
            </button>
          </div>
        </div>
- 
+
        <div id="roster-list" class="space-y-3">
          <div class="bg-white rounded-3xl p-5 text-zinc-500">Loading shifts…</div>
        </div>
      </section>
     <!-- MEDICATION -->
     <section id="meds-panel" class="hidden p-4">
-      <div class="flex items-start justify-between gap-3 mb-4">
-        <div>
-          <h2 class="text-2xl font-bold text-[#0B4C8C]">Medication & MAR</h2>
-          <p class="text-zinc-500 text-sm">Project Florence - enter once, use everywhere</p>
+      <div id="medication-landing">
+        <div class="flex items-start justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-2xl font-bold text-[#0B4C8C]">Medication & MAR</h2>
+            <p class="text-zinc-500 text-sm">Project Florence - enter once, use everywhere</p>
+          </div>
+          <button id="show-medication-profile-form"
+                  class="hidden bg-[#0B4C8C] text-white rounded-2xl px-4 py-3 font-bold whitespace-nowrap">
+            + Medication
+          </button>
         </div>
-        <button id="show-medication-profile-form"
-                class="hidden bg-[#0B4C8C] text-white rounded-2xl px-4 py-3 font-bold whitespace-nowrap">
-          + Medication
-        </button>
-      </div>
- 
-      <select id="medication-client-filter"
-              class="w-full border border-zinc-300 rounded-2xl p-4 mb-4">
-        <option value="">Select client</option>
-      </select>
- 
-      <div class="grid grid-cols-1 gap-3 mb-5">
-        <button id="open-scheduled-mar" class="med-choice med-card text-left p-5 med-type-regular">
-          <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-3xl">💊</div>
-            <div class="flex-1">
-              <h3 class="font-bold text-lg text-[#0B4C8C]">Scheduled Medication & MAR</h3>
-              <p class="text-sm text-zinc-500 mt-1">Morning, midday, evening and bedtime rounds</p>
+
+        <select id="medication-client-filter"
+                class="w-full border border-zinc-300 rounded-2xl p-4 mb-4">
+          <option value="">Select client</option>
+        </select>
+
+        <div class="grid grid-cols-1 gap-3 mb-5">
+          <button id="open-scheduled-mar" class="med-choice med-card text-left p-5 med-type-regular">
+            <div class="flex items-center gap-4">
+              <div class="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-3xl">💊</div>
+              <div class="flex-1">
+                <h3 class="font-bold text-lg text-[#0B4C8C]">Scheduled Medication & MAR</h3>
+                <p class="text-sm text-zinc-500 mt-1">Complete and securely sign today's rounds</p>
+              </div>
+              <span class="text-2xl text-zinc-300">›</span>
             </div>
-            <span class="text-2xl text-zinc-300">›</span>
-          </div>
-        </button>
-        <button id="open-prn" class="med-choice med-card text-left p-5 med-type-prn">
-          <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center text-3xl">🩹</div>
-            <div class="flex-1">
-              <h3 class="font-bold text-lg text-amber-700">PRN Administration</h3>
-              <p class="text-sm text-zinc-500 mt-1">Separate as-needed medication workflow</p>
+          </button>
+
+          <button id="open-prn" class="med-choice med-card text-left p-5 med-type-prn">
+            <div class="flex items-center gap-4">
+              <div class="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center text-3xl">🩹</div>
+              <div class="flex-1">
+                <h3 class="font-bold text-lg text-amber-700">PRN Administration</h3>
+                <p class="text-sm text-zinc-500 mt-1">Separate as-needed medication workflow</p>
+              </div>
+              <span class="text-2xl text-zinc-300">›</span>
             </div>
-            <span class="text-2xl text-zinc-300">›</span>
-          </div>
-        </button>
- 
-        <button id="open-s8" class="med-choice med-card text-left p-5 med-type-schedule8">
-          <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-2xl bg-purple-50 flex items-center justify-center text-3xl">🔒</div>
-            <div class="flex-1">
-              <h3 class="font-bold text-lg text-[#8446A8]">Schedule 8 Register</h3>
-              <p class="text-sm text-zinc-500 mt-1">Controlled-drug administration and stock balance</p>
+          </button>
+
+          <button id="open-s8" class="med-choice med-card text-left p-5 med-type-schedule8">
+            <div class="flex items-center gap-4">
+              <div class="w-14 h-14 rounded-2xl bg-purple-50 flex items-center justify-center text-3xl">🔒</div>
+              <div class="flex-1">
+                <h3 class="font-bold text-lg text-[#8446A8]">Schedule 8 Register</h3>
+                <p class="text-sm text-zinc-500 mt-1">Controlled-drug administration and stock balance</p>
+              </div>
+              <span class="text-2xl text-zinc-300">›</span>
             </div>
-            <span class="text-2xl text-zinc-300">›</span>
-          </div>
-        </button>
-      </div>
- 
-      <div id="medication-profile-form" class="hidden med-card p-5 mb-5">
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <p class="section-label">Supervisor setup</p>
-            <h3 class="font-bold text-xl text-[#0B4C8C]">Add medication profile</h3>
-          </div>
-          <button id="close-medication-profile-form" class="w-10 h-10 rounded-xl bg-zinc-100 text-xl">×</button>
+          </button>
         </div>
- 
-        <div class="space-y-3">
-          <select id="med-profile-client" class="w-full border border-zinc-300 rounded-2xl p-3">
-            <option value="">Select client</option>
-          </select>
- 
-          <div>
-            <label class="section-label">Medication details</label>
-            <input id="med-profile-name" class="w-full border border-zinc-300 rounded-2xl p-3 mt-1" placeholder="Medication name">
+
+        <div id="medication-profile-form" class="hidden med-card p-5 mb-5">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <p class="section-label">Supervisor setup</p>
+              <h3 class="font-bold text-xl text-[#0B4C8C]">Add medication profile</h3>
+            </div>
+            <button id="close-medication-profile-form" class="w-10 h-10 rounded-xl bg-zinc-100 text-xl">×</button>
           </div>
- 
-          <div class="grid grid-cols-2 gap-3">
-            <input id="med-profile-strength" class="border border-zinc-300 rounded-2xl p-3" placeholder="Strength e.g. 500 mg">
-            <select id="med-profile-form-type" class="border border-zinc-300 rounded-2xl p-3">
-              <option value="Tablet">Tablet</option>
-              <option value="Capsule">Capsule</option>
-              <option value="Liquid">Liquid</option>
-              <option value="Cream">Cream</option>
-              <option value="Patch">Patch</option>
-              <option value="Eye drop">Eye drop</option>
-              <option value="Ear drop">Ear drop</option>
-              <option value="Inhaler">Inhaler</option>
-              <option value="Nebuliser">Nebuliser</option>
-              <option value="Injection">Injection</option>
-              <option value="Other">Other</option>
+
+          <div class="space-y-3">
+            <select id="med-profile-client" class="w-full border border-zinc-300 rounded-2xl p-3"><option value="">Select client</option></select>
+            <input id="med-profile-name" class="w-full border border-zinc-300 rounded-2xl p-3" placeholder="Medication name">
+            <div class="grid grid-cols-2 gap-3">
+              <input id="med-profile-strength" class="border border-zinc-300 rounded-2xl p-3" placeholder="Strength e.g. 500 mg">
+              <select id="med-profile-form-type" class="border border-zinc-300 rounded-2xl p-3">
+                <option>Tablet</option><option>Capsule</option><option>Liquid</option><option>Cream</option><option>Patch</option>
+                <option>Eye drop</option><option>Ear drop</option><option>Inhaler</option><option>Nebuliser</option><option>Injection</option><option>Other</option>
+              </select>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <input id="med-profile-dose" class="border border-zinc-300 rounded-2xl p-3" placeholder="Dose e.g. 2 tablets">
+              <select id="med-profile-route" class="border border-zinc-300 rounded-2xl p-3">
+                <option>Oral</option><option>Topical</option><option>Inhaled</option><option>Eye</option><option>Ear</option>
+                <option>Transdermal</option><option>Subcutaneous</option><option>Other</option>
+              </select>
+            </div>
+            <select id="med-profile-type" class="w-full border border-zinc-300 rounded-2xl p-3">
+              <option value="regular">Regular scheduled medication</option>
+              <option value="prn">PRN medication</option>
+              <option value="schedule8">Schedule 8 medication</option>
             </select>
-          </div>
- 
-          <div class="grid grid-cols-2 gap-3">
-            <input id="med-profile-dose" class="border border-zinc-300 rounded-2xl p-3" placeholder="Dose e.g. 2 tablets">
-            <select id="med-profile-route" class="border border-zinc-300 rounded-2xl p-3">
-              <option value="Oral">Oral</option>
-              <option value="Topical">Topical</option>
-              <option value="Inhaled">Inhaled</option>
-              <option value="Eye">Eye</option>
-              <option value="Ear">Ear</option>
-              <option value="Transdermal">Transdermal</option>
-              <option value="Subcutaneous">Subcutaneous</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
- 
-          <select id="med-profile-type" class="w-full border border-zinc-300 rounded-2xl p-3">
-            <option value="regular">Regular scheduled medication</option>
-            <option value="prn">PRN medication</option>
-            <option value="schedule8">Schedule 8 medication</option>
-          </select>
- 
-          <textarea id="med-profile-instructions" rows="3"
-                    class="w-full border border-zinc-300 rounded-2xl p-3"
-                    placeholder="Administration instructions - with food, do not crush, etc."></textarea>
- 
-          <div>
-            <label class="section-label">Prescriber</label>
-            <input id="med-profile-doctor" class="w-full border border-zinc-300 rounded-2xl p-3 mt-1" placeholder="Prescribing doctor's name">
-          </div>
- 
-          <div class="grid grid-cols-2 gap-3">
-            <input id="med-profile-practice" class="border border-zinc-300 rounded-2xl p-3" placeholder="Clinic / practice">
-            <input id="med-profile-practice-phone" type="tel" class="border border-zinc-300 rounded-2xl p-3" placeholder="Clinic phone">
-          </div>
- 
-          <div>
-            <label class="section-label">Pharmacy</label>
-            <div class="grid grid-cols-2 gap-3 mt-1">
+            <textarea id="med-profile-instructions" rows="3" class="w-full border border-zinc-300 rounded-2xl p-3" placeholder="Administration instructions"></textarea>
+            <input id="med-profile-doctor" class="w-full border border-zinc-300 rounded-2xl p-3" placeholder="Prescribing doctor's name">
+            <div class="grid grid-cols-2 gap-3">
+              <input id="med-profile-practice" class="border border-zinc-300 rounded-2xl p-3" placeholder="Clinic / practice">
+              <input id="med-profile-practice-phone" type="tel" class="border border-zinc-300 rounded-2xl p-3" placeholder="Clinic phone">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
               <input id="med-profile-pharmacy" class="border border-zinc-300 rounded-2xl p-3" placeholder="Pharmacy name">
               <input id="med-profile-pharmacy-phone" type="tel" class="border border-zinc-300 rounded-2xl p-3" placeholder="Pharmacy phone">
             </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div><label class="section-label">Start date</label><input id="med-profile-start" type="date" class="w-full border border-zinc-300 rounded-2xl p-3 mt-1"></div>
+              <div><label class="section-label">Review date</label><input id="med-profile-review" type="date" class="w-full border border-zinc-300 rounded-2xl p-3 mt-1"></div>
+            </div>
+            <div id="scheduled-fields">
+              <label class="section-label">Scheduled round</label>
+              <div class="grid grid-cols-2 gap-3 mt-1">
+                <select id="med-profile-round" class="border border-zinc-300 rounded-2xl p-3"><option>Morning</option><option>Midday</option><option>Evening</option><option>Bedtime</option><option>Custom</option></select>
+                <input id="med-profile-time" type="time" class="border border-zinc-300 rounded-2xl p-3" value="08:00">
+              </div>
+            </div>
+            <div id="prn-fields" class="hidden rounded-2xl bg-amber-50 p-4 space-y-3">
+              <p class="font-bold text-amber-800">PRN safety limits</p>
+              <input id="med-profile-min-hours" type="number" step="0.25" min="0" class="w-full border border-amber-200 rounded-2xl p-3" placeholder="Minimum hours between doses">
+              <input id="med-profile-max-dose" class="w-full border border-amber-200 rounded-2xl p-3" placeholder="Maximum dose in 24 hours">
+            </div>
+            <p id="med-profile-message" class="text-sm min-h-5"></p>
+            <button id="save-medication-profile" class="w-full bg-gradient-to-r from-[#0B4C8C] to-[#8446A8] text-white rounded-2xl py-4 font-bold">Save medication profile</button>
           </div>
- 
+        </div>
+
+        <div class="flex items-center justify-between mb-3">
+          <div><p class="section-label">Current profile</p><h3 class="font-bold text-lg text-[#0B4C8C]">Client medications</h3></div>
+          <span id="medication-count" class="pill bg-blue-50 text-[#0B4C8C]">0 active</span>
+        </div>
+        <div id="medication-profile-list" class="space-y-3"><div class="bg-white rounded-3xl p-5 text-zinc-500">Select a client to view medications.</div></div>
+      </div>
+
+      <!-- FUNCTIONAL SCHEDULED MAR -->
+      <div id="scheduled-mar-workspace" class="hidden">
+        <div class="flex items-center gap-3 mb-4">
+          <button id="close-scheduled-mar" class="w-11 h-11 rounded-2xl bg-white border border-zinc-200 text-xl">‹</button>
+          <div class="flex-1">
+            <p class="section-label">Scheduled Medication & MAR</p>
+            <h2 id="mar-client-name" class="text-2xl font-bold text-[#0B4C8C]">Client</h2>
+          </div>
+          <button id="open-pin-setup" class="rounded-2xl px-3 py-2 bg-zinc-100 text-sm font-bold text-[#0B4C8C]">PIN</button>
+        </div>
+
+        <div class="med-card p-4 mb-4">
           <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="section-label">Start date</label>
-              <input id="med-profile-start" type="date" class="w-full border border-zinc-300 rounded-2xl p-3 mt-1">
-            </div>
-            <div>
-              <label class="section-label">Review date</label>
-              <input id="med-profile-review" type="date" class="w-full border border-zinc-300 rounded-2xl p-3 mt-1">
-            </div>
+            <div><label class="section-label">Date</label><input id="mar-date" type="date" class="w-full border border-zinc-300 rounded-2xl p-3 mt-1"></div>
+            <div><label class="section-label">Round</label><select id="mar-round" class="w-full border border-zinc-300 rounded-2xl p-3 mt-1"><option value="">Select round</option></select></div>
           </div>
- 
-          <div id="scheduled-fields">
-            <label class="section-label">Scheduled round</label>
-            <div class="grid grid-cols-2 gap-3 mt-1">
-              <select id="med-profile-round" class="border border-zinc-300 rounded-2xl p-3">
-                <option value="Morning">Morning</option>
-                <option value="Midday">Midday</option>
-                <option value="Evening">Evening</option>
-                <option value="Bedtime">Bedtime</option>
-                <option value="Custom">Custom</option>
-              </select>
-              <input id="med-profile-time" type="time" class="border border-zinc-300 rounded-2xl p-3" value="08:00">
-            </div>
-            <p class="text-xs text-zinc-400 mt-2">Additional daily rounds can be added by duplicating the medication profile in a later build.</p>
-          </div>
- 
-          <div id="prn-fields" class="hidden rounded-2xl bg-amber-50 p-4 space-y-3">
-            <p class="font-bold text-amber-800">PRN safety limits</p>
-            <input id="med-profile-min-hours" type="number" step="0.25" min="0"
-                   class="w-full border border-amber-200 rounded-2xl p-3" placeholder="Minimum hours between doses">
-            <input id="med-profile-max-dose" class="w-full border border-amber-200 rounded-2xl p-3" placeholder="Maximum dose in 24 hours">
-          </div>
- 
-          <p id="med-profile-message" class="text-sm min-h-5"></p>
- 
-          <button id="save-medication-profile"
-                  class="w-full bg-gradient-to-r from-[#0B4C8C] to-[#8446A8] text-white rounded-2xl py-4 font-bold">
-            Save medication profile
-          </button>
+          <div class="mt-4 flex items-center justify-between text-sm"><span id="mar-progress-text" class="font-semibold text-zinc-600">0 of 0 completed</span><span id="mar-round-status" class="pill bg-blue-50 text-[#0B4C8C]">Select round</span></div>
+          <div class="mar-progress-track mt-2"><div id="mar-progress-fill" class="mar-progress-fill" style="width:0%"></div></div>
+        </div>
+
+        <div id="mar-medication-list" class="space-y-3"><div class="bg-white rounded-3xl p-5 text-zinc-500">Choose a round to load medications.</div></div>
+
+        <div id="mar-sign-card" class="hidden med-card p-5 mt-4">
+          <h3 class="font-bold text-lg text-[#0B4C8C]">Confirm medication round</h3>
+          <p class="text-sm text-zinc-500 mt-1">You are confirming the correct client, medication, dose, route, time and documentation.</p>
+          <input id="mar-pin" type="password" inputmode="numeric" maxlength="6" pattern="[0-9]*" class="w-full border border-zinc-300 rounded-2xl p-4 text-center text-2xl tracking-[.5em] mt-4" placeholder="••••••">
+          <p id="mar-sign-message" class="text-sm min-h-5 mt-2"></p>
+          <button id="sign-mar-round" class="w-full bg-gradient-to-r from-[#0B4C8C] to-[#8446A8] text-white rounded-2xl py-4 font-bold mt-2">Confirm and sign round</button>
         </div>
       </div>
- 
-      <div class="flex items-center justify-between mb-3">
-        <div>
-          <p class="section-label">Current profile</p>
-          <h3 class="font-bold text-lg text-[#0B4C8C]">Client medications</h3>
+
+      <!-- PIN SETUP MODAL -->
+      <div id="pin-setup-modal" class="hidden fixed inset-0 z-50 bg-black/50 p-4 flex items-center justify-center">
+        <div class="w-full max-w-sm bg-white rounded-[28px] p-6 shadow-2xl">
+          <div class="flex justify-between gap-3"><div><p class="section-label">Secure signing</p><h3 class="text-xl font-bold text-[#0B4C8C]">Set medication PIN</h3></div><button id="close-pin-setup" class="w-10 h-10 rounded-xl bg-zinc-100 text-xl">×</button></div>
+          <p class="text-sm text-zinc-500 mt-2">Create a private six-digit PIN. Do not share it with other workers.</p>
+          <input id="new-medication-pin" type="password" inputmode="numeric" maxlength="6" class="w-full border border-zinc-300 rounded-2xl p-4 text-center text-2xl tracking-[.5em] mt-4" placeholder="••••••">
+          <input id="confirm-medication-pin" type="password" inputmode="numeric" maxlength="6" class="w-full border border-zinc-300 rounded-2xl p-4 text-center text-2xl tracking-[.5em] mt-3" placeholder="••••••">
+          <p id="pin-setup-message" class="text-sm min-h-5 mt-2"></p>
+          <button id="save-medication-pin" class="w-full bg-[#0B4C8C] text-white rounded-2xl py-4 font-bold mt-2">Save my PIN</button>
         </div>
-        <span id="medication-count" class="pill bg-blue-50 text-[#0B4C8C]">0 active</span>
-      </div>
- 
-      <div id="medication-profile-list" class="space-y-3">
-        <div class="bg-white rounded-3xl p-5 text-zinc-500">Select a client to view medications.</div>
       </div>
     </section>
- 
+
      <!-- NOTES -->
      <section id="notes-panel" class="hidden p-4">
        <div class="mb-4">
@@ -581,12 +576,12 @@ index.html
          </p>
        </div>
      </section>
- 
+
      <footer class="px-4 pt-5 pb-2 text-center text-xs text-zinc-400">
        I-Care Connect Hub · Build 7.1 · Test environment
      </footer>
    </main>
- 
+
    <nav class="fixed left-0 right-0 bottom-0 bg-white border-t border-zinc-200 px-2 pt-2 pb-[max(8px,env(safe-area-inset-bottom))] z-30">
      <div class="max-w-md mx-auto grid grid-cols-5 gap-1">
        <button data-tab="home" class="nav-button active py-2 text-xs"><span class="block text-xl">🏠</span>Home</button>
@@ -597,8 +592,9 @@ index.html
      </div>
    </nav>
  </div>
+
  <div id="drawer-overlay" class="drawer-overlay"></div>
- 
+
  <aside id="side-drawer" class="side-drawer safe-top" aria-hidden="true">
    <div class="px-5 pb-5 bg-gradient-to-br from-[#0B4C8C] to-[#8446A8] text-white">
      <div class="flex items-center justify-between">
@@ -610,7 +606,7 @@ index.html
        <button id="close-menu-button" class="header-icon" aria-label="Close menu">✕</button>
      </div>
    </div>
- 
+
    <div class="p-3 space-y-1">
      <button class="drawer-link" data-menu-open="home">🏠 <span>Dashboard</span></button>
      <button class="drawer-link" data-menu-open="clients">👥 <span>Participants</span></button>
@@ -627,8 +623,7 @@ index.html
      <button id="sign-out-button" class="drawer-link text-red-600">🚪 <span>Sign out</span></button>
    </div>
  </aside>
- 
- <section id="notification-panel" class="notification-panel hidden">
+<section id="notification-panel" class="notification-panel hidden">
    <div class="p-4 bg-gradient-to-r from-[#0B4C8C] to-[#8446A8] text-white flex justify-between items-center">
      <div>
        <h2 class="font-bold text-lg">Notifications</h2>
@@ -651,69 +646,69 @@ index.html
      </button>
    </div>
  </section>
- 
+
  <script>
    const SUPABASE_URL = 'https://pbbsaquwumxyrhqhnobv.supabase.co';
    const SUPABASE_KEY = 'sb_publishable_4D2Oc8FJjOXDXgGG7GbzfA_oYRpXSU5';
    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
- 
+
    let currentSession = null;
    let currentProfile = null;
    let currentRole = 'support_worker';
    let clientsCache = [];
   let medicationsCache = [];
- 
+
    const panels = ['home', 'roster', 'clients', 'meds', 'notes'];
- 
+
    const sideDrawer = document.getElementById('side-drawer');
    const drawerOverlay = document.getElementById('drawer-overlay');
    const notificationPanel = document.getElementById('notification-panel');
- 
+
    function openMenu() {
      sideDrawer.classList.add('open');
      drawerOverlay.classList.add('open');
      sideDrawer.setAttribute('aria-hidden', 'false');
    }
- 
+
    function closeMenu() {
      sideDrawer.classList.remove('open');
      drawerOverlay.classList.remove('open');
      sideDrawer.setAttribute('aria-hidden', 'true');
    }
- 
+
    function closeNotifications() {
      notificationPanel.classList.add('hidden');
    }
- 
+
    document.getElementById('menu-button').addEventListener('click', openMenu);
    document.getElementById('close-menu-button').addEventListener('click', closeMenu);
    drawerOverlay.addEventListener('click', () => {
      closeMenu();
      closeNotifications();
    });
- 
+
    document.getElementById('notification-button').addEventListener('click', () => {
      notificationPanel.classList.toggle('hidden');
    });
    document.getElementById('close-notifications').addEventListener('click', closeNotifications);
- 
+
    document.querySelectorAll('[data-menu-open]').forEach(button => {
      button.addEventListener('click', () => {
        showPanel(button.dataset.menuOpen);
        closeMenu();
      });
    });
- 
+
    document.querySelectorAll('.notification-link').forEach(button => {
      button.addEventListener('click', closeNotifications);
    });
- 
+
    ['menu-staff','menu-family','menu-documents','menu-reports','menu-settings','menu-help']
      .forEach(id => document.getElementById(id).addEventListener('click', () => {
        alert('This menu area is prepared and will be connected in a coming build.');
      }));
- 
- 
+
+
    function setMessage(id, text, isError = false) {
      const el = document.getElementById(id);
      el.textContent = text;
@@ -721,7 +716,7 @@ index.html
        ? 'text-sm min-h-5 text-red-600 font-semibold'
        : 'text-sm min-h-5 text-emerald-700 font-semibold';
    }
- 
+
    function showPanel(name) {
      panels.forEach(panel => {
        document.getElementById(`${panel}-panel`).classList.toggle('hidden', panel !== name);
@@ -731,58 +726,58 @@ index.html
      });
      window.scrollTo({ top: 0, behavior: 'smooth' });
    }
- 
+
    document.querySelectorAll('[data-tab]').forEach(button => {
      button.addEventListener('click', () => showPanel(button.dataset.tab));
    });
- 
+
    document.querySelectorAll('[data-open]').forEach(button => {
      button.addEventListener('click', () => showPanel(button.dataset.open));
    });
- 
+
    document.getElementById('login-form').addEventListener('submit', async event => {
      event.preventDefault();
      const email = document.getElementById('login-email').value.trim();
      const password = document.getElementById('login-password').value;
      const button = document.getElementById('login-button');
- 
+
      button.disabled = true;
      setMessage('login-message', 'Signing in…');
- 
+
      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
      button.disabled = false;
- 
+
      if (error) setMessage('login-message', error.message, true);
    });
- 
+
    document.getElementById('sign-out-button').addEventListener('click', async () => {
      await supabaseClient.auth.signOut();
    });
- 
+
    async function loadProfile() {
      const { data, error } = await supabaseClient
        .from('profiles')
        .select('id, full_name, role, active')
        .eq('id', currentSession.user.id)
        .single();
- 
+
      if (error) throw error;
      if (!data.active) throw new Error('This staff account is inactive.');
- 
+
      currentProfile = data;
      currentRole = data.role;
- 
+
      const firstName = (data.full_name || 'Staff').split(' ')[0];
      document.getElementById('welcome-name').textContent = `Welcome, ${firstName}`;
- 
+
      const label =
        data.role === 'support_worker' ? 'Support Worker' :
        data.role === 'supervisor' ? 'Supervisor' : 'Administrator';
- 
+
      document.getElementById('header-role').textContent = label;
      document.getElementById('drawer-name').textContent = data.full_name || 'Staff member';
      document.getElementById('drawer-role').textContent = label;
- 
+
      const management = ['supervisor', 'administrator'].includes(data.role);
      document.getElementById('supervisor-card').classList.toggle('hidden', !management);
      document.getElementById('supervisor-roster-tools').classList.toggle('hidden', !management);
@@ -791,7 +786,7 @@ index.html
     document.getElementById('show-medication-profile-form').classList.toggle('hidden', !management);
      document.querySelectorAll('.management-menu').forEach(item => item.classList.toggle('hidden', !management));
    }
- 
+
    function renderClients(filter = '') {
      const list = document.getElementById('clients-list');
      const query = filter.trim().toLowerCase();
@@ -799,18 +794,18 @@ index.html
        (client.preferred_name || '').toLowerCase().includes(query) ||
        (client.legal_name || '').toLowerCase().includes(query)
      );
- 
+
      list.innerHTML = '';
- 
+
      if (!filtered.length) {
        list.innerHTML = '<div class="bg-white rounded-3xl p-5 text-zinc-500">No clients found.</div>';
        return;
      }
- 
+
      filtered.forEach(client => {
        const card = document.createElement('article');
        card.className = 'bg-white rounded-3xl border border-zinc-200 shadow-sm overflow-hidden';
- 
+
        card.innerHTML = `
          <div class="bg-gradient-to-r from-[#2494C7] to-[#8446A8] p-5 text-white">
            <div class="flex justify-between gap-3">
@@ -830,40 +825,40 @@ index.html
              <button class="open-notes bg-[#8446A8] text-white rounded-xl py-3 font-semibold">Notes</button>
            </div>
          </div>`;
- 
+
        card.querySelector('.client-name').textContent = client.preferred_name;
        card.querySelector('.client-alert').textContent =
          client.health_alerts || 'No health alert displayed';
        card.querySelector('.client-details').textContent =
          client.date_of_birth ? `DOB: ${client.date_of_birth}` : 'DOB not entered';
- 
+
        card.querySelector('.view-profile').addEventListener('click', () => {
          alert(`${client.preferred_name}'s full profile opens in Build 7.2.`);
        });
        card.querySelector('.open-meds').addEventListener('click', () => showPanel('meds'));
        card.querySelector('.open-notes').addEventListener('click', () => showPanel('notes'));
- 
+
        list.appendChild(card);
      });
    }
- 
+
    async function loadClients() {
      const { data, error } = await supabaseClient
        .from('clients')
        .select('id, preferred_name, legal_name, date_of_birth, ndis_number, address, health_alerts, active')
        .eq('active', true)
        .order('preferred_name');
- 
+
      if (error) {
        document.getElementById('clients-list').innerHTML =
          `<div class="bg-red-50 text-red-700 rounded-3xl p-5">${error.message}</div>`;
        return;
      }
- 
+
      clientsCache = data || [];
      document.getElementById('client-count').textContent = clientsCache.length;
      renderClients(document.getElementById('client-search').value);
- 
+
      const select = document.getElementById('shift-client');
      select.innerHTML = '<option value="">Select client</option>';
      clientsCache.forEach(client => {
@@ -872,12 +867,12 @@ index.html
        option.textContent = client.preferred_name;
        select.appendChild(option);
      });
- 
+
      const medicationFilter = document.getElementById('medication-client-filter');
      const medicationProfileClient = document.getElementById('med-profile-client');
      medicationFilter.innerHTML = '<option value="">Select client</option>';
      medicationProfileClient.innerHTML = '<option value="">Select client</option>';
- 
+
      clientsCache.forEach(client => {
        [medicationFilter, medicationProfileClient].forEach(target => {
          const option = document.createElement('option');
@@ -887,28 +882,29 @@ index.html
        });
      });
    }
- document.getElementById('client-search').addEventListener('input', event => {
+
+   document.getElementById('client-search').addEventListener('input', event => {
      renderClients(event.target.value);
    });
- 
+
    document.getElementById('show-client-form').addEventListener('click', () => {
      document.getElementById('client-form').classList.toggle('hidden');
    });
- 
+
    document.getElementById('home-add-client').addEventListener('click', () => {
      showPanel('clients');
      document.getElementById('client-form').classList.remove('hidden');
    });
- 
+
    document.getElementById('save-client').addEventListener('click', async () => {
      const preferredName = document.getElementById('client-preferred-name').value.trim();
      const legalName = document.getElementById('client-legal-name').value.trim();
- 
+
      if (!preferredName) {
        setMessage('client-form-message', 'Please enter the client’s preferred name.', true);
        return;
      }
- 
+
      const payload = {
        preferred_name: preferredName,
        legal_name: legalName || preferredName,
@@ -920,36 +916,36 @@ index.html
        health_alerts: document.getElementById('client-health-alerts').value.trim() || null,
        active: true
      };
- 
+
      const { error } = await supabaseClient.from('clients').insert(payload);
- 
+
      if (error) {
        setMessage('client-form-message', error.message, true);
        return;
      }
- 
+
      setMessage('client-form-message', `${preferredName} has been added.`);
      ['client-preferred-name','client-legal-name','client-dob','client-ndis','client-address',
       'client-emergency-name','client-emergency-phone','client-health-alerts']
        .forEach(id => document.getElementById(id).value = '');
- 
+
      await loadClients();
    });
- 
+
    async function loadWorkers() {
      if (!['supervisor', 'administrator'].includes(currentRole)) return;
- 
+
      const { data, error } = await supabaseClient
        .from('profiles')
        .select('id, full_name, active')
        .eq('active', true)
        .order('full_name');
- 
+
      if (error) return;
- 
+
      const select = document.getElementById('shift-worker');
      select.innerHTML = '<option value="">Select worker</option>';
- 
+
      data.forEach(worker => {
        const option = document.createElement('option');
        option.value = worker.id;
@@ -957,19 +953,19 @@ index.html
        select.appendChild(option);
      });
    }
- 
+
    function formatDateTime(value) {
      return new Intl.DateTimeFormat('en-AU', {
        weekday: 'short', day: 'numeric', month: 'short',
        hour: 'numeric', minute: '2-digit'
      }).format(new Date(value));
    }
- 
+
    async function loadRoster() {
      const now = new Date();
      const weekLater = new Date();
      weekLater.setDate(weekLater.getDate() + 7);
- 
+
      const { data, error } = await supabaseClient
        .from('roster_shifts')
        .select(`
@@ -980,14 +976,14 @@ index.html
        .gte('end_time', now.toISOString())
        .lt('start_time', weekLater.toISOString())
        .order('start_time');
- 
+
      const list = document.getElementById('roster-list');
- 
+
      if (error) {
        list.innerHTML = `<div class="bg-red-50 text-red-700 rounded-3xl p-5">${error.message}</div>`;
        return;
      }
- 
+
      const shifts = data || [];
      const pendingTotal = shifts.filter(item => item.shift_status === 'pending').length;
      document.getElementById('pending-count').textContent = pendingTotal;
@@ -995,9 +991,9 @@ index.html
        ? `${pendingTotal} shift${pendingTotal === 1 ? '' : 's'} awaiting response.`
        : 'No pending shift responses.';
      document.getElementById('notification-badge').textContent = pendingTotal + 1;
- 
+
      list.innerHTML = '';
- 
+
      if (!shifts.length) {
        list.innerHTML =
          '<div class="bg-white rounded-3xl p-5 text-zinc-500">No shifts scheduled in the next seven days.</div>';
@@ -1005,7 +1001,7 @@ index.html
          '<p class="text-zinc-500 text-sm">No upcoming shift found.</p>';
        return;
      }
- 
+
      const next = shifts[0];
      const isActive = new Date(next.start_time) <= now && new Date(next.end_time) > now;
      document.getElementById('next-shift').innerHTML = `
@@ -1017,14 +1013,14 @@ index.html
          </div>
          <span class="pill ${isActive ? 'pill-active' : 'pill-pending'}">${isActive ? 'Active now' : next.shift_status}</span>
        </div>`;
- 
+
      shifts.forEach(shift => {
        const card = document.createElement('article');
        card.className = 'bg-white rounded-3xl border border-zinc-200 shadow-sm p-5';
- 
+
        const statusClass = ['accepted','pending','declined','cancelled'].includes(shift.shift_status)
          ? `pill-${shift.shift_status}` : 'pill-pending';
- 
+
        card.innerHTML = `
          <div class="flex justify-between gap-3">
            <div>
@@ -1036,7 +1032,7 @@ index.html
            <span class="pill ${statusClass}">${shift.shift_status}</span>
          </div>
          <div class="actions grid grid-cols-2 gap-2 mt-3"></div>`;
- 
+
        card.querySelector('.client').textContent = shift.client?.preferred_name || 'Client';
        card.querySelector('.time').textContent =
          `${formatDateTime(shift.start_time)} – ${new Intl.DateTimeFormat('en-AU', {
@@ -1044,9 +1040,9 @@ index.html
          }).format(new Date(shift.end_time))}`;
        card.querySelector('.worker').textContent = shift.staff?.full_name || 'Unassigned';
        card.querySelector('.type').textContent = shift.shift_type;
- 
+
        const actions = card.querySelector('.actions');
- 
+
        if (shift.shift_status === 'pending') {
          const accept = document.createElement('button');
          accept.className = 'bg-green-600 text-white rounded-xl py-2 font-semibold';
@@ -1058,7 +1054,7 @@ index.html
              .eq('id', shift.id);
            if (error) alert(error.message); else await loadRoster();
          });
- 
+
          const decline = document.createElement('button');
          decline.className = 'bg-red-600 text-white rounded-xl py-2 font-semibold';
          decline.textContent = 'Decline';
@@ -1071,7 +1067,7 @@ index.html
          });
          actions.append(accept, decline);
        }
- 
+
        if (['supervisor','administrator'].includes(currentRole) && shift.shift_status !== 'cancelled') {
          const cancel = document.createElement('button');
          cancel.className = 'col-span-2 border border-red-300 text-red-600 rounded-xl py-2 font-semibold';
@@ -1091,36 +1087,35 @@ index.html
          });
          actions.appendChild(cancel);
        }
- 
+
        list.appendChild(card);
      });
    }
- 
-   document.getElementById('show-create-shift').addEventListener('click', () => {
+document.getElementById('show-create-shift').addEventListener('click', () => {
      document.getElementById('create-shift-form').classList.toggle('hidden');
    });
- 
+
    document.getElementById('home-create-shift').addEventListener('click', () => {
      showPanel('roster');
      document.getElementById('create-shift-form').classList.remove('hidden');
    });
- 
+
    document.getElementById('save-shift').addEventListener('click', async () => {
      const clientId = document.getElementById('shift-client').value;
      const staffId = document.getElementById('shift-worker').value;
      const start = document.getElementById('shift-start').value;
      const end = document.getElementById('shift-end').value;
- 
+
      if (!clientId || !staffId || !start || !end) {
        setMessage('shift-form-message', 'Please complete the client, worker and shift times.', true);
        return;
      }
- 
+
      if (new Date(end) <= new Date(start)) {
        setMessage('shift-form-message', 'The finish time must be after the start time.', true);
        return;
      }
- 
+
      const { error } = await supabaseClient.from('roster_shifts').insert({
        client_id: clientId,
        staff_id: staffId,
@@ -1131,82 +1126,49 @@ index.html
        shift_status: 'pending',
        created_by: currentSession.user.id
      });
- 
+
      if (error) {
        setMessage('shift-form-message', error.message, true);
        return;
      }
- 
+
      setMessage('shift-form-message', 'Shift published successfully.');
      await loadRoster();
    });
- 
- 
+
+
   function medicationTypeLabel(type) {
-    if (type === 'prn') return 'PRN';
-    if (type === 'schedule8') return 'Schedule 8';
-    return 'Regular';
+    return type === 'prn' ? 'PRN' : type === 'schedule8' ? 'Schedule 8' : 'Regular';
   }
- 
+
   function medicationTypeClass(type) {
-    if (type === 'prn') return 'med-type-prn';
-    if (type === 'schedule8') return 'med-type-schedule8';
-    return 'med-type-regular';
+    return type === 'prn' ? 'med-type-prn' : type === 'schedule8' ? 'med-type-schedule8' : 'med-type-regular';
   }
- 
+
   function renderMedicationProfiles() {
     const list = document.getElementById('medication-profile-list');
     document.getElementById('medication-count').textContent = `${medicationsCache.length} active`;
     list.innerHTML = '';
- 
     if (!medicationsCache.length) {
       list.innerHTML = '<div class="bg-white rounded-3xl p-5 text-zinc-500">No active medications have been added for this client.</div>';
       return;
     }
- 
     medicationsCache.forEach(medication => {
       const schedule = medication.medication_schedules?.[0];
       const card = document.createElement('article');
       card.className = `med-card p-5 ${medicationTypeClass(medication.medication_type)}`;
-      card.innerHTML = `
-        <div class="flex items-start justify-between gap-3">
-          <div class="flex-1">
-            <div class="flex items-center gap-2 flex-wrap">
-              <h4 class="font-bold text-lg text-[#0B4C8C] medication-name"></h4>
-              <span class="pill medication-type"></span>
-            </div>
-            <p class="font-semibold text-zinc-700 mt-1 medication-dose"></p>
-            <p class="text-sm text-zinc-500 mt-1 medication-route"></p>
-            <p class="text-sm text-zinc-500 mt-1 medication-schedule"></p>
-            <p class="text-xs text-zinc-400 mt-3 medication-doctor"></p>
-          </div>
-          <div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-2xl">💊</div>
-        </div>`;
- 
-      card.querySelector('.medication-name').textContent =
-        `${medication.medication_name}${medication.strength ? ' ' + medication.strength : ''}`;
+      card.innerHTML = `<div class="flex items-start justify-between gap-3"><div class="flex-1"><div class="flex items-center gap-2 flex-wrap"><h4 class="font-bold text-lg text-[#0B4C8C] medication-name"></h4><span class="pill medication-type"></span></div><p class="font-semibold text-zinc-700 mt-1 medication-dose"></p><p class="text-sm text-zinc-500 mt-1 medication-route"></p><p class="text-sm text-zinc-500 mt-1 medication-schedule"></p><p class="text-xs text-zinc-400 mt-3 medication-doctor"></p></div><div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-2xl">💊</div></div>`;
+      card.querySelector('.medication-name').textContent = `${medication.medication_name}${medication.strength ? ' ' + medication.strength : ''}`;
       card.querySelector('.medication-type').textContent = medicationTypeLabel(medication.medication_type);
-      card.querySelector('.medication-type').classList.add(
-        medication.medication_type === 'prn' ? 'bg-amber-50' :
-        medication.medication_type === 'schedule8' ? 'bg-purple-50' : 'bg-blue-50'
-      );
+      card.querySelector('.medication-type').classList.add(medication.medication_type === 'prn' ? 'bg-amber-50' : medication.medication_type === 'schedule8' ? 'bg-purple-50' : 'bg-blue-50');
       card.querySelector('.medication-dose').textContent = `Give ${medication.dose}`;
       card.querySelector('.medication-route').textContent = `${medication.route || 'Route not entered'} • ${medication.form_type || 'Form not entered'}`;
-      card.querySelector('.medication-schedule').textContent =
-        medication.medication_type === 'prn'
-          ? `PRN • minimum interval ${medication.minimum_hours_between_doses || 'not set'} hours`
-          : schedule
-            ? `${schedule.round_name} • ${String(schedule.scheduled_time).slice(0,5)}`
-            : 'Schedule not entered';
-      card.querySelector('.medication-doctor').textContent =
-        medication.prescribing_doctor
-          ? `Prescribed by ${medication.prescribing_doctor}${medication.medical_practice ? ' • ' + medication.medical_practice : ''}`
-          : 'Prescribing doctor not entered';
- 
+      card.querySelector('.medication-schedule').textContent = medication.medication_type === 'prn' ? `PRN • minimum interval ${medication.minimum_hours_between_doses || 'not set'} hours` : schedule ? `${schedule.round_name} • ${String(schedule.scheduled_time).slice(0,5)}` : 'Schedule not entered';
+      card.querySelector('.medication-doctor').textContent = medication.prescribing_doctor ? `Prescribed by ${medication.prescribing_doctor}${medication.medical_practice ? ' • ' + medication.medical_practice : ''}` : 'Prescribing doctor not entered';
       list.appendChild(card);
     });
   }
- 
+
   async function loadMedicationProfiles(clientId) {
     const list = document.getElementById('medication-profile-list');
     if (!clientId) {
@@ -1215,71 +1177,44 @@ index.html
       list.innerHTML = '<div class="bg-white rounded-3xl p-5 text-zinc-500">Select a client to view medications.</div>';
       return;
     }
- 
     list.innerHTML = '<div class="bg-white rounded-3xl p-5 text-zinc-500">Loading medication profile…</div>';
- 
-    const { data, error } = await supabaseClient
-      .from('medications')
-      .select(`
-        id, client_id, medication_name, strength, dose, route, instructions,
-        medication_type, form_type, prescribing_doctor, medical_practice,
-        practice_phone, pharmacy_name, pharmacy_phone, start_date, review_date,
-        minimum_hours_between_doses, maximum_daily_dose, active,
-        medication_schedules(id, round_name, scheduled_time, active)
-      `)
-      .eq('client_id', clientId)
-      .eq('active', true)
-      .order('medication_name');
- 
+    const { data, error } = await supabaseClient.from('medications').select(`id, client_id, medication_name, strength, dose, route, instructions, medication_type, form_type, prescribing_doctor, medical_practice, practice_phone, pharmacy_name, pharmacy_phone, start_date, review_date, minimum_hours_between_doses, maximum_daily_dose, active, medication_schedules(id, round_name, scheduled_time, active)`).eq('client_id', clientId).eq('active', true).order('medication_name');
     if (error) {
       medicationsCache = [];
       list.innerHTML = `<div class="bg-red-50 text-red-700 rounded-3xl p-5">${error.message}</div>`;
       return;
     }
- 
     medicationsCache = data || [];
     renderMedicationProfiles();
   }
- 
+
   document.getElementById('medication-client-filter').addEventListener('change', event => {
     document.getElementById('med-profile-client').value = event.target.value;
     loadMedicationProfiles(event.target.value);
   });
- 
   document.getElementById('show-medication-profile-form').addEventListener('click', () => {
     document.getElementById('medication-profile-form').classList.remove('hidden');
     document.getElementById('med-profile-client').value = document.getElementById('medication-client-filter').value;
     document.getElementById('medication-profile-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
- 
-  document.getElementById('close-medication-profile-form').addEventListener('click', () => {
-    document.getElementById('medication-profile-form').classList.add('hidden');
-  });
- 
+  document.getElementById('close-medication-profile-form').addEventListener('click', () => document.getElementById('medication-profile-form').classList.add('hidden'));
   document.getElementById('med-profile-type').addEventListener('change', event => {
     const isPrn = event.target.value === 'prn';
     document.getElementById('prn-fields').classList.toggle('hidden', !isPrn);
     document.getElementById('scheduled-fields').classList.toggle('hidden', isPrn);
   });
- 
+
   document.getElementById('save-medication-profile').addEventListener('click', async () => {
     const clientId = document.getElementById('med-profile-client').value;
     const medicationName = document.getElementById('med-profile-name').value.trim();
     const dose = document.getElementById('med-profile-dose').value.trim();
     const startDate = document.getElementById('med-profile-start').value;
     const medicationType = document.getElementById('med-profile-type').value;
- 
-    if (!clientId || !medicationName || !dose || !startDate) {
-      setMessage('med-profile-message', 'Please complete the client, medication name, dose and start date.', true);
-      return;
-    }
- 
+    if (!clientId || !medicationName || !dose || !startDate) return setMessage('med-profile-message', 'Please complete the client, medication name, dose and start date.', true);
     const medicationPayload = {
-      client_id: clientId,
-      medication_name: medicationName,
+      client_id: clientId, medication_name: medicationName,
       strength: document.getElementById('med-profile-strength').value.trim() || null,
-      dose,
-      route: document.getElementById('med-profile-route').value,
+      dose, route: document.getElementById('med-profile-route').value,
       form_type: document.getElementById('med-profile-form-type').value,
       instructions: document.getElementById('med-profile-instructions').value.trim() || null,
       medication_type: medicationType,
@@ -1288,85 +1223,167 @@ index.html
       practice_phone: document.getElementById('med-profile-practice-phone').value.trim() || null,
       pharmacy_name: document.getElementById('med-profile-pharmacy').value.trim() || null,
       pharmacy_phone: document.getElementById('med-profile-pharmacy-phone').value.trim() || null,
-      start_date: startDate,
-      review_date: document.getElementById('med-profile-review').value || null,
-      minimum_hours_between_doses: medicationType === 'prn'
-        ? Number(document.getElementById('med-profile-min-hours').value) || null
-        : null,
-      maximum_daily_dose: medicationType === 'prn'
-        ? document.getElementById('med-profile-max-dose').value.trim() || null
-        : null,
-      witness_required: medicationType === 'schedule8',
-      active: true
+      start_date: startDate, review_date: document.getElementById('med-profile-review').value || null,
+      minimum_hours_between_doses: medicationType === 'prn' ? Number(document.getElementById('med-profile-min-hours').value) || null : null,
+      maximum_daily_dose: medicationType === 'prn' ? document.getElementById('med-profile-max-dose').value.trim() || null : null,
+      witness_required: medicationType === 'schedule8', active: true
     };
- 
-    const { data: medication, error: medicationError } = await supabaseClient
-      .from('medications')
-      .insert(medicationPayload)
-      .select('id')
-      .single();
- 
-    if (medicationError) {
-      setMessage('med-profile-message', medicationError.message, true);
-      return;
-    }
- 
+    const { data: medication, error: medicationError } = await supabaseClient.from('medications').insert(medicationPayload).select('id').single();
+    if (medicationError) return setMessage('med-profile-message', medicationError.message, true);
     if (medicationType !== 'prn') {
-      const { error: scheduleError } = await supabaseClient
-        .from('medication_schedules')
-        .insert({
-          medication_id: medication.id,
-          round_name: document.getElementById('med-profile-round').value,
-          scheduled_time: document.getElementById('med-profile-time').value,
-          days_of_week: [1,2,3,4,5,6,7],
-          active: true
-        });
- 
-      if (scheduleError) {
-        setMessage('med-profile-message', `Medication saved, but schedule failed: ${scheduleError.message}`, true);
-        await loadMedicationProfiles(clientId);
-        return;
-      }
+      const { error: scheduleError } = await supabaseClient.from('medication_schedules').insert({medication_id: medication.id, round_name: document.getElementById('med-profile-round').value, scheduled_time: document.getElementById('med-profile-time').value, days_of_week: [1,2,3,4,5,6,7], active: true});
+      if (scheduleError) { setMessage('med-profile-message', `Medication saved, but schedule failed: ${scheduleError.message}`, true); await loadMedicationProfiles(clientId); return; }
     }
- setMessage('med-profile-message', `${medicationName} has been added to the medication profile.`);
+    setMessage('med-profile-message', `${medicationName} has been added to the medication profile.`);
     document.getElementById('medication-client-filter').value = clientId;
     await loadMedicationProfiles(clientId);
- 
-    [
-      'med-profile-name','med-profile-strength','med-profile-dose','med-profile-instructions',
-      'med-profile-doctor','med-profile-practice','med-profile-practice-phone',
-      'med-profile-pharmacy','med-profile-pharmacy-phone','med-profile-review',
-      'med-profile-min-hours','med-profile-max-dose'
-    ].forEach(id => document.getElementById(id).value = '');
   });
- 
-  document.getElementById('open-scheduled-mar').addEventListener('click', () => {
-    const clientId = document.getElementById('medication-client-filter').value;
+
+  let marClientId = null;
+  let marRoundMedications = [];
+  const marSelections = new Map();
+
+  function localDateValue(date = new Date()) {
+    const offset = date.getTimezoneOffset();
+    return new Date(date.getTime() - offset * 60000).toISOString().slice(0,10);
+  }
+
+  function updateMarProgress() {
+    const total = marRoundMedications.length;
+    const completed = marRoundMedications.filter(item => marSelections.has(item.schedule_id)).length;
+    document.getElementById('mar-progress-text').textContent = `${completed} of ${total} completed`;
+    document.getElementById('mar-progress-fill').style.width = total ? `${Math.round(completed / total * 100)}%` : '0%';
+    document.getElementById('mar-sign-card').classList.toggle('hidden', !total || completed !== total);
+  }
+
+  function renderMarMedicationCards() {
+    const list = document.getElementById('mar-medication-list');
+    list.innerHTML = '';
+    if (!marRoundMedications.length) {
+      list.innerHTML = '<div class="bg-white rounded-3xl p-5 text-zinc-500">No active medications are scheduled for this round.</div>';
+      updateMarProgress();
+      return;
+    }
+    const labels = {given:'Given', refused:'Refused', withheld:'Withheld', missed:'Missed', unavailable:'Unavailable', client_absent:'Client absent', other:'Other'};
+    marRoundMedications.forEach(item => {
+      const card = document.createElement('article');
+      card.className = 'med-card p-5';
+      card.innerHTML = `<div class="flex items-start gap-3"><div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-2xl">💊</div><div class="flex-1"><h3 class="font-bold text-lg text-[#0B4C8C]"></h3><p class="font-semibold text-zinc-700 dose"></p><p class="text-sm text-zinc-500 route"></p><p class="text-sm text-zinc-500 instructions mt-2"></p></div></div><div class="grid grid-cols-2 gap-2 mt-4 status-grid"></div><textarea rows="2" class="hidden exception-note w-full border border-amber-300 bg-amber-50 rounded-2xl p-3 mt-3" placeholder="Required exception note"></textarea>`;
+      card.querySelector('h3').textContent = `${item.medication_name}${item.strength ? ' ' + item.strength : ''}`;
+      card.querySelector('.dose').textContent = `Give ${item.dose}`;
+      card.querySelector('.route').textContent = `${item.route || 'Route not entered'} • Due ${String(item.scheduled_time).slice(0,5)}`;
+      card.querySelector('.instructions').textContent = item.instructions || 'No special instructions';
+      const grid = card.querySelector('.status-grid');
+      Object.entries(labels).forEach(([value,label]) => {
+        const button = document.createElement('button');
+        button.type='button'; button.className='mar-status-button'; button.textContent=label;
+        button.addEventListener('click', () => {
+          grid.querySelectorAll('button').forEach(b => b.className='mar-status-button');
+          button.classList.add(value === 'given' ? 'selected-given' : 'selected-exception');
+          const note = card.querySelector('.exception-note');
+          note.classList.toggle('hidden', value === 'given');
+          marSelections.set(item.schedule_id, {medication_id:item.medication_id, schedule_id:item.schedule_id, status:value, note:value === 'given' ? '' : note.value});
+          updateMarProgress();
+        });
+        grid.appendChild(button);
+      });
+      card.querySelector('.exception-note').addEventListener('input', event => {
+        const selection = marSelections.get(item.schedule_id);
+        if (selection) { selection.note = event.target.value; marSelections.set(item.schedule_id, selection); }
+      });
+      list.appendChild(card);
+    });
+    updateMarProgress();
+  }
+
+  async function loadMarRound() {
+    const round = document.getElementById('mar-round').value;
+    const date = document.getElementById('mar-date').value;
+    marSelections.clear();
+    document.getElementById('mar-pin').value='';
+    document.getElementById('mar-sign-message').textContent='';
+    if (!round || !date) { marRoundMedications=[]; renderMarMedicationCards(); return; }
+    const list=document.getElementById('mar-medication-list');
+    list.innerHTML='<div class="bg-white rounded-3xl p-5 text-zinc-500">Loading medication round…</div>';
+    const { data: signed } = await supabaseClient.from('mar_round_signatures').select('id,signed_at,signed_by').eq('client_id',marClientId).eq('round_name',round).eq('scheduled_date',date).maybeSingle();
+    if (signed) {
+      marRoundMedications=[];
+      list.innerHTML=`<div class="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-3xl p-5"><strong class="block text-lg">✓ Round already signed</strong><span class="text-sm">Completed ${new Date(signed.signed_at).toLocaleString('en-AU')}.</span></div>`;
+      document.getElementById('mar-round-status').textContent='Completed';
+      document.getElementById('mar-round-status').className='pill pill-active';
+      updateMarProgress(); return;
+    }
+    document.getElementById('mar-round-status').textContent='In progress';
+    document.getElementById('mar-round-status').className='pill pill-pending';
+    const { data, error } = await supabaseClient.from('medication_schedules').select(`id, round_name, scheduled_time, medication:medications!inner(id,client_id,medication_name,strength,dose,route,instructions,medication_type,active)`).eq('round_name',round).eq('active',true).eq('medication.client_id',marClientId).eq('medication.active',true).eq('medication.medication_type','regular').order('scheduled_time');
+    if (error) { marRoundMedications=[]; list.innerHTML=`<div class="bg-red-50 text-red-700 rounded-3xl p-5">${error.message}</div>`; updateMarProgress(); return; }
+    marRoundMedications=(data||[]).map(row=>({schedule_id:row.id,round_name:row.round_name,scheduled_time:row.scheduled_time,medication_id:row.medication.id,medication_name:row.medication.medication_name,strength:row.medication.strength,dose:row.medication.dose,route:row.medication.route,instructions:row.medication.instructions}));
+    renderMarMedicationCards();
+  }
+
+  async function openScheduledMar() {
+    const clientId=document.getElementById('medication-client-filter').value;
     if (!clientId) return alert('Please select a client first.');
-    alert('Scheduled MAR rounds are next. This screen will show only medications due in the selected round.');
+    marClientId=clientId;
+    const client=clientsCache.find(item=>item.id===clientId);
+    document.getElementById('mar-client-name').textContent=client?.preferred_name || 'Client';
+    document.getElementById('mar-date').value=localDateValue();
+    const rounds=[...new Set(medicationsCache.filter(m=>m.medication_type==='regular').flatMap(m=>(m.medication_schedules||[]).filter(s=>s.active).map(s=>s.round_name)))];
+    const select=document.getElementById('mar-round');
+    select.innerHTML='<option value="">Select round</option>';
+    rounds.forEach(round=>{const option=document.createElement('option'); option.value=round; option.textContent=round; select.appendChild(option);});
+    document.getElementById('medication-landing').classList.add('hidden');
+    document.getElementById('scheduled-mar-workspace').classList.remove('hidden');
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  document.getElementById('open-scheduled-mar').addEventListener('click', openScheduledMar);
+  document.getElementById('close-scheduled-mar').addEventListener('click',()=>{document.getElementById('scheduled-mar-workspace').classList.add('hidden');document.getElementById('medication-landing').classList.remove('hidden');});
+  document.getElementById('mar-round').addEventListener('change',loadMarRound);
+  document.getElementById('mar-date').addEventListener('change',loadMarRound);
+
+  document.getElementById('open-pin-setup').addEventListener('click',()=>document.getElementById('pin-setup-modal').classList.remove('hidden'));
+  document.getElementById('close-pin-setup').addEventListener('click',()=>document.getElementById('pin-setup-modal').classList.add('hidden'));
+  document.getElementById('save-medication-pin').addEventListener('click',async()=>{
+    const pin=document.getElementById('new-medication-pin').value;
+    const confirm=document.getElementById('confirm-medication-pin').value;
+    if (!/^\d{6}$/.test(pin)) return setMessage('pin-setup-message','PIN must contain exactly six digits.',true);
+    if (pin!==confirm) return setMessage('pin-setup-message','The PINs do not match.',true);
+    const { error }=await supabaseClient.rpc('set_my_medication_pin',{new_pin:pin});
+    if (error) return setMessage('pin-setup-message',error.message,true);
+    setMessage('pin-setup-message','Medication PIN saved securely.');
+    document.getElementById('new-medication-pin').value='';document.getElementById('confirm-medication-pin').value='';
   });
- 
-  document.getElementById('open-prn').addEventListener('click', () => {
-    const clientId = document.getElementById('medication-client-filter').value;
-    if (!clientId) return alert('Please select a client first.');
-    alert('PRN will remain a completely separate administration workflow with interval and follow-up checks.');
+
+  document.getElementById('sign-mar-round').addEventListener('click',async()=>{
+    const round=document.getElementById('mar-round').value;
+    const date=document.getElementById('mar-date').value;
+    const pin=document.getElementById('mar-pin').value;
+    if (!/^\d{6}$/.test(pin)) return setMessage('mar-sign-message','Enter your six-digit medication PIN.',true);
+    const entries=marRoundMedications.map(item=>marSelections.get(item.schedule_id));
+    const missingNote=entries.find(entry=>entry.status!=='given' && !entry.note.trim());
+    if (missingNote) return setMessage('mar-sign-message','Please add a note for every medication not recorded as given.',true);
+    const button=document.getElementById('sign-mar-round'); button.disabled=true;
+    setMessage('mar-sign-message','Securely signing medication round…');
+    const { error }=await supabaseClient.rpc('sign_scheduled_mar_round',{target_client_id:marClientId,target_round_name:round,target_scheduled_date:date,supplied_pin:pin,entries});
+    button.disabled=false;
+    if (error) return setMessage('mar-sign-message',error.message,true);
+    setMessage('mar-sign-message','Medication round completed and locked.');
+    await loadMarRound();
   });
- 
-  document.getElementById('open-s8').addEventListener('click', () => {
-    const clientId = document.getElementById('medication-client-filter').value;
-    if (!clientId) return alert('Please select a client first.');
-    alert('The Schedule 8 register will have its own running stock balance and audit history.');
-  });
- 
+
+  document.getElementById('open-prn').addEventListener('click',()=>{if(!document.getElementById('medication-client-filter').value)return alert('Please select a client first.');alert('PRN administration is the next Florence workflow. Scheduled MAR is now live.');});
+  document.getElementById('open-s8').addEventListener('click',()=>{if(!document.getElementById('medication-client-filter').value)return alert('Please select a client first.');alert('The Schedule 8 stock register will be built after PRN testing.');});
+
   document.getElementById('family-requests-home').addEventListener('click', () => {
      alert('The Participant & Family Portal database is ready. The live request screen is coming after medication and notes.');
    });
- 
+
    async function startApp(session) {
      currentSession = session;
      document.getElementById('login-screen').classList.add('hidden');
      document.getElementById('app-shell').classList.remove('hidden');
- 
+
      try {
        await loadProfile();
        await Promise.all([loadClients(), loadWorkers(), loadRoster()]);
@@ -1375,7 +1392,7 @@ index.html
        await supabaseClient.auth.signOut();
      }
    }
- 
+
    function stopApp() {
      currentSession = null;
      currentProfile = null;
@@ -1388,18 +1405,18 @@ index.html
      closeMenu();
      closeNotifications();
    }
- 
+
    supabaseClient.auth.onAuthStateChange((_event, session) => {
      if (session) startApp(session);
      else stopApp();
    });
- 
+
    async function initialise() {
      const { data } = await supabaseClient.auth.getSession();
      if (data.session) await startApp(data.session);
      else stopApp();
    }
- 
+
    initialise();
  </script>
 </body>
