@@ -208,3 +208,23 @@ drop policy if exists shifts_staff_claim on public.shifts;
 create policy shifts_staff_claim on public.shifts for update
 using(organisation_id=public.current_org_id() and assigned_staff_id is null and status='Published' and public.current_role() in('staff','supervisor'))
 with check(organisation_id=public.current_org_id() and assigned_staff_id=auth.uid() and status='Published');
+
+-- Schedule 8 controlled-drug stock register
+create table if not exists public.controlled_drug_register (
+ id uuid primary key default gen_random_uuid(), organisation_id uuid not null references public.organisations(id) on delete cascade,
+ participant_id uuid not null references public.participants(id) on delete cascade, medication_id uuid not null references public.medications(id) on delete cascade,
+ transaction_at timestamptz not null default now(), transaction_type text not null check(transaction_type in('Received','Administered','Destroyed','Adjustment','Count check')),
+ quantity numeric(10,2) not null default 0, balance numeric(10,2) not null, reason text,
+ recorded_by uuid not null references public.profiles(id) on delete restrict, witnessed_by uuid references public.profiles(id) on delete restrict,
+ created_at timestamptz not null default now()
+);
+alter table public.controlled_drug_register enable row level security;
+drop policy if exists controlled_drug_register_org_select on public.controlled_drug_register;
+create policy controlled_drug_register_org_select on public.controlled_drug_register for select
+using(public.current_role() in('staff','supervisor') and organisation_id=public.current_org_id());
+drop policy if exists controlled_drug_register_staff_insert on public.controlled_drug_register;
+create policy controlled_drug_register_staff_insert on public.controlled_drug_register for insert
+with check(public.current_role() in('staff','supervisor') and organisation_id=public.current_org_id() and recorded_by=auth.uid() and witnessed_by is not null and witnessed_by<>auth.uid());
+drop trigger if exists controlled_drug_register_audit on public.controlled_drug_register;
+create trigger controlled_drug_register_audit after insert or update or delete on public.controlled_drug_register for each row execute function public.audit_row_change();
+create index if not exists controlled_drug_register_medication_idx on public.controlled_drug_register(medication_id,transaction_at desc);
