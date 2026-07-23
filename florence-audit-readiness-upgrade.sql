@@ -228,3 +228,47 @@ with check(public.current_role() in('staff','supervisor') and organisation_id=pu
 drop trigger if exists controlled_drug_register_audit on public.controlled_drug_register;
 create trigger controlled_drug_register_audit after insert or update or delete on public.controlled_drug_register for each row execute function public.audit_row_change();
 create index if not exists controlled_drug_register_medication_idx on public.controlled_drug_register(medication_id,transaction_at desc);
+
+-- Least-privilege reads for staff and participant-linked portal accounts
+drop policy if exists incidents_org_select on public.incidents;
+create policy incidents_org_select on public.incidents for select using(public.current_role() in('staff','supervisor') and organisation_id=public.current_org_id());
+drop policy if exists medication_incidents_org_select on public.medication_incidents;
+create policy medication_incidents_org_select on public.medication_incidents for select using(public.current_role() in('staff','supervisor') and organisation_id=public.current_org_id());
+drop policy if exists staff_credentials_org_select on public.staff_credentials;
+create policy staff_credentials_org_select on public.staff_credentials for select using(public.current_role() in('staff','supervisor') and organisation_id=public.current_org_id());
+drop policy if exists emergency_plans_org_select on public.emergency_plans;
+create policy emergency_plans_org_select on public.emergency_plans for select using(organisation_id=public.current_org_id() and (public.current_role() in('staff','supervisor') or participant_id=public.current_participant_id()));
+drop policy if exists participant_goals_org_select on public.participant_goals;
+create policy participant_goals_org_select on public.participant_goals for select using(organisation_id=public.current_org_id() and (public.current_role() in('staff','supervisor') or participant_id=public.current_participant_id()));
+drop policy if exists funding_plans_org_select on public.funding_plans;
+create policy funding_plans_org_select on public.funding_plans for select using(organisation_id=public.current_org_id() and (public.current_role() in('staff','supervisor') or participant_id=public.current_participant_id()));
+drop policy if exists ndis_support_items_org_select on public.ndis_support_items;
+create policy ndis_support_items_org_select on public.ndis_support_items for select using(public.current_role() in('staff','supervisor') and organisation_id=public.current_org_id());
+
+create or replace function public.notify_supervisors_of_operation() returns trigger language plpgsql security definer set search_path=public as $$
+declare heading text; detail text; category_name text; org uuid; related uuid;
+begin
+ org:=new.organisation_id; related:=new.id;
+ if tg_table_name='incidents' then heading:='New incident requires review';detail:=new.category||' incident rated '||new.severity;category_name:='Incident';
+ elsif tg_table_name='medication_incidents' then heading:='Medication error requires review';detail:=new.incident_type;category_name:='Medication';
+ elsif tg_table_name='complaints' then heading:='New complaint or feedback';detail:=new.subject;category_name:='Complaint';
+ elsif tg_table_name='leave_requests' then heading:='Leave request awaiting review';detail:=new.leave_type;category_name:='Workforce';
+ elsif tg_table_name='timesheets' then heading:='Timesheet submitted';detail:='A timesheet is ready for approval';category_name:='Timesheet';
+ else return new; end if;
+ if tg_op='INSERT' or (tg_table_name='timesheets' and old.status is distinct from new.status and new.status='Submitted') then
+  insert into public.notifications(organisation_id,recipient_id,title,body,category,related_record_id)
+  select org,id,heading,detail,category_name,related from public.profiles
+  where organisation_id=org and role='supervisor' and active=true and id<>auth.uid();
+ end if;
+ return new;
+end $$;
+drop trigger if exists incidents_notify on public.incidents;
+create trigger incidents_notify after insert on public.incidents for each row execute function public.notify_supervisors_of_operation();
+drop trigger if exists medication_incidents_notify on public.medication_incidents;
+create trigger medication_incidents_notify after insert on public.medication_incidents for each row execute function public.notify_supervisors_of_operation();
+drop trigger if exists complaints_notify on public.complaints;
+create trigger complaints_notify after insert on public.complaints for each row execute function public.notify_supervisors_of_operation();
+drop trigger if exists leave_requests_notify on public.leave_requests;
+create trigger leave_requests_notify after insert on public.leave_requests for each row execute function public.notify_supervisors_of_operation();
+drop trigger if exists timesheets_notify on public.timesheets;
+create trigger timesheets_notify after insert or update on public.timesheets for each row execute function public.notify_supervisors_of_operation();
