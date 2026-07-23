@@ -128,10 +128,13 @@ function expStatus(d){if(!d)return"No review date";const days=Math.ceil((new Dat
 function shiftName(s){return s.participant?.full_name||"Participant"}
 function workerName(s){return s.worker?.full_name||"Unassigned"}
 function shiftCard(s,showOwnShiftActions=false){
- let actions="";
- if(isSupervisor()&&s.status==="Draft")actions=`<div class="actions"><button class="publish" data-publish="${s.id}">Publish shift</button></div>`;
- if(isStaffUser()&&s.status==="Published"&&s.response==="Pending"&&(s.assigned_staff_id===profile.id||showOwnShiftActions))actions=`<div class="actions"><button class="accept" data-shift-response="${s.id}" data-response="Accepted">Accept</button><button class="decline" data-shift-response="${s.id}" data-response="Declined">Decline</button></div>`;
- return `<article class="record"><div class="record-top"><div><h3>${esc(shiftName(s))}</h3><p>${esc(s.shift_type)} · ${esc(workerName(s))}</p></div>${badge(s.status)}</div><p><strong>Start:</strong> ${fmt(s.starts_at)}<br><strong>Finish:</strong> ${fmt(s.ends_at)}</p><div class="record-meta">${badge(s.response)}</div>${actions}</article>`
+ const controls=[];
+ if(isSupervisor()&&s.status==="Draft")controls.push(`<button class="publish" data-publish="${s.id}">Publish shift</button>`);
+ if(isStaffUser()&&s.status==="Published"&&s.response==="Pending"&&(s.assigned_staff_id===profile.id||showOwnShiftActions))controls.push(`<button class="accept" data-shift-response="${s.id}" data-response="Accepted">Accept</button><button class="decline" data-shift-response="${s.id}" data-response="Declined">Decline</button>`);
+ if(isStaffUser()&&s.status==="Published"&&s.response==="Pending"&&!s.assigned_staff_id)controls.push(`<button class="accept" data-claim-shift="${s.id}">Claim open shift</button>`);
+ if(isSupervisor()&&s.status==="Published")controls.push(`<button class="decline" data-cancel-shift="${s.id}">Cancel shift</button>`);
+ const actions=controls.length?`<div class="actions">${controls.join("")}</div>`:"";
+ return `<article class="record"><div class="record-top"><div><h3>${esc(shiftName(s))}</h3><p>${esc(s.shift_type)} · ${esc(workerName(s))}</p></div>${badge(s.status)}</div><p><strong>Start:</strong> ${fmt(s.starts_at)}<br><strong>Finish:</strong> ${fmt(s.ends_at)}</p>${s.handover_notes?`<p><strong>Handover:</strong> ${esc(s.handover_notes)}</p>`:""}<div class="record-meta">${badge(s.response)}</div>${actions}</article>`
 }
 function renderDashboard(){
  const pending=state.shifts.filter(s=>s.status==="Published"&&s.response==="Pending");
@@ -149,7 +152,7 @@ function renderParticipants(){
 function renderRoster(){
  let list=state.shifts;
  if(isSupervisor()) list=list.filter(s=>rosterTab==="draft"?s.status==="Draft":rosterTab==="mine"?s.assigned_staff_id===profile.id:s.status==="Published");
- else if(profile.role==="staff") list=list.filter(s=>s.assigned_staff_id===profile.id);
+ else if(profile.role==="staff") list=list.filter(s=>s.assigned_staff_id===profile.id||(s.status==="Published"&&!s.assigned_staff_id));
  else list=list.filter(s=>s.participant_id===profile.participant_id&&s.status==="Published");
  $("#roster-list").innerHTML=list.length?list.map(s=>shiftCard(s,rosterTab==="mine"&&s.assigned_staff_id===profile.id)).join(""):empty("No shifts in this view.");
 }
@@ -363,13 +366,31 @@ $("#add-participant").onclick=()=>form("Add participant",[
 
 $("#add-shift").onclick=()=>form("Create roster shift",[
  field("participant_id","Participant","select",state.participants.map(p=>({value:p.id,label:p.full_name}))),
- field("assigned_staff_id","Assigned staff member","select",state.staff.filter(s=>s.role==="staff"||s.role==="supervisor").map(s=>({value:s.id,label:s.full_name}))),
+ field("assigned_staff_id","Assigned worker (optional — leave blank to broadcast)","select",[{value:"",label:"Open shift — any worker can claim"},...state.staff.filter(s=>s.role==="staff"||s.role==="supervisor").map(s=>({value:s.id,label:s.full_name}))],false),
  field("starts_at","Start","datetime-local"),field("ends_at","Finish","datetime-local"),
- field("shift_type","Shift type","select",["24-hour support","Personal care","Community access","Social support","Sleepover","Transport"]),
- field("status","Save as","select",["Draft","Published"]),field("instructions","Shift instructions (optional)","textarea",[],false)
-],async v=>{const payload={organisation_id:profile.organisation_id,participant_id:v.participant_id,assigned_staff_id:v.assigned_staff_id,starts_at:new Date(v.starts_at).toISOString(),ends_at:new Date(v.ends_at).toISOString(),shift_type:v.shift_type,status:v.status,response:v.status==="Published"?"Pending":"Not sent",instructions:v.instructions,created_by:profile.id,published_at:v.status==="Published"?new Date().toISOString():null};const {error}=await db.from("shifts").insert(payload);if(error)throw error;await refreshAll();toast(v.status==="Published"?"Shift published":"Draft saved")});
+ field("shift_type","Shift type","select",["24-hour support","Personal care","Community access","Social support","Sleepover","Transport","Domestic assistance"]),
+ field("repeat_weeks","Repeat for number of weeks (optional)","number",[],false),
+ field("status","Save as","select",["Draft","Published"]),field("instructions","Shift instructions (optional)","textarea",[],false),
+ field("handover_notes","Handover information (optional)","textarea",[],false)
+],async v=>{
+ const starts=new Date(v.starts_at),ends=new Date(v.ends_at);if(ends<=starts)throw new Error("Shift finish must be after its start");
+ const count=Math.min(52,Math.max(1,Number(v.repeat_weeks||1))),group=count>1?id():null,rows=[];
+ for(let week=0;week<count;week++){
+  const shiftStart=new Date(starts.getTime()+week*7*86400000),shiftEnd=new Date(ends.getTime()+week*7*86400000);
+  if(v.assigned_staff_id&&state.shifts.some(s=>s.assigned_staff_id===v.assigned_staff_id&&s.status!=="Cancelled"&&new Date(s.starts_at)<shiftEnd&&new Date(s.ends_at)>shiftStart))throw new Error(`Roster conflict in week ${week+1}: this worker already has an overlapping shift`);
+  rows.push({organisation_id:profile.organisation_id,participant_id:v.participant_id,assigned_staff_id:v.assigned_staff_id||null,starts_at:shiftStart.toISOString(),ends_at:shiftEnd.toISOString(),shift_type:v.shift_type,status:v.status,response:v.status==="Published"?"Pending":"Not sent",instructions:v.instructions||null,handover_notes:v.handover_notes||null,recurrence_group:group,created_by:profile.id,published_at:v.status==="Published"?new Date().toISOString():null});
+ }
+ const {error}=await db.from("shifts").insert(rows);if(error)throw error;await refreshAll();toast(count>1?`${count} recurring shifts created`:v.status==="Published"?"Shift published":"Draft saved")
+});
 $("#add-note").onclick=()=>form("Create progress note",[field("participant_id","Participant","select",state.participants.map(p=>({value:p.id,label:p.full_name}))),field("category","Note type","select",["Daily support","Personal care","Community access","Health","Communication","Goals and outcomes","Behaviour observation"]),field("content","What support was provided and what was the outcome?","textarea"),field("status","Save note as","select",["Final","Draft"])],async v=>{const {error}=await db.from("progress_notes").insert({organisation_id:profile.organisation_id,participant_id:v.participant_id,staff_id:profile.id,category:v.category,content:v.content,status:v.status});if(error)throw error;await refreshAll();toast("Progress note saved")});
-$("#add-med").onclick=()=>form("Add medication profile",[field("participant_id","Participant","select",state.participants.map(p=>({value:p.id,label:p.full_name}))),field("medication_name","Medication name"),field("dose","Dose"),field("route","Route","select",["Oral","Topical","Inhaled","Subcutaneous","Other"]),field("administration_time","Administration time","time"),field("medication_type","Type","select",["Regular","PRN","Schedule 8"]),field("instructions","Administration instructions (optional)","textarea",[],false)],async v=>{const {error}=await db.from("medications").insert({organisation_id:profile.organisation_id,active:true,created_by:profile.id,...v});if(error)throw error;await refreshAll();toast("Medication added")});
+$("#add-med").onclick=()=>form("Add medication profile",[
+ field("participant_id","Participant","select",state.participants.map(p=>({value:p.id,label:p.full_name}))),
+ field("medication_name","Medication name"),field("dose","Dose"),field("route","Route","select",["Oral","Topical","Inhaled","Subcutaneous","Other"]),
+ field("administration_time","Administration time (optional for PRN)","time",[],false),field("medication_type","Type","select",["Regular","PRN","Schedule 8"]),
+ field("prn_indication","PRN indication (optional)","textarea",[],false),field("max_prn_dose","Maximum PRN dose (optional)","text",[],false),
+ field("hold_from","Hold from (optional)","date",[],false),field("hold_until","Hold until (optional)","date",[],false),field("ceased_at","Ceased date (optional)","date",[],false),
+ field("instructions","Administration instructions (optional)","textarea",[],false)
+],async v=>{const payload={organisation_id:profile.organisation_id,active:!v.ceased_at,created_by:profile.id,...v};for(const key of ["administration_time","prn_indication","max_prn_dose","hold_from","hold_until","ceased_at","instructions"])if(!payload[key])payload[key]=null;const {error}=await db.from("medications").insert(payload);if(error)throw error;await refreshAll();toast("Medication added")});
 $("#create-invoice").onclick=()=>form("Create invoice",[field("participant_id","Participant","select",state.participants.map(p=>({value:p.id,label:p.full_name}))),field("description","NDIS support or line item"),field("hours","Billable hours","number"),field("rate","Hourly rate","number"),field("invoice_date","Invoice date","date")],async v=>{const number=`ICC-${Date.now().toString().slice(-8)}`;const {error}=await db.from("invoices").insert({organisation_id:profile.organisation_id,invoice_number:number,status:"Draft",created_by:profile.id,...v});if(error)throw error;await refreshAll();toast("Invoice created")});
 
 
@@ -417,6 +438,8 @@ document.addEventListener("click",async e=>{
   b=e.target.closest("[data-thread]");if(b){activePortalThread=b.dataset.thread;renderPortal();return}
   b=e.target.closest("[data-archive-thread]");if(b){if(!isStaffUser())throw new Error("This action is available to staff only");const archive=b.dataset.archive==="true";const {error}=await db.from("portal_threads").update({status:archive?"Closed":"Open",updated_at:new Date().toISOString()}).eq("id",b.dataset.archiveThread);if(error)throw error;activePortalThread=null;await refreshAll();return toast(archive?"Conversation archived":"Conversation restored")}
   b=e.target.closest("[data-mar-sign]");if(b){if(!isStaffUser())throw new Error("This action is available to staff only");pendingMed=state.medications.find(x=>x.id===b.dataset.marSign);if(!pendingMed)throw new Error("Medication profile not found");$("#mar-outcome").value=b.dataset.outcome||"Administered";$("#mar-reason").value="";$("#mar-notes").value="";$("#mar-reason-label").classList.toggle("required-reason",$("#mar-outcome").value!=="Administered");$("#pin-summary").textContent=`${pendingMed.medication_name} · ${pendingMed.dose} for ${pendingMed.participant?.full_name}`;openDialog($("#pin-dialog"));return}
+  b=e.target.closest("[data-claim-shift]");if(b){const {data,error}=await db.from("shifts").update({assigned_staff_id:profile.id,response:"Accepted",responded_at:new Date().toISOString()}).eq("id",b.dataset.claimShift).is("assigned_staff_id",null).eq("status","Published").select();if(error)throw error;if(!data?.length)throw new Error("This shift has already been claimed");await refreshAll();return toast("Open shift claimed")}
+  b=e.target.closest("[data-cancel-shift]");if(b){const reason=prompt("Why is this shift being cancelled?");if(!reason)return;const {error}=await db.from("shifts").update({status:"Cancelled",cancellation_reason:reason,cancelled_at:new Date().toISOString()}).eq("id",b.dataset.cancelShift);if(error)throw error;await refreshAll();return toast("Shift cancelled")}
   b=e.target.closest("[data-publish]");if(b){const {error}=await db.from("shifts").update({status:"Published",response:"Pending",published_at:new Date().toISOString()}).eq("id",b.dataset.publish);if(error)throw error;await refreshAll();return toast("Shift published")}
   b=e.target.closest("[data-shift-response]");if(b){const {error}=await db.from("shifts").update({response:b.dataset.response,responded_at:new Date().toISOString()}).eq("id",b.dataset.shiftResponse).eq("assigned_staff_id",profile.id);if(error)throw error;await refreshAll();return toast("Shift "+b.dataset.response.toLowerCase())}
   b=e.target.closest("[data-administer]");if(b){pendingMed=state.medications.find(x=>x.id===b.dataset.administer);$("#pin-summary").textContent=`${pendingMed.medication_name} · ${pendingMed.dose} for ${pendingMed.participant?.full_name}`;openDialog($("#pin-dialog"));return}
