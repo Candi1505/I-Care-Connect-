@@ -54,12 +54,17 @@ async function enterApp(s){
  $$(".admin-only").forEach(e=>e.classList.toggle("hidden",!isSupervisor()));
  ["#add-note","#add-timeline-event"].forEach(s=>{const e=$(s);if(e)e.classList.toggle("hidden",!isStaffUser())});
  $$(`[data-view="finance"]`).forEach(e=>e.classList.toggle("hidden",!isSupervisor()));
+ if(isPortalUser()){
+   $$(`[data-view="notes"]`).forEach(e=>e.classList.add("hidden"));
+   $$(`[data-view="compliance"]`).forEach(e=>e.classList.add("hidden"));
+   $("#backup")?.classList.add("hidden");
+ }
  const h=new Date().getHours();$("#greeting").textContent=h<12?"Good morning":h<17?"Good afternoon":"Good evening";
  await refreshAll();
 }
 async function refreshAll(){
  const org=profile.organisation_id;
- const queries=[
+ const commonQueries=[
   db.from("profiles").select("id,full_name,role,email,active,participant_id").eq("organisation_id",org).eq("active",true),
   db.from("participants").select("*").eq("organisation_id",org).order("full_name"),
   db.from("shifts").select("*, participant:participants(full_name), worker:profiles!shifts_assigned_staff_id_fkey(full_name)").eq("organisation_id",org).order("starts_at"),
@@ -67,14 +72,18 @@ async function refreshAll(){
   db.from("mar_entries").select("*, medication:medications(medication_name), participant:participants(full_name), worker:profiles!mar_entries_staff_id_fkey(full_name)").eq("organisation_id",org).order("recorded_at",{ascending:false}),
   db.from("progress_notes").select("*, participant:participants(full_name), worker:profiles!progress_notes_staff_id_fkey(full_name)").eq("organisation_id",org).order("recorded_at",{ascending:false}),
   db.from("compliance_documents").select("*").eq("organisation_id",org).order("uploaded_at",{ascending:false}),
-  db.from("invoices").select("*, participant:participants(full_name)").eq("organisation_id",org).order("created_at",{ascending:false}),
   db.from("client_timeline").select("*, participant:participants(full_name), created_by_profile:profiles!client_timeline_created_by_fkey(full_name)").eq("organisation_id",org).order("occurred_at",{ascending:false}),
   db.from("portal_threads").select("*, participant:participants(full_name), created_by_profile:profiles!portal_threads_created_by_fkey(full_name)").eq("organisation_id",org).order("updated_at",{ascending:false}),
   db.from("portal_messages").select("*, sender:profiles!portal_messages_sender_id_fkey(full_name,role)").eq("organisation_id",org).order("created_at")
  ];
- const results=await Promise.all(queries);
- const firstError=results.find(r=>r.error)?.error;if(firstError)throw firstError;
- [state.staff,state.participants,state.shifts,state.medications,state.mar,state.notes,state.compliance,state.invoices,state.timeline,state.portalThreads,state.portalMessages]=results.map(r=>r.data||[]);
+ const invoiceQuery=isSupervisor()
+  ? db.from("invoices").select("*, participant:participants(full_name)").eq("organisation_id",org).order("created_at",{ascending:false})
+  : Promise.resolve({data:[],error:null});
+ const results=await Promise.all([...commonQueries,invoiceQuery]);
+ const firstError=results.find(r=>r.error)?.error;
+ if(firstError)throw firstError;
+ const [staff,participants,shifts,medications,mar,notes,compliance,timeline,portalThreads,portalMessages,invoices]=results.map(r=>r.data||[]);
+ Object.assign(state,{staff,participants,shifts,medications,mar,notes,compliance,timeline,portalThreads,portalMessages,invoices});
  render();
 }function render(){renderDashboard();renderParticipants();renderRoster();renderMeds();renderNotes();renderTimeline();renderPortal();renderCompliance();renderFinance()}
 function expStatus(d){if(!d)return"No review date";const days=Math.ceil((new Date(d)-new Date())/86400000);return days<0?"Expired":days<=30?"Due soon":"Current"}
@@ -152,6 +161,35 @@ $$("[data-compliance-tab]").forEach(b=>b.onclick=()=>{$$("[data-compliance-tab]"
 
 $$("[data-timeline-filter]").forEach(b=>b.onclick=()=>{$$("[data-timeline-filter]").forEach(x=>x.classList.toggle("active",x===b));timelineFilter=b.dataset.timelineFilter;renderTimeline()});
 
+
+$("#add-participant").onclick=()=>form("Add participant",[
+ field("full_name","Full legal name"),
+ field("preferred_name","Preferred name"),
+ field("date_of_birth","Date of birth","date"),
+ field("ndis_number","NDIS number"),
+ field("address","Address"),
+ field("phone","Phone"),
+ field("emergency_contact","Emergency contact"),
+ field("guardian_nominee","Guardian or nominee"),
+ field("gp","GP"),
+ field("pharmacy","Pharmacy"),
+ field("communication_needs","Communication needs","textarea"),
+ field("diagnoses","Diagnoses","textarea"),
+ field("allergies","Allergies","textarea"),
+ field("goals","Goals","textarea"),
+ field("preferences","Preferences","textarea"),
+ field("risks_and_safeguards","Risks and safeguards","textarea"),
+ field("funding_start","Funding start","date"),
+ field("funding_end","Funding end","date")
+],async v=>{
+ const payload={organisation_id:profile.organisation_id,status:"Active"};
+ for(const [k,val] of Object.entries(v))payload[k]=val===""?null:val;
+ const {error}=await db.from("participants").insert(payload);
+ if(error)throw error;
+ await refreshAll();
+ toast("Participant added");
+});
+
 $("#add-shift").onclick=()=>form("Create roster shift",[
  field("participant_id","Participant","select",state.participants.map(p=>({value:p.id,label:p.full_name}))),
  field("assigned_staff_id","Assigned staff member","select",state.staff.filter(s=>s.role==="staff"||s.role==="supervisor").map(s=>({value:s.id,label:s.full_name}))),
@@ -173,10 +211,10 @@ $("#add-timeline-event").onclick=()=>form("Add client timeline event",[
 ],async v=>{const {error}=await db.from("client_timeline").insert({organisation_id:profile.organisation_id,created_by:profile.id,...v,occurred_at:new Date(v.occurred_at).toISOString()});if(error)throw error;await refreshAll();toast("Timeline event added")});
 
 $("#new-portal-item").onclick=()=>form("New portal message or request",[
- field("participant_id","Participant","select",state.participants.map(p=>({value:p.id,label:p.full_name}))),
+ ...(isPortalUser()?[]:[field("participant_id","Participant","select",state.participants.map(p=>({value:p.id,label:p.full_name})))]),
  field("thread_type","Type","select",["Message","Request","Information update","Appointment request","Roster request","General question"]),
  field("subject","Subject"),field("message","Message or request","textarea")
-],async v=>{const {data:thread,error}=await db.from("portal_threads").insert({organisation_id:profile.organisation_id,participant_id:v.participant_id,thread_type:v.thread_type,subject:v.subject,status:"Open",created_by:profile.id,updated_at:new Date().toISOString()}).select().single();if(error)throw error;const {error:msgErr}=await db.from("portal_messages").insert({organisation_id:profile.organisation_id,thread_id:thread.id,sender_id:profile.id,message:v.message});if(msgErr)throw msgErr;activePortalThread=thread.id;await refreshAll();toast("Portal item created")});
+],async v=>{const participantId=isPortalUser()?profile.participant_id:v.participant_id;const {data:thread,error}=await db.from("portal_threads").insert({organisation_id:profile.organisation_id,participant_id:participantId,thread_type:v.thread_type,subject:v.subject,status:"Open",created_by:profile.id,updated_at:new Date().toISOString()}).select().single();if(error)throw error;const {error:msgErr}=await db.from("portal_messages").insert({organisation_id:profile.organisation_id,thread_id:thread.id,sender_id:profile.id,message:v.message});if(msgErr)throw msgErr;activePortalThread=thread.id;await refreshAll();toast("Portal item created")});
 
 $("#portal-reply-form").onsubmit=async e=>{e.preventDefault();try{const text=$("#portal-reply-text").value.trim();if(!text||!activePortalThread)return;const {error}=await db.from("portal_messages").insert({organisation_id:profile.organisation_id,thread_id:activePortalThread,sender_id:profile.id,message:text});if(error)throw error;await db.from("portal_threads").update({updated_at:new Date().toISOString()}).eq("id",activePortalThread);$("#portal-reply-text").value="";await refreshAll();toast("Reply sent")}catch(err){toast(err.message)}};
 
