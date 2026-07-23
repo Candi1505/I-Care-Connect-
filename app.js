@@ -74,8 +74,18 @@ async function boot(){
   $("#connection-message").textContent="Secure sign-in ready.";
  }catch(err){toast(err.message)}
 }
+async function ensureMfa(){
+ const {data:list,error:listError}=await db.auth.mfa.listFactors();if(listError)throw listError;
+ const factor=list?.totp?.find(x=>x.status==="verified");if(!factor)return;
+ const {data:aal}=await db.auth.mfa.getAuthenticatorAssuranceLevel();if(aal?.currentLevel==="aal2")return;
+ const code=prompt("Enter the six-digit code from your Florence authenticator app");
+ if(!code)throw new Error("Multi-factor authentication is required");
+ const {data:challenge,error:challengeError}=await db.auth.mfa.challenge({factorId:factor.id});if(challengeError)throw challengeError;
+ const {error:verifyError}=await db.auth.mfa.verify({factorId:factor.id,challengeId:challenge.id,code});if(verifyError)throw verifyError;
+}
 async function enterApp(s){
  session=s;
+ await ensureMfa();
  const {data:p,error}=await db.from("profiles").select("*, organisations(*)").eq("id",s.user.id).single();
  if(error||!p) throw new Error("Your Florence profile has not been activated.");
  profile=p;organisation=p.organisations;
