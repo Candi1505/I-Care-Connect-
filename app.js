@@ -6,7 +6,7 @@ const fmt=v=>new Intl.DateTimeFormat("en-AU",{day:"numeric",month:"short",year:"
 const date=v=>v?new Intl.DateTimeFormat("en-AU",{day:"numeric",month:"short",year:"numeric"}).format(new Date(v)):"";
 const id=()=>crypto.randomUUID?.()||Date.now()+"-"+Math.random().toString(16).slice(2);
 let db=null, session=null, profile=null, organisation=null;
-let rosterTab="published",medTab="round",complianceTab="all",timelineFilter="all",pending=null,pendingMed=null,activePortalThread=null;
+let rosterTab="published",medTab="Regular",complianceTab="all",timelineFilter="all",portalFilter="active",pending=null,pendingMed=null,activePortalThread=null;
 let state={staff:[],participants:[],shifts:[],medications:[],mar:[],notes:[],compliance:[],invoices:[],timeline:[],portalThreads:[],portalMessages:[]};
 
 function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),2500)}
@@ -183,9 +183,7 @@ $$("[data-compliance-tab]").forEach(b=>b.onclick=()=>{$$("[data-compliance-tab]"
 
 $$("[data-portal-filter]").forEach(b=>b.onclick=()=>{$$("[data-portal-filter]").forEach(x=>x.classList.toggle("active",x===b));portalFilter=b.dataset.portalFilter;activePortalThread=null;renderPortal()});
 
-$$("[data-timeline-filter]").forEach(b=>b.onclick=()=>{$$("[data-portal-filter]").forEach(b=>b.onclick=()=>{$$("[data-portal-filter]").forEach(x=>x.classList.toggle("active",x===b));portalFilter=b.dataset.portalFilter;activePortalThread=null;renderPortal()});
-
-$$("[data-timeline-filter]").forEach(x=>x.classList.toggle("active",x===b));timelineFilter=b.dataset.timelineFilter;renderTimeline()});
+$("[data-timeline-filter]").forEach(b=>b.onclick=()=>{$("[data-timeline-filter]").forEach(x=>x.classList.toggle("active",x===b));timelineFilter=b.dataset.timelineFilter;renderTimeline()});
 
 
 $("#add-participant").onclick=()=>form("Add participant",[
@@ -247,6 +245,8 @@ $("#portal-reply-form").onsubmit=async e=>{e.preventDefault();try{const text=$("
 document.addEventListener("click",async e=>{
  try{
   let b=e.target.closest("[data-thread]");if(b){activePortalThread=b.dataset.thread;renderPortal();return}
+  b=e.target.closest("[data-archive-thread]");if(b){if(!isStaffUser())throw new Error("This action is available to staff only");const {error}=await db.from("portal_threads").update({archived:b.dataset.archive==="true",updated_at:new Date().toISOString()}).eq("id",b.dataset.archiveThread);if(error)throw error;activePortalThread=null;await refreshAll();return toast(b.dataset.archive==="true"?"Conversation archived":"Conversation restored")}
+  b=e.target.closest("[data-mar-sign]");if(b){if(!isStaffUser())throw new Error("This action is available to staff only");pendingMed=state.medications.find(x=>x.id===b.dataset.marSign);if(!pendingMed)throw new Error("Medication profile not found");$("#mar-outcome").value=b.dataset.outcome||"Administered";$("#mar-reason").value="";$("#mar-notes").value="";$("#mar-reason-label").classList.toggle("required-reason",$("#mar-outcome").value!=="Administered");$("#pin-summary").textContent=`${pendingMed.medication_name} · ${pendingMed.dose} for ${pendingMed.participant?.full_name}`;$("#pin-dialog").showModal();return}
   b=e.target.closest("[data-publish]");if(b){const {error}=await db.from("shifts").update({status:"Published",response:"Pending",published_at:new Date().toISOString()}).eq("id",b.dataset.publish);if(error)throw error;await refreshAll();return toast("Shift published")}
   b=e.target.closest("[data-shift-response]");if(b){const {error}=await db.from("shifts").update({response:b.dataset.response,responded_at:new Date().toISOString()}).eq("id",b.dataset.shiftResponse).eq("assigned_staff_id",profile.id);if(error)throw error;await refreshAll();return toast("Shift "+b.dataset.response.toLowerCase())}
   b=e.target.closest("[data-administer]");if(b){pendingMed=state.medications.find(x=>x.id===b.dataset.administer);$("#pin-summary").textContent=`${pendingMed.medication_name} · ${pendingMed.dose} for ${pendingMed.participant?.full_name}`;$("#pin-dialog").showModal();return}
@@ -279,6 +279,6 @@ $("#pin-form").onsubmit=async e=>{e.preventDefault();try{
 $("#close-pin").onclick=$("#cancel-pin").onclick=()=>{$("#pin-dialog").close();pendingMed=null};
 $("#backup").onclick=()=>toast("Live Supabase backups are managed from the database project");
 $("#connect-xero").onclick=()=>toast("Xero secure backend connection is the next integration step");
+$("#mar-outcome").onchange=()=>{$("#mar-reason-label").classList.toggle("required-reason",$("#mar-outcome").value!=="Administered")};
 boot();
 })();
-$("#mar-outcome").onchange=()=>{$("#mar-reason-label").classList.toggle("required-reason",$("#mar-outcome").value!=="Administered")};
