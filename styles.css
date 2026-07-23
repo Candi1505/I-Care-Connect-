@@ -66,8 +66,9 @@ dialog{width:min(94vw,620px);border:0;border-radius:24px;padding:0;box-shadow:0 
 .mar-round-complete{margin:16px 0;border:1px solid #88dcb2;background:#e9fbf2;color:#176747}
 .mar-signed-item{margin-top:12px}
 @media(max-width:680px){
- .mar-round-controls{grid-template-columns:1fr 1fr}
- .mar-round-controls label:first-child{grid-column:1/-1}
+ .mar-round-controls{grid-template-columns:1fr}
+ .mar-round-controls label{grid-column:1/-1;min-width:0}
+ .mar-round-controls input,.mar-round-controls select{display:block;width:100%;min-width:0}
  .mar-outcomes{grid-template-columns:1fr 1fr}
 }
 
