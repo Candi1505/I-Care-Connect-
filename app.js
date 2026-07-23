@@ -215,7 +215,7 @@ $$("[data-compliance-tab]").forEach(b=>b.onclick=()=>{$$("[data-compliance-tab]"
 
 $$("[data-portal-filter]").forEach(b=>b.onclick=()=>{$$("[data-portal-filter]").forEach(x=>x.classList.toggle("active",x===b));portalFilter=b.dataset.portalFilter;activePortalThread=null;renderPortal()});
 
-$("[data-timeline-filter]").forEach(b=>b.onclick=()=>{$("[data-timeline-filter]").forEach(x=>x.classList.toggle("active",x===b));timelineFilter=b.dataset.timelineFilter;renderTimeline()});
+$$("[data-timeline-filter]").forEach(b=>b.onclick=()=>{$$("[data-timeline-filter]").forEach(x=>x.classList.toggle("active",x===b));timelineFilter=b.dataset.timelineFilter;renderTimeline()});
 
 
 $("#add-participant").onclick=()=>form("Add participant",[
