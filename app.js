@@ -14,6 +14,8 @@ function empty(t){return `<div class="empty">${esc(t)}</div>`}
 function badge(s){const c=/expired|declined|overdue|refused/i.test(s)?"red":/due|pending|draft|withheld/i.test(s)?"amber":/schedule 8/i.test(s)?"purple":"good";return `<span class="badge ${c}">${esc(s)}</span>`}
 function initials(n){return String(n||"?").split(/\s+/).map(x=>x[0]).slice(0,2).join("").toUpperCase()}
 function isSupervisor(){return profile?.role==="supervisor"}
+function isStaffUser(){return profile?.role==="supervisor"||profile?.role==="staff"}
+function isPortalUser(){return profile?.role==="family"||profile?.role==="client"}
 function requireConfig(){
  if(!C.supabaseUrl||!C.supabaseAnonKey){
    $("#connection-message").textContent="Supabase setup is required before staff can sign in.";
@@ -42,13 +44,16 @@ async function boot(){
 async function enterApp(s){
  session=s;
  const {data:p,error}=await db.from("profiles").select("*, organisations(*)").eq("id",s.user.id).single();
- if(error||!p) throw new Error("Your Florence staff profile has not been activated.");
+ if(error||!p) throw new Error("Your Florence profile has not been activated.");
  profile=p;organisation=p.organisations;
  $("#signed-in-name").textContent=profile.full_name;
  $("#welcome-name").textContent=`Welcome back, ${profile.full_name.split(" ")[0]}`;
- $("#role-label").textContent=isSupervisor()?"Supervisor workspace":"Support worker workspace";
+ const roleLabels={supervisor:"Supervisor workspace",staff:"Support worker workspace",family:"Family portal",client:"Client portal"};
+ $("#role-label").textContent=roleLabels[profile.role]||"Florence workspace";
  $("#login").classList.add("hidden");$("#app").classList.remove("hidden");
  $$(".admin-only").forEach(e=>e.classList.toggle("hidden",!isSupervisor()));
+ ["#add-note","#add-timeline-event"].forEach(s=>{const e=$(s);if(e)e.classList.toggle("hidden",!isStaffUser())});
+ $$(`[data-view="finance"]`).forEach(e=>e.classList.toggle("hidden",!isSupervisor()));
  const h=new Date().getHours();$("#greeting").textContent=h<12?"Good morning":h<17?"Good afternoon":"Good evening";
  await refreshAll();
 }
@@ -59,13 +64,13 @@ async function refreshAll(){
   db.from("participants").select("*").eq("organisation_id",org).order("full_name"),
   db.from("shifts").select("*, participant:participants(full_name), worker:profiles!shifts_assigned_staff_id_fkey(full_name)").eq("organisation_id",org).order("starts_at"),
   db.from("medications").select("*, participant:participants(full_name)").eq("organisation_id",org).order("administration_time"),
-  db.from("mar_entries").select("*, medication:medications(medication_name), participant:participants(full_name), worker:profiles(full_name)").eq("organisation_id",org).order("recorded_at",{ascending:false}),
-  db.from("progress_notes").select("*, participant:participants(full_name), worker:profiles(full_name)").eq("organisation_id",org).order("recorded_at",{ascending:false}),
+  db.from("mar_entries").select("*, medication:medications(medication_name), participant:participants(full_name), worker:profiles!mar_entries_staff_id_fkey(full_name)").eq("organisation_id",org).order("recorded_at",{ascending:false}),
+  db.from("progress_notes").select("*, participant:participants(full_name), worker:profiles!progress_notes_staff_id_fkey(full_name)").eq("organisation_id",org).order("recorded_at",{ascending:false}),
   db.from("compliance_documents").select("*").eq("organisation_id",org).order("uploaded_at",{ascending:false}),
   db.from("invoices").select("*, participant:participants(full_name)").eq("organisation_id",org).order("created_at",{ascending:false}),
-  db.from("client_timeline").select("*, participant:participants(full_name), created_by_profile:profiles(full_name)").eq("organisation_id",org).order("occurred_at",{ascending:false}),
-  db.from("portal_threads").select("*, participant:participants(full_name), created_by_profile:profiles(full_name)").eq("organisation_id",org).order("updated_at",{ascending:false}),
-  db.from("portal_messages").select("*, sender:profiles(full_name,role)").eq("organisation_id",org).order("created_at")
+  db.from("client_timeline").select("*, participant:participants(full_name), created_by_profile:profiles!client_timeline_created_by_fkey(full_name)").eq("organisation_id",org).order("occurred_at",{ascending:false}),
+  db.from("portal_threads").select("*, participant:participants(full_name), created_by_profile:profiles!portal_threads_created_by_fkey(full_name)").eq("organisation_id",org).order("updated_at",{ascending:false}),
+  db.from("portal_messages").select("*, sender:profiles!portal_messages_sender_id_fkey(full_name,role)").eq("organisation_id",org).order("created_at")
  ];
  const results=await Promise.all(queries);
  const firstError=results.find(r=>r.error)?.error;if(firstError)throw firstError;
@@ -92,14 +97,16 @@ function renderParticipants(){
  $("#participant-list").innerHTML=state.participants.map(p=>`<article class="person"><div class="avatar">${initials(p.full_name)}</div><div><div class="record-top"><div><h3>${esc(p.preferred_name||p.full_name)}</h3><p>${esc(p.full_name)} · ${esc(p.address||"")}</p></div>${badge(p.status)}</div><p><strong>NDIS:</strong> ${esc(p.ndis_number||"Not entered")}</p><p><strong>Diagnoses:</strong> ${esc(p.diagnoses||"")}</p><p><strong>Communication:</strong> ${esc(p.communication_needs||"")}</p><p><strong>Goals:</strong> ${esc(p.goals||"")}</p><div class="record-meta">${isSupervisor()?`<button class="link" data-careplan="${p.id}">Upload PDF care plan</button>`:""}</div></div></article>`).join("")||empty("No participants.");
 }
 function renderRoster(){
- let list=state.shifts.filter(s=>rosterTab==="draft"?s.status==="Draft":rosterTab==="mine"?s.assigned_staff_id===profile.id:s.status==="Published");
- if(!isSupervisor())list=list.filter(s=>s.assigned_staff_id===profile.id);
+ let list=state.shifts;
+ if(isSupervisor()) list=list.filter(s=>rosterTab==="draft"?s.status==="Draft":rosterTab==="mine"?s.assigned_staff_id===profile.id:s.status==="Published");
+ else if(profile.role==="staff") list=list.filter(s=>s.assigned_staff_id===profile.id);
+ else list=list.filter(s=>s.participant_id===profile.participant_id&&s.status==="Published");
  $("#roster-list").innerHTML=list.length?list.map(shiftCard).join(""):empty("No shifts in this view.");
 }
 function renderMeds(){
  if(medTab==="profiles")$("#med-content").innerHTML=state.medications.map(m=>`<article class="record"><div class="record-top"><div><h3>${esc(m.medication_name)}</h3><p>${esc(m.participant?.full_name)} · ${esc(m.dose)} · ${esc(m.route)}</p></div>${badge(m.medication_type)}</div><p>${esc(m.instructions||"")}</p></article>`).join("")||empty("No medication profiles.");
  else if(medTab==="history")$("#med-content").innerHTML=state.mar.map(m=>`<article class="record"><div class="record-top"><div><h3>${esc(m.medication?.medication_name)}</h3><p>${esc(m.participant?.full_name)} · ${esc(m.worker?.full_name)}</p></div>${badge(m.status)}</div><p>${fmt(m.recorded_at)}</p></article>`).join("")||empty("No MAR history.");
- else $("#med-content").innerHTML=state.medications.filter(m=>m.active).map(m=>`<article class="record"><div class="record-top"><div><h3>${esc(m.medication_name)}</h3><p>${esc(m.participant?.full_name)} · ${esc(m.dose)} · ${esc(m.route)}</p></div>${badge(m.administration_time||"Due")}</div><p>${esc(m.instructions||"")}</p><div class="actions"><button class="accept" data-administer="${m.id}">Confirm given</button><button class="publish" data-mar-other="${m.id}" data-status="Withheld">Withheld</button><button class="decline" data-mar-other="${m.id}" data-status="Refused">Refused</button></div></article>`).join("")||empty("No medication is due.");
+ else $("#med-content").innerHTML=state.medications.filter(m=>m.active).map(m=>`<article class="record"><div class="record-top"><div><h3>${esc(m.medication_name)}</h3><p>${esc(m.participant?.full_name)} · ${esc(m.dose)} · ${esc(m.route)}</p></div>${badge(m.administration_time||"Due")}</div><p>${esc(m.instructions||"")}</p>${isStaffUser()?`<div class="actions"><button class="accept" data-administer="${m.id}">Confirm given</button><button class="publish" data-mar-other="${m.id}" data-status="Withheld">Withheld</button><button class="decline" data-mar-other="${m.id}" data-status="Refused">Refused</button></div>`:""}</article>`).join("")||empty("No medication is due.");
 }
 function renderNotes(){
  $("#note-list").innerHTML=state.notes.map(n=>`<article class="record"><div class="record-top"><div><h3>${esc(n.participant?.full_name)}</h3><p>${esc(n.category)} · ${esc(n.worker?.full_name)}</p></div>${badge(n.status)}</div><p>${esc(n.content)}</p><div class="record-meta">${badge(fmt(n.recorded_at))}</div></article>`).join("")||empty("No progress notes.");
@@ -153,8 +160,8 @@ $("#add-shift").onclick=()=>form("Create roster shift",[
  field("status","Save as","select",["Draft","Published"]),field("instructions","Shift instructions","textarea")
 ],async v=>{const payload={organisation_id:profile.organisation_id,participant_id:v.participant_id,assigned_staff_id:v.assigned_staff_id,starts_at:new Date(v.starts_at).toISOString(),ends_at:new Date(v.ends_at).toISOString(),shift_type:v.shift_type,status:v.status,response:v.status==="Published"?"Pending":"Not sent",instructions:v.instructions,created_by:profile.id,published_at:v.status==="Published"?new Date().toISOString():null};const {error}=await db.from("shifts").insert(payload);if(error)throw error;await refreshAll();toast(v.status==="Published"?"Shift published":"Draft saved")});
 $("#add-note").onclick=()=>form("Create progress note",[field("participant_id","Participant","select",state.participants.map(p=>({value:p.id,label:p.full_name}))),field("category","Note type","select",["Daily support","Personal care","Community access","Health","Communication","Goals and outcomes","Behaviour observation"]),field("content","What support was provided and what was the outcome?","textarea"),field("status","Save note as","select",["Final","Draft"])],async v=>{const {error}=await db.from("progress_notes").insert({organisation_id:profile.organisation_id,participant_id:v.participant_id,staff_id:profile.id,category:v.category,content:v.content,status:v.status});if(error)throw error;await refreshAll();toast("Progress note saved")});
-$("#add-med").onclick=()=>form("Add medication profile",[field("participant_id","Participant","select",state.participants.map(p=>({value:p.id,label:p.full_name}))),field("medication_name","Medication name"),field("dose","Dose"),field("route","Route","select",["Oral","Topical","Inhaled","Subcutaneous","Other"]),field("administration_time","Administration time","time"),field("medication_type","Type","select",["Regular","PRN","Schedule 8"]),field("instructions","Administration instructions","textarea")],async v=>{const {error}=await db.from("medications").insert({organisation_id:profile.organisation_id,active:true,...v});if(error)throw error;await refreshAll();toast("Medication added")});
-$("#create-invoice").onclick=()=>form("Create invoice",[field("participant_id","Participant","select",state.participants.map(p=>({value:p.id,label:p.full_name}))),field("description","NDIS support or line item"),field("hours","Billable hours","number"),field("rate","Hourly rate","number"),field("invoice_date","Invoice date","date")],async v=>{const number=`ICC-${Date.now().toString().slice(-8)}`;const {error}=await db.from("invoices").insert({organisation_id:profile.organisation_id,invoice_number:number,status:"Draft",...v});if(error)throw error;await refreshAll();toast("Invoice created")});
+$("#add-med").onclick=()=>form("Add medication profile",[field("participant_id","Participant","select",state.participants.map(p=>({value:p.id,label:p.full_name}))),field("medication_name","Medication name"),field("dose","Dose"),field("route","Route","select",["Oral","Topical","Inhaled","Subcutaneous","Other"]),field("administration_time","Administration time","time"),field("medication_type","Type","select",["Regular","PRN","Schedule 8"]),field("instructions","Administration instructions","textarea")],async v=>{const {error}=await db.from("medications").insert({organisation_id:profile.organisation_id,active:true,created_by:profile.id,...v});if(error)throw error;await refreshAll();toast("Medication added")});
+$("#create-invoice").onclick=()=>form("Create invoice",[field("participant_id","Participant","select",state.participants.map(p=>({value:p.id,label:p.full_name}))),field("description","NDIS support or line item"),field("hours","Billable hours","number"),field("rate","Hourly rate","number"),field("invoice_date","Invoice date","date")],async v=>{const number=`ICC-${Date.now().toString().slice(-8)}`;const {error}=await db.from("invoices").insert({organisation_id:profile.organisation_id,invoice_number:number,status:"Draft",created_by:profile.id,...v});if(error)throw error;await refreshAll();toast("Invoice created")});
 
 
 $("#add-timeline-event").onclick=()=>form("Add client timeline event",[
@@ -179,7 +186,7 @@ document.addEventListener("click",async e=>{
   b=e.target.closest("[data-publish]");if(b){const {error}=await db.from("shifts").update({status:"Published",response:"Pending",published_at:new Date().toISOString()}).eq("id",b.dataset.publish);if(error)throw error;await refreshAll();return toast("Shift published")}
   b=e.target.closest("[data-shift-response]");if(b){const {error}=await db.from("shifts").update({response:b.dataset.response,responded_at:new Date().toISOString()}).eq("id",b.dataset.shiftResponse).eq("assigned_staff_id",profile.id);if(error)throw error;await refreshAll();return toast("Shift "+b.dataset.response.toLowerCase())}
   b=e.target.closest("[data-administer]");if(b){pendingMed=state.medications.find(x=>x.id===b.dataset.administer);$("#pin-summary").textContent=`${pendingMed.medication_name} · ${pendingMed.dose} for ${pendingMed.participant?.full_name}`;$("#pin-dialog").showModal();return}
-  b=e.target.closest("[data-mar-other]");if(b){const m=state.medications.find(x=>x.id===b.dataset.marOther);const {error}=await db.from("mar_entries").insert({organisation_id:profile.organisation_id,medication_id:m.id,participant_id:m.participant_id,staff_id:profile.id,status:b.dataset.status,pin_verified:false});if(error)throw error;await refreshAll();return toast("MAR recorded")}
+  b=e.target.closest("[data-mar-other]");if(b){if(!isStaffUser())throw new Error("This action is available to staff only");const m=state.medications.find(x=>x.id===b.dataset.marOther);const {error}=await db.from("mar_entries").insert({organisation_id:profile.organisation_id,medication_id:m.id,participant_id:m.participant_id,staff_id:profile.id,status:b.dataset.status,pin_verified:false});if(error)throw error;await refreshAll();return toast("MAR recorded")}
   b=e.target.closest("[data-open-doc]");if(b){const d=state.compliance.find(x=>x.id===b.dataset.openDoc);const {data,error}=await db.storage.from(C.storageBucket).createSignedUrl(d.storage_path,60);if(error)throw error;window.open(data.signedUrl,"_blank");return}
   b=e.target.closest("[data-careplan]");if(b){const p=state.participants.find(x=>x.id===b.dataset.careplan);form("Upload PDF care plan",[field("title","Document title"),field("review_date","Review date","date"),field("file","PDF care plan","file")],async(v,fd)=>uploadDocument(fd.get("file"),{scope:"Participant",subject_name:p.full_name,subject_id:p.id,category:"Care plan",title:v.title,review_date:v.review_date}));return}
  }catch(err){toast(err.message)}
@@ -194,7 +201,7 @@ async function uploadDocument(file,meta){
 $("#upload-compliance").onclick=()=>form("Upload compliance evidence",[field("scope","Document area","select",["Staff","Participant","Organisation"]),field("subject_name","Staff member, participant or organisation"),field("category","Document type","select",["Service agreement","Care plan","NDIS plan","Consent","Risk assessment","Medication chart","Allied health report","Police check","NDIS Worker Screening","Blue Card","First Aid","CPR","Medication competency","Driver licence","Vehicle registration","Vehicle insurance","Policy and procedure","Incident register","Complaints register","Continuous improvement","Internal audit","Staff meeting minutes","Emergency management","Other"]),field("title","Document title"),field("review_date","Expiry or review date","date"),field("file","Choose document or photo","file")],async(v,fd)=>uploadDocument(fd.get("file"),v));
 $("#dynamic-form").onsubmit=async e=>{e.preventDefault();if(!pending)return;const fd=new FormData(e.currentTarget),v=Object.fromEntries(fd.entries());try{await pending(v,fd);$("#dialog").close();pending=null;e.currentTarget.reset()}catch(err){toast(err.message)}};
 $("#close-dialog").onclick=$("#cancel-dialog").onclick=()=>{$("#dialog").close();pending=null};
-$("#pin-form").onsubmit=async e=>{e.preventDefault();try{const pin=$("#med-pin").value;const {data,error}=await db.rpc("record_medication_administration",{p_medication_id:pendingMed.id,p_pin:pin,p_status:"Administered"});if(error)throw error;$("#pin-dialog").close();$("#med-pin").value="";pendingMed=null;await refreshAll();toast("Medication administration recorded")}catch(err){toast(err.message)}};
+$("#pin-form").onsubmit=async e=>{e.preventDefault();try{const pin=$("#med-pin").value;const {data,error}=await db.rpc("record_medication_administration",{p_medication_id:pendingMed.id,p_pin:pin,p_status:"Administered",p_notes:null});if(error)throw error;$("#pin-dialog").close();$("#med-pin").value="";pendingMed=null;await refreshAll();toast("Medication administration recorded")}catch(err){toast(err.message)}};
 $("#close-pin").onclick=$("#cancel-pin").onclick=()=>{$("#pin-dialog").close();pendingMed=null};
 $("#backup").onclick=()=>toast("Live Supabase backups are managed from the database project");
 $("#connect-xero").onclick=()=>toast("Xero secure backend connection is the next integration step");

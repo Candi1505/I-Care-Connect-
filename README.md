@@ -138,3 +138,13 @@ Examples include:
 Each entry records the date and time, event type, severity, description, actions taken, follow-up and the staff member who entered it.
 
 Run the updated `supabase-schema.sql` again. The statements use `if not exists` and safe policy replacement for the new tables.
+
+
+## Florence App V1 database compatibility update
+
+- Matches the clean Florence Database V1 schema.
+- Uses explicit Supabase foreign-key relationships.
+- Supports supervisor, staff, family and client workspaces.
+- Restricts medication actions to staff and supervisors.
+- Gives family/client accounts read access only to their linked participant.
+- Updates the medication RPC call to the V1 function signature.
