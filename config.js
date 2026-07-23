@@ -1,10 +1,8 @@
 window.FLORENCE_CONFIG = {
   organisationName: "I-Care Connect",
 
-  // Paste these two PUBLIC browser values from:
-  // Supabase → Project Settings → API
-  supabaseUrl: "",
-  supabaseAnonKey: "",
+  supabaseUrl: "https://pbbsaquwumxyrhqhnobv.supabase.co",
+  supabaseAnonKey: "sb_publishable_4D2Oc8FJjOXDXgGG7GbzfA_oYRpXSU5",
 
   storageBucket: "florence-private",
   maxDocumentBytes: 8 * 1024 * 1024,
