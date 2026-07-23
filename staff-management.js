@@ -7,7 +7,11 @@ const roleLabel=role=>role==="supervisor"?"Supervisor":"Support worker";
 const accountStatus=worker=>!worker.active?"Inactive":worker.banned_until?"Suspended":worker.last_sign_in_at?"Active":"Invited";
 async function invoke(body){
  const {data,error}=await B().db.functions.invoke("staff-management",{body});
- if(error)throw new Error(data?.error||error.message||"Staff management is unavailable");
+ if(error){
+  let message=data?.error||error.message||"Staff management is unavailable";
+  try{if(error.context instanceof Response){const payload=await error.context.clone().json();message=payload?.error||message}}catch(_ignored){}
+  throw new Error(message);
+ }
  if(data?.error)throw new Error(data.error);
  return data;
 }
