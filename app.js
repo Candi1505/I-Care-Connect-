@@ -52,6 +52,8 @@ function form(title,fields,handler,values={}){
  try{
   $("#dialog-title").textContent=title;
   $("#dialog-fields").innerHTML=fields.join("");
+  const dialogStatus=$("#dialog-status");if(dialogStatus){dialogStatus.textContent="";dialogStatus.classList.add("hidden")}
+  const dialogSubmit=$("#dynamic-form .dialog-actions button[type=\"submit\"]");if(dialogSubmit){dialogSubmit.disabled=false;dialogSubmit.textContent="Save"}
   Object.entries(values).forEach(([k,v])=>{const e=$(`[name="${k}"]`);if(e)e.value=v??""});
   pending=handler;
   openDialog($("#dialog"));
@@ -507,7 +509,7 @@ async function uploadDocument(file,meta){
  await refreshAll();toast("Document uploaded securely")
 }
 $("#upload-compliance").onclick=()=>form("Upload compliance evidence",[field("scope","Document area","select",["Staff","Participant","Organisation"]),field("subject_name","Staff member, participant or organisation"),field("category","Document type","select",["Service agreement","Care plan","NDIS plan","Consent","Risk assessment","Medication chart","Allied health report","Police check","NDIS Worker Screening","Blue Card","First Aid","CPR","Medication competency","Driver licence","Vehicle registration","Vehicle insurance","Policy and procedure","Incident register","Complaints register","Continuous improvement","Internal audit","Staff meeting minutes","Emergency management","Other"]),field("title","Document title"),field("review_date","Expiry or review date","date"),field("file","Choose document or photo","file")],async(v,fd)=>uploadDocument(fd.get("file"),v));
-$("#dynamic-form").onsubmit=async e=>{e.preventDefault();if(!pending)return;const fd=new FormData(e.currentTarget),v=Object.fromEntries(fd.entries());try{await pending(v,fd);closeDialog($("#dialog"));pending=null;e.currentTarget.reset()}catch(err){toast(err.message)}};
+$("#dynamic-form").onsubmit=async e=>{e.preventDefault();if(!pending)return;const formElement=e.currentTarget,fd=new FormData(formElement),v=Object.fromEntries(fd.entries()),submit=formElement.querySelector('button[type="submit"]'),status=$("#dialog-status"),isInvite=$("#dialog-title")?.textContent==="Invite worker";if(status){status.textContent="";status.classList.add("hidden")}if(submit){submit.disabled=true;submit.textContent=isInvite?"Sending invitation…":"Saving…"}try{await Promise.race([pending(v,fd),new Promise((_,reject)=>setTimeout(()=>reject(new Error("Florence did not receive a response. Check the Edge Function logs and try again.")),20000))]);closeDialog($("#dialog"));pending=null;formElement.reset();toast(isInvite?"Invitation sent securely":"Saved successfully")}catch(err){const message=err.message||"Florence could not save this form.";if(status){status.textContent=message;status.classList.remove("hidden")}else toast(message)}finally{if(submit){submit.disabled=false;submit.textContent="Save"}}};
 $("#close-dialog").onclick=$("#cancel-dialog").onclick=()=>{closeDialog($("#dialog"));pending=null};
 $("#pin-form").onsubmit=async e=>{e.preventDefault();try{
  const pin=$("#med-pin").value;

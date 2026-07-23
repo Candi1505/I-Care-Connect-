@@ -269,7 +269,8 @@
   <form id="dynamic-form">
     <div class="dialog-head"><div><p class="eyebrow">Florence</p><h3 id="dialog-title"></h3></div><button type="button" id="close-dialog" class="icon-btn dark">×</button></div>
     <div id="dialog-fields" class="fields"></div>
-    <div class="dialog-actions"><button type="button" id="cancel-dialog" class="secondary">Cancel</button><button class="primary">Save</button></div>
+    <div id="dialog-status" class="form-status hidden" role="alert"></div>
+    <div class="dialog-actions"><button type="button" id="cancel-dialog" class="secondary">Cancel</button><button type="submit" class="primary">Save</button></div>
   </form>
 </dialog>
 
@@ -311,9 +312,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
-<script src="app.js?v=20260723-20"></script>
+<script src="app.js?v=20260723-21"></script>
 <script src="operations.js?v=20260723-3"></script>
-<script src="staff-management.js?v=20260723-1"></script>
+<script src="staff-management.js?v=20260723-2"></script>
 <script>
 if("serviceWorker" in navigator){
   window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));

@@ -123,3 +123,7 @@ dialog{width:min(94vw,620px);border:0;border-radius:24px;padding:0;box-shadow:0 
 .staff-card .actions{align-items:center}.staff-card select{width:auto;min-width:150px;padding:9px 11px}.account-security-grid form{margin-top:14px}.account-security-grid .primary{width:100%}
 .staff-invite-status{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 @media(max-width:560px){.staff-card .record-top{align-items:flex-start}.staff-card .actions{display:grid;grid-template-columns:1fr 1fr}.staff-card .actions select{grid-column:1/-1;width:100%}.staff-card .actions button{width:100%}}
+
+
+/* Visible feedback for modal form submissions */
+.form-status{margin-top:14px;padding:12px 14px;border:1px solid #efb0b0;border-radius:12px;background:#fff0f0;color:#913d3d;font-size:13px;font-weight:700;line-height:1.45}.dialog-actions button:disabled{opacity:.65;cursor:wait}
