@@ -72,12 +72,12 @@
     </section>
 
     <section id="participants-view" class="view">
-      <div class="page-head"><div><p class="eyebrow">People</p><h2>Participant profiles</h2><p>Detailed support, clinical and document information.</p></div><button id="add-participant" class="primary admin-only">+ Participant</button></div>
+      <div class="page-head"><div><p class="eyebrow">People</p><h2>Participant profiles</h2><p>Detailed support, clinical and document information.</p></div><button type="button" id="add-participant" class="primary admin-only">+ Participant</button></div>
       <div id="participant-list" class="card-grid"></div>
     </section>
 
     <section id="roster-view" class="view">
-      <div class="page-head"><div><p class="eyebrow">Staff scheduling</p><h2>Roster</h2><p>Supervisors create, publish and assign shifts. Staff accept or decline.</p></div><button id="add-shift" class="primary admin-only">+ Create shift</button></div>
+      <div class="page-head"><div><p class="eyebrow">Staff scheduling</p><h2>Roster</h2><p>Supervisors create, publish and assign shifts. Staff accept or decline.</p></div><button type="button" id="add-shift" class="primary admin-only">+ Create shift</button></div>
       <div class="segmented">
         <button class="active" data-roster-tab="published">Published</button>
         <button data-roster-tab="draft">Drafts</button>
@@ -94,7 +94,7 @@
           <h2>Client timeline</h2>
           <p>A flexible chronological record of significant events, observations and follow-up.</p>
         </div>
-        <button id="add-timeline-event" class="primary">+ Timeline event</button>
+        <button type="button" id="add-timeline-event" class="primary">+ Timeline event</button>
       </div>
       <div class="segmented">
         <button class="active" data-timeline-filter="all">All</button>
@@ -114,7 +114,7 @@
           <h2>Family & client portal</h2>
           <p>Secure communication, requests and information updates linked to each participant.</p>
         </div>
-        <button id="new-portal-item" class="primary">+ New message or request</button>
+        <button type="button" id="new-portal-item" class="primary">+ New message or request</button>
       </div>
       <div class="segmented">
         <button class="active" data-portal-filter="active">Active</button>
@@ -143,7 +143,7 @@
     </section>
 
     <section id="medications-view" class="view">
-      <div class="page-head"><div><p class="eyebrow">Medication safety</p><h2>Medication & MAR</h2><p>Medication administration is confirmed with the staff member’s six-digit medication PIN.</p></div><button id="add-med" class="primary admin-only">+ Medication</button></div>
+      <div class="page-head"><div><p class="eyebrow">Medication safety</p><h2>Medication & MAR</h2><p>Medication administration is confirmed with the staff member’s six-digit medication PIN.</p></div><button type="button" id="add-med" class="primary admin-only">+ Medication</button></div>
       <div class="segmented">
         <button class="active" data-med-tab="Regular">Regular</button>
         <button data-med-tab="PRN">PRN</button>
@@ -155,12 +155,12 @@
     </section>
 
     <section id="notes-view" class="view">
-      <div class="page-head"><div><p class="eyebrow">Easy documentation</p><h2>Progress notes</h2><p>Simple prompts, templates and quick phrases for faster notes.</p></div><button id="add-note" class="primary">+ New note</button></div>
+      <div class="page-head"><div><p class="eyebrow">Easy documentation</p><h2>Progress notes</h2><p>Simple prompts, templates and quick phrases for faster notes.</p></div><button type="button" id="add-note" class="primary">+ New note</button></div>
       <div id="note-list" class="stack"></div>
     </section>
 
     <section id="compliance-view" class="view">
-      <div class="page-head"><div><p class="eyebrow">NDIS audit readiness</p><h2>Compliance centre</h2><p>Staff, participant and organisation evidence in one auditable register.</p></div><button id="upload-compliance" class="primary admin-only">+ Upload document</button></div>
+      <div class="page-head"><div><p class="eyebrow">NDIS audit readiness</p><h2>Compliance centre</h2><p>Staff, participant and organisation evidence in one auditable register.</p></div><button type="button" id="upload-compliance" class="primary admin-only">+ Upload document</button></div>
       <div class="notice"><strong>No restrictive-practice module:</strong> Florence reflects that I-Care Connect does not implement restrictive practices.</div>
       <div class="segmented">
         <button class="active" data-compliance-tab="all">All documents</button>
@@ -173,7 +173,7 @@
     </section>
 
     <section id="finance-view" class="view">
-      <div class="page-head"><div><p class="eyebrow">Finance</p><h2>Invoicing & Xero</h2><p>Create invoices from completed shifts and prepare them for Xero.</p></div><button id="create-invoice" class="primary admin-only">+ Invoice</button></div>
+      <div class="page-head"><div><p class="eyebrow">Finance</p><h2>Invoicing & Xero</h2><p>Create invoices from completed shifts and prepare them for Xero.</p></div><button type="button" id="create-invoice" class="primary admin-only">+ Invoice</button></div>
       <article class="panel xero-card">
         <div><h3>Xero connection</h3><p id="xero-status">Not connected. Add your Xero app credentials in config.js.</p></div>
         <button id="connect-xero" class="secondary admin-only">Configure Xero</button>
@@ -237,6 +237,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
-<script src="app.js?v=20260723-3"></script>
+<script src="app.js?v=20260723-4"></script>
 </body>
 </html>
