@@ -54,6 +54,10 @@
       <div class="welcome"><div><p class="eyebrow" id="greeting">Good afternoon</p><h2 id="welcome-name">Welcome back, Candice</h2><p>Every small act of care makes a difference.</p></div><span class="pill good">● System ready</span></div>
       <div id="stats" class="stats"></div>
       <div class="grid two">
+        <article class="panel"><div class="panel-head"><div><p class="eyebrow">Medication safety</p><h3>Medication due</h3></div><button class="link" data-view="medications">Open MAR</button></div><div id="dashboard-medications" class="stack"></div></article>
+        <article class="panel"><div class="panel-head"><div><p class="eyebrow">Daily documentation</p><h3>Recent progress notes</h3></div><button class="link" data-view="notes">Add note</button></div><div id="dashboard-notes" class="stack"></div></article>
+      </div>
+      <div class="grid two dashboard-secondary">
         <article class="panel"><div class="panel-head"><div><p class="eyebrow">Roster</p><h3>Shifts needing attention</h3></div><button class="link" data-view="roster">Open roster</button></div><div id="dashboard-shifts" class="stack"></div></article>
         <article class="panel"><div class="panel-head"><div><p class="eyebrow">Audit readiness</p><h3>Compliance alerts</h3></div><button class="link" data-view="compliance">Open centre</button></div><div id="dashboard-compliance" class="stack"></div></article>
       </div>
@@ -112,6 +116,10 @@
         </div>
         <button id="new-portal-item" class="primary">+ New message or request</button>
       </div>
+      <div class="segmented">
+        <button class="active" data-portal-filter="active">Active</button>
+        <button data-portal-filter="archived">Archived</button>
+      </div>
 
       <div class="grid two portal-layout">
         <article class="panel">
@@ -137,7 +145,9 @@
     <section id="medications-view" class="view">
       <div class="page-head"><div><p class="eyebrow">Medication safety</p><h2>Medication & MAR</h2><p>Medication administration is confirmed with the staff member’s six-digit medication PIN.</p></div><button id="add-med" class="primary admin-only">+ Medication</button></div>
       <div class="segmented">
-        <button class="active" data-med-tab="round">Current round</button>
+        <button class="active" data-med-tab="Regular">Regular</button>
+        <button data-med-tab="PRN">PRN</button>
+        <button data-med-tab="Schedule 8">Schedule 8</button>
         <button data-med-tab="profiles">Profiles</button>
         <button data-med-tab="history">MAR history</button>
       </div>
@@ -191,10 +201,37 @@
 
 <dialog id="pin-dialog">
   <form id="pin-form">
-    <div class="dialog-head"><div><p class="eyebrow">Medication confirmation</p><h3>Enter your 6-digit medication PIN</h3></div><button type="button" id="close-pin" class="icon-btn dark">×</button></div>
+    <div class="dialog-head"><div><p class="eyebrow">Digital medication signature</p><h3>Sign MAR entry</h3></div><button type="button" id="close-pin" class="icon-btn dark">×</button></div>
     <p id="pin-summary"></p>
-    <label>Medication PIN<input id="med-pin" type="password" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" required></label>
-    <div class="dialog-actions"><button type="button" id="cancel-pin" class="secondary">Cancel</button><button class="primary">Confirm administration</button></div>
+    <label>Outcome
+      <select id="mar-outcome" required>
+        <option value="Administered">Administered</option>
+        <option value="Withheld">Withheld</option>
+        <option value="Refused">Refused</option>
+        <option value="Missed">Missed</option>
+      </select>
+    </label>
+    <label id="mar-reason-label">Reason or notes
+      <select id="mar-reason">
+        <option value="">Select a reason</option>
+        <option>Participant refused</option>
+        <option>Participant asleep</option>
+        <option>Participant away from residence</option>
+        <option>Medication unavailable</option>
+        <option>Medication ceased or on hold</option>
+        <option>Clinical direction to withhold</option>
+        <option>Vomiting or unable to tolerate</option>
+        <option>Unsafe to administer</option>
+        <option>Administration time missed</option>
+        <option>Other — see additional notes</option>
+      </select>
+    </label>
+    <label>Additional notes<textarea id="mar-notes" placeholder="Add any relevant details"></textarea></label>
+    <label>Your personal 6-digit medication PIN
+      <input id="med-pin" type="password" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="off" required>
+    </label>
+    <small>This PIN is your digital signature and must not be shared.</small>
+    <div class="dialog-actions"><button type="button" id="cancel-pin" class="secondary">Cancel</button><button class="primary">Sign and save MAR</button></div>
   </form>
 </dialog>
 
