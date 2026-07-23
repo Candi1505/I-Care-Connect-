@@ -55,6 +55,8 @@
     <button data-view="workforce">⏱️ Workforce & timesheets</button>
     <button data-view="outcomes">🎯 Goals & funding</button>
     <button data-view="governance">🔐 Governance <span id="notification-count" class="badge amber">0</span></button>
+    <button class="admin-only" data-view="staff-management">👩‍⚕️ Staff management</button>
+    <button class="staff-only" data-view="my-account">🔑 My account & PIN</button>
     <button data-view="finance">💳 Invoicing & Xero</button>
     <button id="backup">⬇️ Export backup to Drive</button>
     <button id="import-backup">⬆️ Import backup from Drive</button>
@@ -223,7 +225,36 @@
       <article class="panel admin-only"><div class="panel-head"><div><h3>Immutable audit activity</h3><p>Database changes are recorded automatically.</p></div></div><div id="audit-list" class="stack"></div></article>
     </section>
 
-  </main>
+  
+    <section id="staff-management-view" class="view">
+      <div class="page-head"><div><p class="eyebrow">Supervisor administration</p><h2>Staff management</h2><p>Invite workers, assign access and manage active accounts without opening Supabase.</p></div><button id="invite-worker" class="primary admin-only">+ Invite worker</button></div>
+      <article class="notice staff-security-note"><strong>Private and secure</strong><br>Workers set their own password and six-digit signing PIN. Supervisors cannot view either.</article>
+      <div id="staff-directory" class="stack"></div>
+    </section>
+
+    <section id="my-account-view" class="view">
+      <div class="page-head"><div><p class="eyebrow">My security</p><h2>My account & PIN</h2><p>Only you can create or change your password and six-digit signing PIN.</p></div></div>
+      <div class="grid two account-security-grid">
+        <article class="panel">
+          <div class="panel-head"><div><h3>Signing PIN</h3><p>Used to sign MAR entries and progress notes.</p></div></div>
+          <form id="set-pin-form">
+            <label>New six-digit PIN<input id="new-signing-pin" type="password" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="new-password" required></label>
+            <label>Confirm PIN<input id="confirm-signing-pin" type="password" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="new-password" required></label>
+            <button class="primary">Save my PIN</button>
+          </form>
+        </article>
+        <article class="panel">
+          <div class="panel-head"><div><h3>Password</h3><p>Use at least ten characters and keep it private.</p></div></div>
+          <form id="change-password-form">
+            <label>New password<input id="new-account-password" type="password" minlength="10" autocomplete="new-password" required></label>
+            <label>Confirm password<input id="confirm-account-password" type="password" minlength="10" autocomplete="new-password" required></label>
+            <button class="primary">Change my password</button>
+          </form>
+        </article>
+      </div>
+    </section>
+
+</main>
 
   <nav class="bottom-nav">
     <button class="active" data-view="dashboard">⌂<span>Home</span></button>
@@ -282,6 +313,7 @@
 <script src="config.js"></script>
 <script src="app.js?v=20260723-20"></script>
 <script src="operations.js?v=20260723-3"></script>
+<script src="staff-management.js?v=20260723-1"></script>
 <script>
 if("serviceWorker" in navigator){
   window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));
