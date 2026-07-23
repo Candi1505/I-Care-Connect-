@@ -98,6 +98,7 @@ async function enterApp(s){
   await loadXeroStatus();
   if(new URL(location.href).searchParams.get("xero")==="connected"){toast("Xero organisation connected");history.replaceState({},"",location.pathname)}
  }
+ window.dispatchEvent(new CustomEvent("florence:ready"));
 }
 async function refreshAll(){
  const org=profile.organisation_id;
@@ -452,5 +453,9 @@ $("#backup-file").onchange=async e=>{try{await importBackup(e.target.files?.[0])
 $("#connect-xero").onclick=async()=>{try{const {data,error}=await db.functions.invoke("xero-connect",{body:{action:"start"}});if(error||!data?.authorization_url)throw new Error("Xero setup is not deployed yet");location.href=data.authorization_url}catch(err){toast(err.message)}};
 $("#disconnect-xero").onclick=async()=>{try{if(!confirm("Disconnect Florence from Xero?"))return;const {data,error}=await db.functions.invoke("xero-connect",{body:{action:"disconnect"}});if(error||data?.error)throw new Error(data?.error||"Could not disconnect Xero");await loadXeroStatus();toast("Xero disconnected")}catch(err){toast(err.message)}};
 $("#mar-outcome").onchange=()=>{$("#mar-reason-label").classList.toggle("required-reason",$("#mar-outcome").value!=="Administered")};
+window.FlorenceBridge={
+ get db(){return db},get profile(){return profile},get organisation(){return organisation},get state(){return state},
+ toast,form,field,showView,openDialog,closeDialog,esc,fmt,date,badge,empty,isSupervisor,isStaffUser,refreshAll
+};
 boot();
 })();
