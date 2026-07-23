@@ -7,6 +7,7 @@ const date=v=>v?new Intl.DateTimeFormat("en-AU",{day:"numeric",month:"short",yea
 const id=()=>crypto.randomUUID?.()||Date.now()+"-"+Math.random().toString(16).slice(2);
 let db=null, session=null, profile=null, organisation=null;
 let rosterTab="published",medTab="round",complianceTab="all",timelineFilter="all",portalFilter="active",pending=null,pendingMed=null,activePortalThread=null,marRoundParticipant="",marRoundDate="",marRoundName="Bedtime",marRoundSelections={};
+let xeroConnection={checked:false,connected:false,tenant_name:null};
 let state={staff:[],participants:[],shifts:[],medications:[],mar:[],notes:[],compliance:[],invoices:[],timeline:[],portalThreads:[],portalMessages:[]};
 
 function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),2500)}
@@ -93,6 +94,10 @@ async function enterApp(s){
  }
  const h=new Date().getHours();$("#greeting").textContent=h<12?"Good morning":h<17?"Good afternoon":"Good evening";
  await refreshAll();
+ if(isSupervisor()){
+  await loadXeroStatus();
+  if(new URL(location.href).searchParams.get("xero")==="connected"){toast("Xero organisation connected");history.replaceState({},"",location.pathname)}
+ }
 }
 async function refreshAll(){
  const org=profile.organisation_id;
@@ -298,9 +303,20 @@ async function importBackup(file){
  }
  await refreshAll();toast("Florence backup imported");
 }
+async function loadXeroStatus(){
+ try{
+  const {data,error}=await db.functions.invoke("xero-connect",{body:{action:"status"}});
+  if(error)throw error;
+  xeroConnection={checked:true,connected:!!data?.connected,tenant_name:data?.tenant_name||null};
+ }catch(_error){xeroConnection={checked:true,connected:false,tenant_name:null,setupRequired:true}}
+ renderFinance();
+}
 function renderFinance(){
- $("#xero-status").textContent=C.xero?.clientId?"Xero client configured; secure backend token exchange still required.":"Xero is not connected.";
- $("#invoice-list").innerHTML=state.invoices.map(i=>`<article class="record"><div class="record-top"><div><h3>${esc(i.invoice_number)}</h3><p>${esc(i.participant?.full_name)} · ${esc(i.description)}</p></div>${badge(i.status)}</div><p>${i.hours} hours × $${Number(i.rate).toFixed(2)} = <strong>$${Number(i.total).toFixed(2)}</strong></p></article>`).join("")||empty("No invoices.");
+ const status=$("#xero-status"),connect=$("#connect-xero"),disconnect=$("#disconnect-xero");
+ if(status)status.textContent=xeroConnection.connected?`Connected to ${xeroConnection.tenant_name||"Xero"}.`:xeroConnection.setupRequired?"Xero is prepared. VJ’s developer credentials and Supabase function deployment are required.":"Xero is not connected.";
+ if(connect){connect.textContent=xeroConnection.connected?"Reconnect Xero":"Connect Xero";connect.disabled=!xeroConnection.checked}
+ if(disconnect)disconnect.classList.toggle("hidden",!xeroConnection.connected);
+ $("#invoice-list").innerHTML=state.invoices.map(i=>`<article class="record"><div class="record-top"><div><h3>${esc(i.invoice_number)}</h3><p>${esc(i.participant?.full_name)} · ${esc(i.description)}</p></div>${badge(i.status)}</div><p>${i.hours} hours × ${Number(i.rate).toFixed(2)} = <strong>${Number(i.total).toFixed(2)}</strong></p><div class="record-meta">${i.xero_invoice_id?badge("Synced to Xero"):xeroConnection.connected?`<button class="link" data-xero-invoice="${i.id}">Send draft to Xero</button>`:""}</div></article>`).join("")||empty("No invoices.");
 }
 
 $("#login-form").onsubmit=async e=>{e.preventDefault();try{requireConfig();const {data,error}=await db.auth.signInWithPassword({email:$("#email").value.trim(),password:$("#password").value});if(error)throw error;await enterApp(data.session)}catch(err){toast(err.message)}};
@@ -396,6 +412,7 @@ document.addEventListener("click",async e=>{
    }
    marRoundSelections={};await refreshAll();return toast("Medication round signed and saved");
   }
+  b=e.target.closest("[data-xero-invoice]");if(b){if(!confirm("Send this invoice to Xero as a draft?"))return;const {data,error}=await db.functions.invoke("xero-connect",{body:{action:"sync-invoice",invoice_id:b.dataset.xeroInvoice}});if(error||data?.error)throw new Error(data?.error||"Xero invoice sync failed");await refreshAll();return toast("Invoice sent to Xero as a draft")}
   b=e.target.closest("[data-thread]");if(b){activePortalThread=b.dataset.thread;renderPortal();return}
   b=e.target.closest("[data-archive-thread]");if(b){if(!isStaffUser())throw new Error("This action is available to staff only");const archive=b.dataset.archive==="true";const {error}=await db.from("portal_threads").update({status:archive?"Closed":"Open",updated_at:new Date().toISOString()}).eq("id",b.dataset.archiveThread);if(error)throw error;activePortalThread=null;await refreshAll();return toast(archive?"Conversation archived":"Conversation restored")}
   b=e.target.closest("[data-mar-sign]");if(b){if(!isStaffUser())throw new Error("This action is available to staff only");pendingMed=state.medications.find(x=>x.id===b.dataset.marSign);if(!pendingMed)throw new Error("Medication profile not found");$("#mar-outcome").value=b.dataset.outcome||"Administered";$("#mar-reason").value="";$("#mar-notes").value="";$("#mar-reason-label").classList.toggle("required-reason",$("#mar-outcome").value!=="Administered");$("#pin-summary").textContent=`${pendingMed.medication_name} · ${pendingMed.dose} for ${pendingMed.participant?.full_name}`;openDialog($("#pin-dialog"));return}
@@ -432,7 +449,8 @@ $("#close-pin").onclick=$("#cancel-pin").onclick=()=>{closeDialog($("#pin-dialog
 $("#backup").onclick=async()=>{try{await exportBackup()}catch(err){if(err?.name!=="AbortError")toast(err.message)}};
 $("#import-backup").onclick=()=>$("#backup-file").click();
 $("#backup-file").onchange=async e=>{try{await importBackup(e.target.files?.[0])}catch(err){toast(err.message)}finally{e.target.value=""}};
-$("#connect-xero").onclick=()=>toast("Xero secure backend connection is the next integration step");
+$("#connect-xero").onclick=async()=>{try{const {data,error}=await db.functions.invoke("xero-connect",{body:{action:"start"}});if(error||!data?.authorization_url)throw new Error("Xero setup is not deployed yet");location.href=data.authorization_url}catch(err){toast(err.message)}};
+$("#disconnect-xero").onclick=async()=>{try{if(!confirm("Disconnect Florence from Xero?"))return;const {data,error}=await db.functions.invoke("xero-connect",{body:{action:"disconnect"}});if(error||data?.error)throw new Error(data?.error||"Could not disconnect Xero");await loadXeroStatus();toast("Xero disconnected")}catch(err){toast(err.message)}};
 $("#mar-outcome").onchange=()=>{$("#mar-reason-label").classList.toggle("required-reason",$("#mar-outcome").value!=="Administered")};
 boot();
 })();
