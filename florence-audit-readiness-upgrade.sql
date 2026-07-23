@@ -272,3 +272,8 @@ drop trigger if exists leave_requests_notify on public.leave_requests;
 create trigger leave_requests_notify after insert on public.leave_requests for each row execute function public.notify_supervisors_of_operation();
 drop trigger if exists timesheets_notify on public.timesheets;
 create trigger timesheets_notify after insert or update on public.timesheets for each row execute function public.notify_supervisors_of_operation();
+
+drop policy if exists controlled_drug_register_supervisor_all on public.controlled_drug_register;
+create policy controlled_drug_register_supervisor_all on public.controlled_drug_register for all
+using(public.is_supervisor() and organisation_id=public.current_org_id())
+with check(public.is_supervisor() and organisation_id=public.current_org_id());
