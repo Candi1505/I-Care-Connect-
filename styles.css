@@ -93,3 +93,13 @@ dialog{width:min(94vw,620px);border:0;border-radius:24px;padding:0;box-shadow:0 
   grid-column:1/-1;
  }
 }
+
+/* Audit-readiness modules */
+.mfa-qr{display:block;width:min(240px,80%);margin:18px auto;border-radius:18px;background:#fff;padding:12px}
+#notification-count{margin-left:auto;padding:3px 8px;font-size:.72rem}
+.panel>.panel-head .actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+@media(max-width:560px){
+ #safety-view .panel-head,#workforce-view .panel-head,#outcomes-view .panel-head,#governance-view .panel-head{align-items:stretch;gap:14px}
+ #safety-view .panel-head>.primary,#outcomes-view .panel-head>.primary,#governance-view .panel-head>.primary{width:100%}
+ #workforce-view .panel-head .actions{display:grid;grid-template-columns:1fr 1fr;width:100%}
+}
