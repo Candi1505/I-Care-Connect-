@@ -194,3 +194,17 @@ with check(organisation_id=public.current_org_id() and staff_id=auth.uid() and s
 drop policy if exists participant_goals_staff_insert on public.participant_goals;
 create policy participant_goals_staff_insert on public.participant_goals for insert
 with check(public.current_role() in('staff','supervisor') and organisation_id=public.current_org_id() and created_by=auth.uid());
+
+-- Open-shift broadcasting and safe claiming
+alter table public.shifts alter column assigned_staff_id drop not null;
+drop policy if exists shifts_select on public.shifts;
+create policy shifts_select on public.shifts for select using(
+ organisation_id=public.current_org_id() and (
+  public.is_supervisor() or assigned_staff_id=auth.uid() or participant_id=public.current_participant_id()
+  or (public.current_role() in('staff','supervisor') and assigned_staff_id is null and status='Published')
+ )
+);
+drop policy if exists shifts_staff_claim on public.shifts;
+create policy shifts_staff_claim on public.shifts for update
+using(organisation_id=public.current_org_id() and assigned_staff_id is null and status='Published' and public.current_role() in('staff','supervisor'))
+with check(organisation_id=public.current_org_id() and assigned_staff_id=auth.uid() and status='Published');
