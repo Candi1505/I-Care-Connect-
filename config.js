@@ -1,13 +1,14 @@
 window.FLORENCE_CONFIG = {
   organisationName: "I-Care Connect",
-  demoAppPin: "123456",
-  demoMedicationPin: "654321",
 
-  // Add your Supabase project values when ready.
+  // Paste these two PUBLIC browser values from:
+  // Supabase → Project Settings → API
   supabaseUrl: "",
   supabaseAnonKey: "",
 
-  // Xero requires a registered OAuth 2.0 app and a secure backend callback.
+  storageBucket: "florence-private",
+  maxDocumentBytes: 8 * 1024 * 1024,
+
   xero: {
     clientId: "",
     redirectUri: "",
@@ -24,6 +25,5 @@ window.FLORENCE_CONFIG = {
     "image/png",
     "image/heic",
     "text/plain"
-  ],
-  maxDocumentBytes: 8 * 1024 * 1024
+  ]
 };

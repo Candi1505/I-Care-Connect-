@@ -18,16 +18,11 @@
     <div class="brand-mark">🌿</div>
     <h1>Florence</h1>
     <p>Supporting those who support others.</p>
-    <label>Email<input id="email" type="email" value="candice@icareconnect.com.au" required></label>
-    <label>App PIN<input id="app-pin" type="password" inputmode="numeric" maxlength="6" value="123456" required></label>
-    <label>Role
-      <select id="role">
-        <option value="supervisor">Supervisor / Admin</option>
-        <option value="staff">Support Worker</option>
-      </select>
-    </label>
-    <button class="primary wide">Continue</button>
-    <small>Demo PIN: 123456</small>
+    <label>Email<input id="email" type="email" autocomplete="email" required></label>
+    <label>Password<input id="password" type="password" autocomplete="current-password" required></label>
+    <button class="primary wide">Sign in securely</button>
+    <button id="forgot-password" type="button" class="link">Send password reset email</button>
+    <small id="connection-message">Connecting to I-Care Connect…</small>
   </form>
 </section>
 
@@ -39,9 +34,11 @@
   </header>
 
   <aside id="drawer" class="drawer">
-    <div class="drawer-head"><div class="brand-mark small">🌿</div><div><strong>Florence</strong><span>I-Care Connect</span></div></div>
+    <div class="drawer-head"><div class="brand-mark small">🌿</div><div><strong>Florence</strong><span id="signed-in-name">I-Care Connect</span></div></div>
     <button data-view="dashboard">🏠 Dashboard</button>
     <button data-view="participants">👥 Participants</button>
+    <button data-view="timeline">🕒 Client timeline</button>
+    <button data-view="portal">💬 Family & client portal</button>
     <button data-view="roster">📅 Roster</button>
     <button data-view="medications">💊 Medication & MAR</button>
     <button data-view="notes">📝 Progress notes</button>
@@ -64,6 +61,8 @@
         <button data-view="participants">👤<strong>Participant profiles</strong><small>Care details and care plans</small></button>
         <button data-view="roster">📅<strong>Publish roster</strong><small>Assign and notify staff</small></button>
         <button data-view="notes">📝<strong>Progress note</strong><small>Fast shift documentation</small></button>
+        <button data-view="timeline">🕒<strong>Client timeline</strong><small>Falls, health, behaviour and medication events</small></button>
+        <button data-view="portal">💬<strong>Family portal</strong><small>Messages, requests and updates</small></button>
         <button data-view="compliance">🗂️<strong>Audit evidence</strong><small>Documents and expiry tracking</small></button>
       </div>
     </section>
@@ -81,6 +80,58 @@
         <button data-roster-tab="mine">My shifts</button>
       </div>
       <div id="roster-list" class="stack"></div>
+    </section>
+
+
+    <section id="timeline-view" class="view">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Client history</p>
+          <h2>Client timeline</h2>
+          <p>A flexible chronological record of significant events, observations and follow-up.</p>
+        </div>
+        <button id="add-timeline-event" class="primary">+ Timeline event</button>
+      </div>
+      <div class="segmented">
+        <button class="active" data-timeline-filter="all">All</button>
+        <button data-timeline-filter="Fall">Falls</button>
+        <button data-timeline-filter="Behaviour">Behaviour</button>
+        <button data-timeline-filter="Medication">Medication</button>
+        <button data-timeline-filter="Health">Health</button>
+        <button data-timeline-filter="Other">Other</button>
+      </div>
+      <div id="timeline-list" class="timeline"></div>
+    </section>
+
+    <section id="portal-view" class="view">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Connected care</p>
+          <h2>Family & client portal</h2>
+          <p>Secure communication, requests and information updates linked to each participant.</p>
+        </div>
+        <button id="new-portal-item" class="primary">+ New message or request</button>
+      </div>
+
+      <div class="grid two portal-layout">
+        <article class="panel">
+          <div class="panel-head">
+            <div><p class="eyebrow">Conversations</p><h3>Messages and requests</h3></div>
+          </div>
+          <div id="portal-thread-list" class="stack"></div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <div><p class="eyebrow">Conversation</p><h3 id="portal-thread-title">Select a conversation</h3></div>
+          </div>
+          <div id="portal-messages" class="portal-messages"></div>
+          <form id="portal-reply-form" class="portal-reply hidden">
+            <textarea id="portal-reply-text" placeholder="Write a reply…" required></textarea>
+            <button class="primary">Send reply</button>
+          </form>
+        </article>
+      </div>
     </section>
 
     <section id="medications-view" class="view">
@@ -126,7 +177,7 @@
     <button data-view="participants">♙<span>People</span></button>
     <button data-view="roster">▣<span>Roster</span></button>
     <button data-view="medications">✚<span>MAR</span></button>
-    <button data-view="compliance">☑<span>Audit</span></button>
+    <button data-view="portal">💬<span>Portal</span></button>
   </nav>
 </div>
 
@@ -147,6 +198,7 @@
   </form>
 </dialog>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>
 </body>
