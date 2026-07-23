@@ -95,12 +95,12 @@ async function enterApp(s){
  $("#role-label").textContent=roleLabels[profile.role]||"Florence workspace";
  $("#login").classList.add("hidden");$("#app").classList.remove("hidden");
  $$(".admin-only").forEach(e=>e.classList.toggle("hidden",!isSupervisor()));
- ["#add-note","#add-timeline-event"].forEach(s=>{const e=$(s);if(e)e.classList.toggle("hidden",!isStaffUser())});
+ ["#add-note","#add-timeline-event","#add-goal","#add-incident","#add-medication-error","#add-controlled-drug","#clock-in","#clock-out","#add-availability","#add-leave","#add-travel"].forEach(s=>{const e=$(s);if(e)e.classList.toggle("hidden",!isStaffUser())});
  $$(`[data-view="finance"]`).forEach(e=>e.classList.toggle("hidden",!isSupervisor()));
  if(isPortalUser()){
    $$(`[data-view="notes"]`).forEach(e=>e.classList.add("hidden"));
-   $$(`[data-view="compliance"]`).forEach(e=>e.classList.add("hidden"));
-   $("#backup")?.classList.add("hidden");
+   $('[data-view="compliance"],[data-view="safety"],[data-view="workforce"],[data-view="governance"],[data-view="finance"]').forEach(e=>e.classList.add("hidden"));
+   $("#backup")?.classList.add("hidden");$("#import-backup")?.classList.add("hidden");
  }
  const h=new Date().getHours();$("#greeting").textContent=h<12?"Good morning":h<17?"Good afternoon":"Good evening";
  await refreshAll();
