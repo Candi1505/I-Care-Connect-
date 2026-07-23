@@ -26,7 +26,39 @@ function requireConfig(){
 function showView(v){$$(".view").forEach(e=>e.classList.toggle("active",e.id===v+"-view"));$$("[data-view]").forEach(e=>e.classList.toggle("active",e.dataset.view===v));closeDrawer();scrollTo({top:0,behavior:"smooth"})}
 function openDrawer(){$("#drawer").classList.add("open");$("#scrim").classList.remove("hidden")}
 function closeDrawer(){$("#drawer").classList.remove("open");$("#scrim").classList.add("hidden")}
-function form(title,fields,handler,values={}){$("#dialog-title").textContent=title;$("#dialog-fields").innerHTML=fields.join("");Object.entries(values).forEach(([k,v])=>{const e=$(`[name="${k}"]`);if(e)e.value=v??""});pending=handler;$("#dialog").showModal()}
+function openDialog(dialog){
+ if(!dialog)throw new Error("Florence could not find the form window.");
+ if(dialog.open)return;
+ try{
+  if(typeof dialog.showModal==="function")dialog.showModal();
+  else dialog.setAttribute("open","");
+ }catch(_error){
+  dialog.setAttribute("open","");
+ }
+ dialog.classList.add("dialog-open");
+}
+function closeDialog(dialog){
+ if(!dialog)return;
+ try{
+  if(typeof dialog.close==="function"&&dialog.open)dialog.close();
+  else dialog.removeAttribute("open");
+ }catch(_error){
+  dialog.removeAttribute("open");
+ }
+ dialog.classList.remove("dialog-open");
+}
+function form(title,fields,handler,values={}){
+ try{
+  $("#dialog-title").textContent=title;
+  $("#dialog-fields").innerHTML=fields.join("");
+  Object.entries(values).forEach(([k,v])=>{const e=$(`[name="${k}"]`);if(e)e.value=v??""});
+  pending=handler;
+  openDialog($("#dialog"));
+ }catch(error){
+  pending=null;
+  toast(error.message||"Florence could not open this form.");
+ }
+}
 const field=(name,label,type="text",options=[])=>type==="textarea"?`<label>${label}<textarea name="${name}" required></textarea></label>`:type==="select"?`<label>${label}<select name="${name}" required>${options.map(o=>`<option value="${esc(typeof o==="string"?o:o.value)}">${esc(typeof o==="string"?o:o.label)}</option>`).join("")}</select></label>`:type==="file"?`<label>${label}<input name="${name}" type="file" required></label>`:`<label>${label}<input name="${name}" type="${type}" required></label>`;
 
 async function boot(){
@@ -246,10 +278,10 @@ document.addEventListener("click",async e=>{
  try{
   let b=e.target.closest("[data-thread]");if(b){activePortalThread=b.dataset.thread;renderPortal();return}
   b=e.target.closest("[data-archive-thread]");if(b){if(!isStaffUser())throw new Error("This action is available to staff only");const archive=b.dataset.archive==="true";const {error}=await db.from("portal_threads").update({status:archive?"Closed":"Open",updated_at:new Date().toISOString()}).eq("id",b.dataset.archiveThread);if(error)throw error;activePortalThread=null;await refreshAll();return toast(archive?"Conversation archived":"Conversation restored")}
-  b=e.target.closest("[data-mar-sign]");if(b){if(!isStaffUser())throw new Error("This action is available to staff only");pendingMed=state.medications.find(x=>x.id===b.dataset.marSign);if(!pendingMed)throw new Error("Medication profile not found");$("#mar-outcome").value=b.dataset.outcome||"Administered";$("#mar-reason").value="";$("#mar-notes").value="";$("#mar-reason-label").classList.toggle("required-reason",$("#mar-outcome").value!=="Administered");$("#pin-summary").textContent=`${pendingMed.medication_name} · ${pendingMed.dose} for ${pendingMed.participant?.full_name}`;$("#pin-dialog").showModal();return}
+  b=e.target.closest("[data-mar-sign]");if(b){if(!isStaffUser())throw new Error("This action is available to staff only");pendingMed=state.medications.find(x=>x.id===b.dataset.marSign);if(!pendingMed)throw new Error("Medication profile not found");$("#mar-outcome").value=b.dataset.outcome||"Administered";$("#mar-reason").value="";$("#mar-notes").value="";$("#mar-reason-label").classList.toggle("required-reason",$("#mar-outcome").value!=="Administered");$("#pin-summary").textContent=`${pendingMed.medication_name} · ${pendingMed.dose} for ${pendingMed.participant?.full_name}`;openDialog($("#pin-dialog"));return}
   b=e.target.closest("[data-publish]");if(b){const {error}=await db.from("shifts").update({status:"Published",response:"Pending",published_at:new Date().toISOString()}).eq("id",b.dataset.publish);if(error)throw error;await refreshAll();return toast("Shift published")}
   b=e.target.closest("[data-shift-response]");if(b){const {error}=await db.from("shifts").update({response:b.dataset.response,responded_at:new Date().toISOString()}).eq("id",b.dataset.shiftResponse).eq("assigned_staff_id",profile.id);if(error)throw error;await refreshAll();return toast("Shift "+b.dataset.response.toLowerCase())}
-  b=e.target.closest("[data-administer]");if(b){pendingMed=state.medications.find(x=>x.id===b.dataset.administer);$("#pin-summary").textContent=`${pendingMed.medication_name} · ${pendingMed.dose} for ${pendingMed.participant?.full_name}`;$("#pin-dialog").showModal();return}
+  b=e.target.closest("[data-administer]");if(b){pendingMed=state.medications.find(x=>x.id===b.dataset.administer);$("#pin-summary").textContent=`${pendingMed.medication_name} · ${pendingMed.dose} for ${pendingMed.participant?.full_name}`;openDialog($("#pin-dialog"));return}
   b=e.target.closest("[data-mar-other]");if(b){if(!isStaffUser())throw new Error("This action is available to staff only");const m=state.medications.find(x=>x.id===b.dataset.marOther);const {error}=await db.from("mar_entries").insert({organisation_id:profile.organisation_id,medication_id:m.id,participant_id:m.participant_id,staff_id:profile.id,status:b.dataset.status,pin_verified:false});if(error)throw error;await refreshAll();return toast("MAR recorded")}
   b=e.target.closest("[data-open-doc]");if(b){const d=state.compliance.find(x=>x.id===b.dataset.openDoc);const {data,error}=await db.storage.from(C.storageBucket).createSignedUrl(d.storage_path,60);if(error)throw error;window.open(data.signedUrl,"_blank");return}
   b=e.target.closest("[data-careplan]");if(b){const p=state.participants.find(x=>x.id===b.dataset.careplan);form("Upload PDF care plan",[field("title","Document title"),field("review_date","Review date","date"),field("file","PDF care plan","file")],async(v,fd)=>uploadDocument(fd.get("file"),{scope:"Participant",subject_name:p.full_name,subject_id:p.id,category:"Care plan",title:v.title,review_date:v.review_date}));return}
@@ -263,8 +295,8 @@ async function uploadDocument(file,meta){
  await refreshAll();toast("Document uploaded securely")
 }
 $("#upload-compliance").onclick=()=>form("Upload compliance evidence",[field("scope","Document area","select",["Staff","Participant","Organisation"]),field("subject_name","Staff member, participant or organisation"),field("category","Document type","select",["Service agreement","Care plan","NDIS plan","Consent","Risk assessment","Medication chart","Allied health report","Police check","NDIS Worker Screening","Blue Card","First Aid","CPR","Medication competency","Driver licence","Vehicle registration","Vehicle insurance","Policy and procedure","Incident register","Complaints register","Continuous improvement","Internal audit","Staff meeting minutes","Emergency management","Other"]),field("title","Document title"),field("review_date","Expiry or review date","date"),field("file","Choose document or photo","file")],async(v,fd)=>uploadDocument(fd.get("file"),v));
-$("#dynamic-form").onsubmit=async e=>{e.preventDefault();if(!pending)return;const fd=new FormData(e.currentTarget),v=Object.fromEntries(fd.entries());try{await pending(v,fd);$("#dialog").close();pending=null;e.currentTarget.reset()}catch(err){toast(err.message)}};
-$("#close-dialog").onclick=$("#cancel-dialog").onclick=()=>{$("#dialog").close();pending=null};
+$("#dynamic-form").onsubmit=async e=>{e.preventDefault();if(!pending)return;const fd=new FormData(e.currentTarget),v=Object.fromEntries(fd.entries());try{await pending(v,fd);closeDialog($("#dialog"));pending=null;e.currentTarget.reset()}catch(err){toast(err.message)}};
+$("#close-dialog").onclick=$("#cancel-dialog").onclick=()=>{closeDialog($("#dialog"));pending=null};
 $("#pin-form").onsubmit=async e=>{e.preventDefault();try{
  const pin=$("#med-pin").value;
  const outcome=$("#mar-outcome").value;
@@ -274,9 +306,9 @@ $("#pin-form").onsubmit=async e=>{e.preventDefault();try{
  const notes=[reason,extra].filter(Boolean).join(" — ")||null;
  const {error}=await db.rpc("record_medication_administration",{p_medication_id:pendingMed.id,p_pin:pin,p_status:outcome,p_notes:notes});
  if(error)throw error;
- $("#pin-dialog").close();$("#pin-form").reset();pendingMed=null;await refreshAll();toast(`${outcome} MAR entry digitally signed`);
+ closeDialog($("#pin-dialog"));$("#pin-form").reset();pendingMed=null;await refreshAll();toast(`${outcome} MAR entry digitally signed`);
 }catch(err){toast(err.message)}};
-$("#close-pin").onclick=$("#cancel-pin").onclick=()=>{$("#pin-dialog").close();pendingMed=null};
+$("#close-pin").onclick=$("#cancel-pin").onclick=()=>{closeDialog($("#pin-dialog"));pendingMed=null};
 $("#backup").onclick=()=>toast("Live Supabase backups are managed from the database project");
 $("#connect-xero").onclick=()=>toast("Xero secure backend connection is the next integration step");
 $("#mar-outcome").onchange=()=>{$("#mar-reason-label").classList.toggle("required-reason",$("#mar-outcome").value!=="Administered")};
