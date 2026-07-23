@@ -6,7 +6,7 @@ const fmt=v=>new Intl.DateTimeFormat("en-AU",{day:"numeric",month:"short",year:"
 const date=v=>v?new Intl.DateTimeFormat("en-AU",{day:"numeric",month:"short",year:"numeric"}).format(new Date(v)):"";
 const id=()=>crypto.randomUUID?.()||Date.now()+"-"+Math.random().toString(16).slice(2);
 let db=null, session=null, profile=null, organisation=null;
-let rosterTab="published",medTab="round",complianceTab="all",timelineFilter="all",portalFilter="active",pending=null,pendingMed=null,activePortalThread=null,marRoundParticipant="",marRoundDate="",marRoundName="Bedtime",marRoundSelections={};
+let rosterTab="published",rosterWeekOffset=0,medTab="round",complianceTab="all",timelineFilter="all",portalFilter="active",pending=null,pendingMed=null,activePortalThread=null,marRoundParticipant="",marRoundDate="",marRoundName="Bedtime",marRoundSelections={};
 let xeroConnection={checked:false,connected:false,tenant_name:null};
 let state={staff:[],participants:[],shifts:[],medications:[],mar:[],notes:[],compliance:[],invoices:[],timeline:[],portalThreads:[],portalMessages:[]};
 
@@ -193,11 +193,56 @@ function renderDashboard(){
 function renderParticipants(){
  $("#participant-list").innerHTML=state.participants.map(p=>`<article class="person"><div class="avatar">${initials(p.full_name)}</div><div><div class="record-top"><div><h3>${esc(p.preferred_name||p.full_name)}</h3><p>${esc(p.full_name)} · ${esc(p.address||"")}</p></div>${badge(p.status)}</div><p><strong>NDIS:</strong> ${esc(p.ndis_number||"Not entered")}</p><p><strong>Diagnoses:</strong> ${esc(p.diagnoses||"")}</p><p><strong>Communication:</strong> ${esc(p.communication_needs||"")}</p><p><strong>Goals:</strong> ${esc(p.goals||"")}</p><div class="record-meta">${isSupervisor()?`<button class="link" data-careplan="${p.id}">Upload PDF care plan</button>`:""}</div></div></article>`).join("")||empty("No participants.");
 }
+function rosterWeekStart(){
+ const base=new Date(brisbaneYmd()+"T00:00:00Z"),mondayOffset=(base.getUTCDay()+6)%7;
+ base.setUTCDate(base.getUTCDate()-mondayOffset+(rosterWeekOffset*7));
+ return base;
+}
+function rosterDayKey(date){return date.toISOString().slice(0,10)}
+function rosterClock(value){return new Intl.DateTimeFormat("en-AU",{timeZone:"Australia/Brisbane",hour:"numeric",minute:"2-digit"}).format(new Date(value))}
+function supervisorShiftCell(shifts){
+ if(!shifts.length)return '<span class="roster-empty-cell">—</span>';
+ return shifts.sort((a,b)=>new Date(a.starts_at)-new Date(b.starts_at)).map(s=>{
+  const controls=[];
+  if(s.status==="Draft")controls.push(`<button class="publish" data-publish="${s.id}">Publish</button>`);
+  if(s.status==="Published")controls.push(`<button class="decline" data-cancel-shift="${s.id}">Cancel</button>`);
+  return `<article class="calendar-shift ${s.status.toLowerCase()}">
+   <strong>${esc(shiftName(s))}</strong>
+   <span>${esc(rosterClock(s.starts_at))}–${esc(rosterClock(s.ends_at))}</span>
+   <small>${esc(s.shift_type)} · ${esc(s.response||s.status)}</small>
+   ${s.handover_notes?`<small class="calendar-note">${esc(s.handover_notes)}</small>`:""}
+   ${controls.length?`<div class="calendar-actions">${controls.join("")}</div>`:""}
+  </article>`;
+ }).join("");
+}
+function renderSupervisorRoster(list){
+ const start=rosterWeekStart(),days=Array.from({length:7},(_,index)=>{const day=new Date(start);day.setUTCDate(start.getUTCDate()+index);return day});
+ const end=days[6],dayKeys=days.map(rosterDayKey),weekShifts=list.filter(s=>dayKeys.includes(brisbaneYmd(s.starts_at)));
+ const assignedIds=new Set(weekShifts.map(s=>s.assigned_staff_id).filter(Boolean));
+ const workers=state.staff.filter(s=>s.active&&(s.role==="staff"||s.role==="supervisor")&&(rosterTab!=="mine"||s.id===profile.id));
+ weekShifts.forEach(s=>{if(s.assigned_staff_id&&!workers.some(w=>w.id===s.assigned_staff_id))workers.push({id:s.assigned_staff_id,full_name:workerName(s),role:"staff"})});
+ workers.sort((a,b)=>String(a.full_name).localeCompare(String(b.full_name)));
+ const rows=[];
+ if(weekShifts.some(s=>!s.assigned_staff_id))rows.push({id:null,full_name:"Open shifts",role:"Unassigned"});
+ workers.forEach(worker=>rows.push(worker));
+ const range=new Intl.DateTimeFormat("en-AU",{day:"numeric",month:"short",year:"numeric",timeZone:"UTC"});
+ const header=days.map(day=>`<th><span>${new Intl.DateTimeFormat("en-AU",{weekday:"short",timeZone:"UTC"}).format(day)}</span><strong>${new Intl.DateTimeFormat("en-AU",{day:"numeric",month:"short",timeZone:"UTC"}).format(day)}</strong></th>`).join("");
+ const body=rows.length?rows.map(worker=>`<tr><th class="roster-worker"><strong>${esc(worker.full_name)}</strong><small>${esc(worker.role==="supervisor"?"Supervisor":worker.role==="staff"?"Support worker":"Unassigned")}</small></th>${dayKeys.map(key=>`<td>${supervisorShiftCell(weekShifts.filter(s=>(s.assigned_staff_id||null)===(worker.id||null)&&brisbaneYmd(s.starts_at)===key))}</td>`).join("")}</tr>`).join(""):`<tr><td colspan="8">${empty("No staff or shifts in this week.")}</td></tr>`;
+ $("#roster-list").innerHTML=`<div class="roster-calendar-toolbar">
+  <button class="secondary" data-roster-week="-1" aria-label="Previous week">‹</button>
+  <button class="secondary roster-today" data-roster-week="today">Today</button>
+  <div><p class="eyebrow">Weekly schedule</p><strong>${range.format(start)} – ${range.format(end)}</strong></div>
+  <button class="secondary" data-roster-week="1" aria-label="Next week">›</button>
+ </div>
+ <div class="roster-calendar-scroll"><table class="roster-calendar"><thead><tr><th class="roster-worker">Worker</th>${header}</tr></thead><tbody>${body}</tbody></table></div>
+ <p class="roster-calendar-hint">Swipe sideways to see every day of the week.</p>`;
+}
 function renderRoster(){
  let list=state.shifts;
  if(isSupervisor()) list=list.filter(s=>rosterTab==="draft"?s.status==="Draft":rosterTab==="mine"?s.assigned_staff_id===profile.id:s.status==="Published");
  else if(profile.role==="staff") list=list.filter(s=>s.assigned_staff_id===profile.id||(s.status==="Published"&&!s.assigned_staff_id));
  else list=list.filter(s=>s.participant_id===profile.participant_id&&s.status==="Published");
+ if(isSupervisor())return renderSupervisorRoster(list);
  $("#roster-list").innerHTML=list.length?list.map(s=>shiftCard(s,rosterTab==="mine"&&s.assigned_staff_id===profile.id)).join(""):empty("No shifts in this view.");
 }
 function marActionButtons(m){
@@ -470,7 +515,8 @@ document.addEventListener("change",e=>{
 });
 document.addEventListener("click",async e=>{
  try{
-  let b=e.target.closest("[data-round-status]");if(b){marRoundSelections[b.dataset.medicationId]=b.dataset.roundStatus;renderMarRound();return}
+  let b=e.target.closest("[data-roster-week]");if(b){if(b.dataset.rosterWeek==="today")rosterWeekOffset=0;else rosterWeekOffset+=Number(b.dataset.rosterWeek);renderRoster();return}
+  b=e.target.closest("[data-round-status]");if(b){marRoundSelections[b.dataset.medicationId]=b.dataset.roundStatus;renderMarRound();return}
   b=e.target.closest("#confirm-mar-round");if(b){
    const meds=selectedRoundMeds().filter(m=>!existingRoundEntry(m));
    if(!meds.length)throw new Error("This medication round has already been signed");
