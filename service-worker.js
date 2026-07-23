@@ -1,5 +1,5 @@
-const CACHE="florence-shell-20260723-2";
-const SHELL=["./","./index.html","./styles.css?v=20260723-10","./config.js","./app.js?v=20260723-16","./operations.js?v=20260723-1","./manifest.webmanifest","./florence-icon.svg"];
+const CACHE="florence-shell-20260723-3";
+const SHELL=["./","./index.html","./styles.css?v=20260723-11","./config.js","./app.js?v=20260723-17","./operations.js?v=20260723-2","./manifest.webmanifest","./florence-icon.svg"];
 self.addEventListener("install",event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener("activate",event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 self.addEventListener("fetch",event=>{
