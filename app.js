@@ -59,7 +59,7 @@ function form(title,fields,handler,values={}){
   toast(error.message||"Florence could not open this form.");
  }
 }
-const field=(name,label,type="text",options=[])=>type==="textarea"?`<label>${label}<textarea name="${name}" required></textarea></label>`:type==="select"?`<label>${label}<select name="${name}" required>${options.map(o=>`<option value="${esc(typeof o==="string"?o:o.value)}">${esc(typeof o==="string"?o:o.label)}</option>`).join("")}</select></label>`:type==="file"?`<label>${label}<input name="${name}" type="file" required></label>`:`<label>${label}<input name="${name}" type="${type}" required></label>`;
+const field=(name,label,type="text",options=[],isRequired=true)=>{const req=isRequired?" required":"";return type==="textarea"?`<label>${label}<textarea name="${name}"${req}></textarea></label>`:type==="select"?`<label>${label}<select name="${name}"${req}>${options.map(o=>`<option value="${esc(typeof o==="string"?o:o.value)}">${esc(typeof o==="string"?o:o.label)}</option>`).join("")}</select></label>`:type==="file"?`<label>${label}<input name="${name}" type="file"${req}></label>`:`<label>${label}<input name="${name}" type="${type}"${req}></label>`};
 
 async function boot(){
  try{
@@ -279,23 +279,23 @@ $$("[data-timeline-filter]").forEach(b=>b.onclick=()=>{$$("[data-timeline-filter
 
 $("#add-participant").onclick=()=>form("Add participant",[
  field("full_name","Full legal name"),
- field("preferred_name","Preferred name"),
- field("date_of_birth","Date of birth","date"),
- field("ndis_number","NDIS number"),
- field("address","Address"),
- field("phone","Phone"),
- field("emergency_contact","Emergency contact"),
- field("guardian_nominee","Guardian or nominee"),
- field("gp","GP"),
- field("pharmacy","Pharmacy"),
- field("communication_needs","Communication needs","textarea"),
- field("diagnoses","Diagnoses","textarea"),
- field("allergies","Allergies","textarea"),
- field("goals","Goals","textarea"),
- field("preferences","Preferences","textarea"),
- field("risks_and_safeguards","Risks and safeguards","textarea"),
- field("funding_start","Funding start","date"),
- field("funding_end","Funding end","date")
+ field("preferred_name","Preferred name (optional)","text",[],false),
+ field("date_of_birth","Date of birth (optional)","date",[],false),
+ field("ndis_number","NDIS number (optional)","text",[],false),
+ field("address","Address (optional)","text",[],false),
+ field("phone","Phone (optional)","tel",[],false),
+ field("emergency_contact","Emergency contact (optional)","text",[],false),
+ field("guardian_nominee","Guardian or nominee (optional)","text",[],false),
+ field("gp","GP (optional)","text",[],false),
+ field("pharmacy","Pharmacy (optional)","text",[],false),
+ field("communication_needs","Communication needs (optional)","textarea",[],false),
+ field("diagnoses","Diagnoses (optional)","textarea",[],false),
+ field("allergies","Allergies (optional)","textarea",[],false),
+ field("goals","Goals (optional)","textarea",[],false),
+ field("preferences","Preferences (optional)","textarea",[],false),
+ field("risks_and_safeguards","Risks and safeguards (optional)","textarea",[],false),
+ field("funding_start","Funding start (optional)","date",[],false),
+ field("funding_end","Funding end (optional)","date",[],false)
 ],async v=>{
  const payload={organisation_id:profile.organisation_id,status:"Active"};
  for(const [k,val] of Object.entries(v))payload[k]=val===""?null:val;
