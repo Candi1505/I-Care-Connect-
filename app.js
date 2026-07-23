@@ -259,6 +259,45 @@ function renderCompliance(){
  $("#compliance-summary").innerHTML=[["✅",docs.filter(d=>expStatus(d.review_date)==="Current").length,"Current"],["⏳",docs.filter(d=>expStatus(d.review_date)==="Due soon").length,"Due within 30 days"],["⚠️",docs.filter(d=>expStatus(d.review_date)==="Expired").length,"Expired"],["📄",docs.length,"Evidence files"]].map(x=>`<article class="stat"><span>${x[0]}</span><strong>${x[1]}</strong><small>${x[2]}</small></article>`).join("");
  $("#compliance-list").innerHTML=docs.map(d=>`<article class="record"><div class="record-top"><div><h3>${esc(d.title)}</h3><p>${esc(d.scope)} · ${esc(d.subject_name)} · ${esc(d.category)}</p></div>${badge(expStatus(d.review_date))}</div><p>📎 ${esc(d.original_filename)}</p><div class="record-meta">${d.review_date?badge("Review "+date(d.review_date)):badge("No expiry")}<button class="link" data-open-doc="${d.id}">Open securely</button></div></article>`).join("")||empty("No compliance documents.");
 }
+const BACKUP_FIELDS={
+ participants:["id","organisation_id","full_name","preferred_name","date_of_birth","ndis_number","address","phone","emergency_contact","guardian_nominee","gp","pharmacy","communication_needs","diagnoses","allergies","goals","preferences","risks_and_safeguards","funding_start","funding_end","status","created_at"],
+ shifts:["id","organisation_id","participant_id","assigned_staff_id","starts_at","ends_at","shift_type","status","response","instructions","created_by","published_at","responded_at","created_at"],
+ medications:["id","organisation_id","participant_id","medication_name","dose","route","administration_time","medication_type","instructions","active","created_by","created_at"],
+ mar_entries:["id","organisation_id","medication_id","participant_id","staff_id","status","pin_verified","notes","recorded_at"],
+ progress_notes:["id","organisation_id","participant_id","staff_id","shift_id","category","content","status","recorded_at"],
+ client_timeline:["id","organisation_id","participant_id","event_type","severity","occurred_at","title","description","action_taken","follow_up","created_by","created_at"],
+ portal_threads:["id","organisation_id","participant_id","thread_type","subject","status","created_by","assigned_to","created_at","updated_at"],
+ portal_messages:["id","organisation_id","thread_id","sender_id","message","created_at"],
+ compliance_documents:["id","organisation_id","scope","subject_type","subject_id","subject_name","category","title","storage_path","original_filename","mime_type","review_date","version","uploaded_by","uploaded_at"],
+ invoices:["id","organisation_id","participant_id","invoice_number","description","hours","rate","invoice_date","due_date","xero_invoice_id","status","created_by","created_at"]
+};
+const BACKUP_STATE={participants:"participants",shifts:"shifts",medications:"medications",mar_entries:"mar",progress_notes:"notes",client_timeline:"timeline",portal_threads:"portalThreads",portal_messages:"portalMessages",compliance_documents:"compliance",invoices:"invoices"};
+function cleanBackupRow(row,fields){return Object.fromEntries(fields.filter(key=>row[key]!==undefined).map(key=>[key,row[key]]))}
+async function exportBackup(){
+ if(!isSupervisor())throw new Error("Only supervisors can export organisation data");
+ const data=Object.fromEntries(Object.entries(BACKUP_STATE).map(([table,key])=>[table,state[key].map(row=>cleanBackupRow(row,BACKUP_FIELDS[table]))]));
+ const payload={format:"florence-data-backup",version:1,exported_at:new Date().toISOString(),organisation_id:profile.organisation_id,organisation_name:organisation?.name||C.organisationName,data};
+ const filename=`florence-backup-${brisbaneYmd()}.json`;
+ const file=new File([JSON.stringify(payload,null,2)],filename,{type:"application/json"});
+ if(navigator.canShare?.({files:[file]})){await navigator.share({title:"Florence data backup",text:"Save this Florence backup securely to Google Drive.",files:[file]})}
+ else{const url=URL.createObjectURL(file),a=document.createElement("a");a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+ toast("Backup ready to save");
+}
+async function importBackup(file){
+ if(!isSupervisor())throw new Error("Only supervisors can import organisation data");
+ if(!file) return;
+ const payload=JSON.parse(await file.text());
+ if(payload.format!=="florence-data-backup"||payload.version!==1||!payload.data)throw new Error("This is not a valid Florence backup");
+ if(payload.organisation_id!==profile.organisation_id)throw new Error("This backup belongs to a different organisation");
+ if(!confirm("Import this Florence backup? Existing matching records will be updated. Nothing will be deleted."))return;
+ for(const [table] of Object.entries(BACKUP_STATE)){
+  const rows=Array.isArray(payload.data[table])?payload.data[table].map(row=>({...cleanBackupRow(row,BACKUP_FIELDS[table]),organisation_id:profile.organisation_id})):[];
+  if(!rows.length)continue;
+  const {error}=await db.from(table).upsert(rows,{onConflict:"id"});
+  if(error)throw new Error(`${table}: ${error.message}`);
+ }
+ await refreshAll();toast("Florence backup imported");
+}
 function renderFinance(){
  $("#xero-status").textContent=C.xero?.clientId?"Xero client configured; secure backend token exchange still required.":"Xero is not connected.";
  $("#invoice-list").innerHTML=state.invoices.map(i=>`<article class="record"><div class="record-top"><div><h3>${esc(i.invoice_number)}</h3><p>${esc(i.participant?.full_name)} · ${esc(i.description)}</p></div>${badge(i.status)}</div><p>${i.hours} hours × $${Number(i.rate).toFixed(2)} = <strong>$${Number(i.total).toFixed(2)}</strong></p></article>`).join("")||empty("No invoices.");
@@ -390,7 +429,9 @@ $("#pin-form").onsubmit=async e=>{e.preventDefault();try{
  closeDialog($("#pin-dialog"));$("#pin-form").reset();pendingMed=null;await refreshAll();toast(`${outcome} MAR entry digitally signed`);
 }catch(err){toast(err.message)}};
 $("#close-pin").onclick=$("#cancel-pin").onclick=()=>{closeDialog($("#pin-dialog"));pendingMed=null};
-$("#backup").onclick=()=>toast("Live Supabase backups are managed from the database project");
+$("#backup").onclick=async()=>{try{await exportBackup()}catch(err){if(err?.name!=="AbortError")toast(err.message)}};
+$("#import-backup").onclick=()=>$("#backup-file").click();
+$("#backup-file").onchange=async e=>{try{await importBackup(e.target.files?.[0])}catch(err){toast(err.message)}finally{e.target.value=""}};
 $("#connect-xero").onclick=()=>toast("Xero secure backend connection is the next integration step");
 $("#mar-outcome").onchange=()=>{$("#mar-reason-label").classList.toggle("required-reason",$("#mar-outcome").value!=="Administered")};
 boot();
