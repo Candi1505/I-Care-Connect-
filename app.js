@@ -282,7 +282,7 @@ function renderMeds(){
  }
 }
 function renderNotes(){
- $("#note-list").innerHTML=state.notes.map(n=>`<article class="record"><div class="record-top"><div><h3>${esc(n.participant?.full_name)}</h3><p>${esc(n.category)} · ${esc(n.worker?.full_name)}</p></div>${badge(n.status)}</div><p>${esc(n.content)}</p><div class="record-meta">${badge(fmt(n.recorded_at))}</div></article>`).join("")||empty("No progress notes.");
+ $("#note-list").innerHTML=state.notes.map(n=>`<article class="record"><div class="record-top"><div><h3>${esc(n.participant?.full_name)}</h3><p>${esc(n.category)} · ${esc(n.worker?.full_name)}</p></div>${badge(n.status)}</div><p>${esc(n.content)}</p><div class="record-meta">${n.declaration_confirmed&&n.pin_verified?badge("Declared · PIN verified"):badge("Unsigned legacy note")}${badge(fmt(n.recorded_at))}</div></article>`).join("")||empty("No progress notes.");
 }
 
 function renderTimeline(){
@@ -315,7 +315,7 @@ const BACKUP_FIELDS={
  shifts:["id","organisation_id","participant_id","assigned_staff_id","starts_at","ends_at","shift_type","status","response","instructions","created_by","published_at","responded_at","cancellation_reason","cancelled_at","recurrence_group","handover_notes","created_at"],
  medications:["id","organisation_id","participant_id","medication_name","dose","route","administration_time","medication_type","instructions","active","created_by","ceased_at","hold_from","hold_until","prn_indication","max_prn_dose","created_at"],
  mar_entries:["id","organisation_id","medication_id","participant_id","staff_id","status","pin_verified","notes","effectiveness_review","amended_at","amendment_reason","recorded_at"],
- progress_notes:["id","organisation_id","participant_id","staff_id","shift_id","category","content","status","recorded_at"],
+ progress_notes:["id","organisation_id","participant_id","staff_id","shift_id","category","content","status","declaration_confirmed","pin_verified","signed_at","recorded_at"],
  client_timeline:["id","organisation_id","participant_id","event_type","severity","occurred_at","title","description","action_taken","follow_up","created_by","created_at"],
  portal_threads:["id","organisation_id","participant_id","thread_type","subject","status","created_by","assigned_to","created_at","updated_at"],
  portal_messages:["id","organisation_id","thread_id","sender_id","message","created_at"],
@@ -433,7 +433,7 @@ $("#add-shift").onclick=()=>form("Create roster shift",[
  }
  const {error}=await db.from("shifts").insert(rows);if(error)throw error;await refreshAll();toast(count>1?`${count} recurring shifts created`:v.status==="Published"?"Shift published":"Draft saved")
 });
-$("#add-note").onclick=()=>form("Create progress note",[field("participant_id","Participant","select",state.participants.map(p=>({value:p.id,label:p.full_name}))),field("category","Note type","select",["Daily support","Personal care","Community access","Health","Communication","Goals and outcomes","Behaviour observation"]),field("content","What support was provided and what was the outcome?","textarea"),field("status","Save note as","select",["Final","Draft"])],async v=>{const {error}=await db.from("progress_notes").insert({organisation_id:profile.organisation_id,participant_id:v.participant_id,staff_id:profile.id,category:v.category,content:v.content,status:v.status});if(error)throw error;await refreshAll();toast("Progress note saved")});
+$("#add-note").onclick=()=>form("Create progress note",[field("participant_id","Participant","select",state.participants.map(p=>({value:p.id,label:p.full_name}))),field("category","Note type","select",["Daily support","Personal care","Community access","Health","Communication","Goals and outcomes","Behaviour observation"]),field("content","What support was provided and what was the outcome?","textarea"),field("status","Save note as","select",["Final","Draft"]),`<label class="truth-declaration"><input name="declaration_confirmed" type="checkbox" value="true" required><span>I declare that the information I have recorded is true and correct.</span></label>`,field("progress_note_pin","Your personal 6-digit PIN","password")],async v=>{if(v.declaration_confirmed!=="true")throw new Error("Tick the declaration confirming your progress note is true and correct");if(!/^\d{6}$/.test(v.progress_note_pin||""))throw new Error("Enter your six-digit PIN");const {error}=await db.rpc("record_progress_note",{p_participant_id:v.participant_id,p_category:v.category,p_content:v.content,p_status:v.status,p_pin:v.progress_note_pin,p_declaration_confirmed:true});if(error)throw error;await refreshAll();toast("Progress note declared, PIN verified and saved")});
 $("#add-med").onclick=()=>form("Add medication profile",[
  field("participant_id","Participant","select",state.participants.map(p=>({value:p.id,label:p.full_name}))),
  field("medication_name","Medication name"),field("dose","Dose"),field("route","Route","select",["Oral","Topical","Inhaled","Subcutaneous","Other"]),
