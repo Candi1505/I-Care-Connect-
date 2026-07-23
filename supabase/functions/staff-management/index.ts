@@ -57,8 +57,8 @@ Deno.serve(async req=>{
     if(error||!data.user)throw new Error(error?.message||"Invitation could not be created");
     invitedUser=data.user;
    }else{
-    const {error:authError}=await db.auth.admin.updateUserById(invitedUser.id,{ban_duration:"none",user_metadata:{...invitedUser.user_metadata,full_name:fullName,organisation_id:profile.organisation_id,role}});
-    if(authError)throw authError;
+    const {error:authError}=await db.auth.admin.updateUserById(invitedUser.id,{user_metadata:{...invitedUser.user_metadata,full_name:fullName,organisation_id:profile.organisation_id,role}});
+    if(authError)throw new Error(authError.message||"The existing worker account could not be updated");
    }
    const {error:profileError}=await db.from("profiles").upsert({id:invitedUser.id,organisation_id:profile.organisation_id,full_name:fullName,email,role,active:true},{onConflict:"id"});
    if(profileError){if(!existing)await db.auth.admin.deleteUser(invitedUser.id);throw profileError}
@@ -93,5 +93,10 @@ Deno.serve(async req=>{
    return json({success:true});
   }
   return json({error:"Unknown staff-management action"},400);
- }catch(error){const message=error instanceof Error?error.message:"Staff management failed";console.error("staff-management error",message,error);return json({error:message},400)}
+ }catch(error){
+  const record=error&&typeof error==="object"?error as Record<string,unknown>:null;
+  const message=error instanceof Error?error.message:String(record?.message||record?.error_description||record?.details||record?.hint||record?.code||error||"Staff management failed");
+  console.error("staff-management error:",message,record?JSON.stringify(record):String(error));
+  return json({error:message},400);
+ }
 });
