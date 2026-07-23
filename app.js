@@ -515,7 +515,8 @@ document.addEventListener("change",e=>{
 });
 document.addEventListener("click",async e=>{
  try{
-  let b=e.target.closest("[data-roster-week]");if(b){if(b.dataset.rosterWeek==="today")rosterWeekOffset=0;else rosterWeekOffset+=Number(b.dataset.rosterWeek);renderRoster();return}\n  b=e.target.closest("[data-round-status]");if(b){marRoundSelections[b.dataset.medicationId]=b.dataset.roundStatus;renderMarRound();return}
+  let b=e.target.closest("[data-roster-week]");if(b){if(b.dataset.rosterWeek==="today")rosterWeekOffset=0;else rosterWeekOffset+=Number(b.dataset.rosterWeek);renderRoster();return}
+  b=e.target.closest("[data-round-status]");if(b){marRoundSelections[b.dataset.medicationId]=b.dataset.roundStatus;renderMarRound();return}
   b=e.target.closest("#confirm-mar-round");if(b){
    const meds=selectedRoundMeds().filter(m=>!existingRoundEntry(m));
    if(!meds.length)throw new Error("This medication round has already been signed");
