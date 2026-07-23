@@ -44,7 +44,9 @@
     <button data-view="notes">📝 Progress notes</button>
     <button data-view="compliance">🗂️ Compliance centre</button>
     <button data-view="finance">💳 Invoicing & Xero</button>
-    <button id="backup">⬇️ Export backup</button>
+    <button id="backup">⬇️ Export backup to Drive</button>
+    <button id="import-backup">⬆️ Import backup from Drive</button>
+    <input id="backup-file" class="hidden" type="file" accept="application/json,.json">
     <button id="logout">↩️ Log out</button>
   </aside>
   <div id="scrim" class="scrim hidden"></div>
@@ -161,7 +163,6 @@
 
     <section id="compliance-view" class="view">
       <div class="page-head"><div><p class="eyebrow">NDIS audit readiness</p><h2>Compliance centre</h2><p>Staff, participant and organisation evidence in one auditable register.</p></div><button type="button" id="upload-compliance" class="primary admin-only">+ Upload document</button></div>
-      <div class="notice"><strong>No restrictive-practice module:</strong> Florence reflects that I-Care Connect does not implement restrictive practices.</div>
       <div class="segmented">
         <button class="active" data-compliance-tab="all">All documents</button>
         <button data-compliance-tab="staff">Staff</button>
@@ -237,6 +238,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
-<script src="app.js?v=20260723-13"></script>
+<script src="app.js?v=20260723-14"></script>
 </body>
 </html>
