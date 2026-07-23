@@ -51,6 +51,10 @@
     <button data-view="medications">💊 Medication & MAR</button>
     <button data-view="notes">📝 Progress notes</button>
     <button data-view="compliance">🗂️ Compliance centre</button>
+    <button data-view="safety">🛡️ Incidents & complaints</button>
+    <button data-view="workforce">⏱️ Workforce & timesheets</button>
+    <button data-view="outcomes">🎯 Goals & funding</button>
+    <button data-view="governance">🔐 Governance <span id="notification-count" class="badge amber">0</span></button>
     <button data-view="finance">💳 Invoicing & Xero</button>
     <button id="backup">⬇️ Export backup to Drive</button>
     <button id="import-backup">⬆️ Import backup from Drive</button>
@@ -189,6 +193,35 @@
       </article>
       <div id="invoice-list" class="stack"></div>
     </section>
+    <section id="safety-view" class="view">
+      <div class="page-head"><div><p class="eyebrow">Safety and safeguarding</p><h2>Incidents & complaints</h2><p>Record, review and resolve safety events, medication errors, feedback and complaints.</p></div></div>
+      <article class="panel"><div class="panel-head"><div><h3>Incident register</h3><p>All incidents, including potential reportable incidents.</p></div><button id="add-incident" class="primary">+ Incident</button></div><div id="incident-list" class="stack"></div></article>
+      <article class="panel"><div class="panel-head"><div><h3>Medication errors</h3><p>Separate clinical safety and follow-up record.</p></div><button id="add-medication-error" class="primary">+ Medication error</button></div><div id="medication-error-list" class="stack"></div></article>
+      <article class="panel"><div class="panel-head"><div><h3>Complaints & feedback</h3><p>Welcomed, acknowledged, investigated and resolved.</p></div><button id="add-complaint" class="primary">+ Complaint</button></div><div id="complaint-list" class="stack"></div></article>
+    </section>
+
+    <section id="workforce-view" class="view">
+      <div class="page-head"><div><p class="eyebrow">Workforce operations</p><h2>Timesheets & availability</h2><p>Clocking, approvals, availability, leave, travel and expenses.</p></div></div>
+      <article class="panel"><div class="panel-head"><div><h3>Time & attendance</h3><p>Submitted timesheets remain pending until supervisor approval.</p></div><div class="actions"><button id="clock-in" class="primary">Clock in</button><button id="clock-out" class="secondary">Clock out</button></div></div><div id="timesheet-list" class="stack"></div></article>
+      <article class="panel"><div class="panel-head"><div><h3>Workforce requests</h3></div><div class="actions"><button id="add-availability" class="secondary">Availability</button><button id="add-leave" class="secondary">Leave</button><button id="add-travel" class="secondary">Travel/expense</button></div></div><div id="workforce-request-list" class="stack"></div></article>
+    </section>
+
+    <section id="outcomes-view" class="view">
+      <div class="page-head"><div><p class="eyebrow">Participant outcomes</p><h2>Goals, funding & NDIS billing</h2><p>Track participant outcomes and the financial foundations supporting service delivery.</p></div></div>
+      <article class="panel"><div class="panel-head"><div><h3>Participant goals</h3></div><button id="add-goal" class="primary">+ Goal</button></div><div id="goal-list" class="stack"></div></article>
+      <article class="panel"><div class="panel-head"><div><h3>Funding plans</h3></div><button id="add-funding" class="primary admin-only">+ Funding plan</button></div><div id="funding-list" class="stack"></div></article>
+      <article class="panel"><div class="panel-head"><div><h3>NDIS support items</h3><p>Rates must be verified against the applicable pricing arrangements.</p></div><button id="add-support-item" class="primary admin-only">+ Support item</button></div><div id="support-item-list" class="stack"></div></article>
+    </section>
+
+    <section id="governance-view" class="view">
+      <div class="page-head"><div><p class="eyebrow">Audit and governance</p><h2>Governance centre</h2><p>Emergency preparedness, workforce credentials, alerts, security and immutable activity history.</p></div></div>
+      <article class="panel"><div class="panel-head"><div><h3>Emergency & continuity plans</h3></div><button id="add-emergency-plan" class="primary admin-only">+ Emergency plan</button></div><div id="emergency-list" class="stack"></div></article>
+      <article class="panel"><div class="panel-head"><div><h3>Staff credentials</h3></div><button id="add-credential" class="primary admin-only">+ Credential</button></div><div id="credential-list" class="stack"></div></article>
+      <article class="panel"><div class="panel-head"><div><h3>Notifications</h3></div><button id="mark-notifications" class="secondary">Mark all read</button></div><div id="notification-list" class="stack"></div></article>
+      <article class="panel admin-only"><div class="panel-head"><div><h3>Supervisor security</h3><p>Florence signs out after 30 minutes without activity.</p></div></div><div id="mfa-box"></div></article>
+      <article class="panel admin-only"><div class="panel-head"><div><h3>Immutable audit activity</h3><p>Database changes are recorded automatically.</p></div></div><div id="audit-list" class="stack"></div></article>
+    </section>
+
   </main>
 
   <nav class="bottom-nav">
@@ -246,7 +279,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
-<script src="app.js?v=20260723-15"></script>
+<script src="app.js?v=20260723-16"></script>
+<script src="operations.js?v=20260723-1"></script>
 <script>
 if("serviceWorker" in navigator){
   window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));
