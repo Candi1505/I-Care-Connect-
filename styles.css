@@ -116,3 +116,10 @@ dialog{width:min(94vw,620px);border:0;border-radius:24px;padding:0;box-shadow:0 
 /* Progress-note truth declaration */
 .truth-declaration{display:flex;grid-template-columns:none;align-items:flex-start;gap:10px;padding:13px 14px;border:1px solid var(--border);border-radius:14px;background:var(--mist);text-transform:none;letter-spacing:0}
 .truth-declaration input{flex:0 0 auto;width:18px;height:18px;margin:1px 0 0;accent-color:var(--primary)}.truth-declaration span{font-size:13px;line-height:1.45;color:var(--ink)}
+
+
+/* Staff management and private account security */
+.staff-security-note{margin-bottom:16px}.staff-card .record-top{align-items:center}.staff-card .staff-email{overflow-wrap:anywhere}.staff-card.inactive{opacity:.72;border-left:5px solid var(--red)}
+.staff-card .actions{align-items:center}.staff-card select{width:auto;min-width:150px;padding:9px 11px}.account-security-grid form{margin-top:14px}.account-security-grid .primary{width:100%}
+.staff-invite-status{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+@media(max-width:560px){.staff-card .record-top{align-items:flex-start}.staff-card .actions{display:grid;grid-template-columns:1fr 1fr}.staff-card .actions select{grid-column:1/-1;width:100%}.staff-card .actions button{width:100%}}
