@@ -280,9 +280,9 @@ function renderCompliance(){
 }
 const BACKUP_FIELDS={
  participants:["id","organisation_id","full_name","preferred_name","date_of_birth","ndis_number","address","phone","emergency_contact","guardian_nominee","gp","pharmacy","communication_needs","diagnoses","allergies","goals","preferences","risks_and_safeguards","funding_start","funding_end","status","created_at"],
- shifts:["id","organisation_id","participant_id","assigned_staff_id","starts_at","ends_at","shift_type","status","response","instructions","created_by","published_at","responded_at","created_at"],
- medications:["id","organisation_id","participant_id","medication_name","dose","route","administration_time","medication_type","instructions","active","created_by","created_at"],
- mar_entries:["id","organisation_id","medication_id","participant_id","staff_id","status","pin_verified","notes","recorded_at"],
+ shifts:["id","organisation_id","participant_id","assigned_staff_id","starts_at","ends_at","shift_type","status","response","instructions","created_by","published_at","responded_at","cancellation_reason","cancelled_at","recurrence_group","handover_notes","created_at"],
+ medications:["id","organisation_id","participant_id","medication_name","dose","route","administration_time","medication_type","instructions","active","created_by","ceased_at","hold_from","hold_until","prn_indication","max_prn_dose","created_at"],
+ mar_entries:["id","organisation_id","medication_id","participant_id","staff_id","status","pin_verified","notes","effectiveness_review","amended_at","amendment_reason","recorded_at"],
  progress_notes:["id","organisation_id","participant_id","staff_id","shift_id","category","content","status","recorded_at"],
  client_timeline:["id","organisation_id","participant_id","event_type","severity","occurred_at","title","description","action_taken","follow_up","created_by","created_at"],
  portal_threads:["id","organisation_id","participant_id","thread_type","subject","status","created_by","assigned_to","created_at","updated_at"],
@@ -291,10 +291,13 @@ const BACKUP_FIELDS={
  invoices:["id","organisation_id","participant_id","invoice_number","description","hours","rate","invoice_date","due_date","xero_invoice_id","status","created_by","created_at"]
 };
 const BACKUP_STATE={participants:"participants",shifts:"shifts",medications:"medications",mar_entries:"mar",progress_notes:"notes",client_timeline:"timeline",portal_threads:"portalThreads",portal_messages:"portalMessages",compliance_documents:"compliance",invoices:"invoices"};
+const OPERATIONAL_BACKUP_TABLES=["incidents","complaints","medication_incidents","emergency_plans","staff_credentials","timesheets","worker_availability","leave_requests","travel_expenses","participant_goals","funding_plans","ndis_support_items","controlled_drug_register"];
 function cleanBackupRow(row,fields){return Object.fromEntries(fields.filter(key=>row[key]!==undefined).map(key=>[key,row[key]]))}
 async function exportBackup(){
  if(!isSupervisor())throw new Error("Only supervisors can export organisation data");
  const data=Object.fromEntries(Object.entries(BACKUP_STATE).map(([table,key])=>[table,state[key].map(row=>cleanBackupRow(row,BACKUP_FIELDS[table]))]));
+ const operational=await Promise.all(OPERATIONAL_BACKUP_TABLES.map(table=>db.from(table).select("*").eq("organisation_id",profile.organisation_id)));
+ OPERATIONAL_BACKUP_TABLES.forEach((table,index)=>{if(!operational[index].error)data[table]=operational[index].data||[]});
  const payload={format:"florence-data-backup",version:1,exported_at:new Date().toISOString(),organisation_id:profile.organisation_id,organisation_name:organisation?.name||C.organisationName,data};
  const filename=`florence-backup-${brisbaneYmd()}.json`;
  const file=new File([JSON.stringify(payload,null,2)],filename,{type:"application/json"});
@@ -311,6 +314,12 @@ async function importBackup(file){
  if(!confirm("Import this Florence backup? Existing matching records will be updated. Nothing will be deleted."))return;
  for(const [table] of Object.entries(BACKUP_STATE)){
   const rows=Array.isArray(payload.data[table])?payload.data[table].map(row=>({...cleanBackupRow(row,BACKUP_FIELDS[table]),organisation_id:profile.organisation_id})):[];
+  if(!rows.length)continue;
+  const {error}=await db.from(table).upsert(rows,{onConflict:"id"});
+  if(error)throw new Error(`${table}: ${error.message}`);
+ }
+ for(const table of OPERATIONAL_BACKUP_TABLES){
+  const rows=Array.isArray(payload.data[table])?payload.data[table].map(row=>({...row,organisation_id:profile.organisation_id})):[];
   if(!rows.length)continue;
   const {error}=await db.from(table).upsert(rows,{onConflict:"id"});
   if(error)throw new Error(`${table}: ${error.message}`);
