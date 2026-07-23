@@ -1,0 +1,25 @@
+{
+  "name": "Florence · I-Care Connect",
+  "short_name": "Florence",
+  "description": "Secure disability support operations for I-Care Connect.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f6f8f3",
+  "theme_color": "#5f8f72",
+  "lang": "en-AU",
+  "categories": [
+    "business",
+    "medical",
+    "productivity"
+  ],
+  "icons": [
+    {
+      "src": "florence-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
