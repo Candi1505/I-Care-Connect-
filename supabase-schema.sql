@@ -853,11 +853,9 @@ begin
     raise exception 'Only staff can record medication administration';
   end if;
 
-  if p_status = 'Administered' then
-    if v_profile.medication_pin_hash is null
-       or crypt(p_pin, v_profile.medication_pin_hash) <> v_profile.medication_pin_hash then
-      raise exception 'Incorrect medication PIN';
-    end if;
+  if v_profile.medication_pin_hash is null
+     or crypt(p_pin, v_profile.medication_pin_hash) <> v_profile.medication_pin_hash then
+    raise exception 'Incorrect medication PIN';
   end if;
 
   select *
@@ -886,7 +884,7 @@ begin
     v_medication.participant_id,
     v_profile.id,
     p_status,
-    p_status = 'Administered',
+    true,
     p_notes
   )
   returning id into v_entry_id;
