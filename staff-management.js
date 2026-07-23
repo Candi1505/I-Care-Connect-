@@ -64,25 +64,27 @@ function bindInvite(){
 function bindAccountForms(){
  q("#set-pin-form").onsubmit=async event=>{
   event.preventDefault();
+  const form=event.currentTarget;
   try{
    const pin=q("#new-signing-pin").value,confirmPin=q("#confirm-signing-pin").value;
    if(!/^\d{6}$/.test(pin))throw new Error("Enter exactly six numbers");
    if(pin!==confirmPin)throw new Error("The PINs do not match");
    const {error}=await B().db.rpc("set_my_signing_pin",{p_pin:pin});
    if(error)throw error;
-   event.currentTarget.reset();
+   form.reset();
    B().toast("Your private signing PIN has been saved");
   }catch(error){B().toast(error.message)}
  };
  q("#change-password-form").onsubmit=async event=>{
   event.preventDefault();
+  const form=event.currentTarget;
   try{
    const password=q("#new-account-password").value,confirmPassword=q("#confirm-account-password").value;
    if(password.length<10)throw new Error("Use at least ten characters");
    if(password!==confirmPassword)throw new Error("The passwords do not match");
    const {error}=await B().db.auth.updateUser({password});
    if(error)throw error;
-   event.currentTarget.reset();
+   form.reset();
    B().toast("Your password has been changed");
   }catch(error){B().toast(error.message)}
  };
