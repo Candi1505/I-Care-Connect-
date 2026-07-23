@@ -1,9 +1,15 @@
--- FLORENCE 10.1 LIVE TRIAL
--- Run once in Supabase SQL Editor on a new/empty Florence project.
+-- FLORENCE 10.2 LIVE TRIAL — SAFE UPGRADE
+-- Safe to run on a new project or an existing Florence 10.1 database.
 
 create extension if not exists pgcrypto;
 
-do $$ begin create type public.app_role as enum ('supervisor','staff','family','client'); exception when duplicate_object then null; end $$;
+do $$ begin
+  create type public.app_role as enum ('supervisor','staff');
+exception when duplicate_object then null;
+end $$;
+
+alter type public.app_role add value if not exists 'family';
+alter type public.app_role add value if not exists 'client';
 do $$ begin create type public.shift_status as enum ('Draft','Published','Completed','Cancelled'); exception when duplicate_object then null; end $$;
 do $$ begin create type public.shift_response as enum ('Not sent','Pending','Accepted','Declined'); exception when duplicate_object then null; end $$;
 do $$ begin create type public.mar_status as enum ('Administered','Withheld','Refused'); exception when duplicate_object then null; end $$;
