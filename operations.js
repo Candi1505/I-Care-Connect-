@@ -125,5 +125,5 @@ document.addEventListener("click",async e=>{
  }catch(error){B().toast(error.message)}
 });
 let idleTimer;const resetIdle=()=>{clearTimeout(idleTimer);if(B()?.profile)idleTimer=setTimeout(()=>B().db.auth.signOut().then(()=>location.reload()),30*60*1000)};["pointerdown","keydown","touchstart"].forEach(name=>addEventListener(name,resetIdle,{passive:true}));
-window.addEventListener("florence:ready",async()=>{bindForms();await loadOperations();await setupMfa();resetIdle()});
+window.addEventListener("florence:ready",async()=>{if(!B().isStaffUser())return;bindForms();await loadOperations();if(B().isSupervisor())await setupMfa();resetIdle()});
 })();
