@@ -124,7 +124,7 @@ function workerName(s){return s.worker?.full_name||"Unassigned"}
 function shiftCard(s){
  let actions="";
  if(isSupervisor()&&s.status==="Draft")actions=`<div class="actions"><button class="publish" data-publish="${s.id}">Publish shift</button></div>`;
- if(!isSupervisor()&&s.status==="Published"&&s.assigned_staff_id===profile.id&&s.response==="Pending")actions=`<div class="actions"><button class="accept" data-shift-response="${s.id}" data-response="Accepted">Accept</button><button class="decline" data-shift-response="${s.id}" data-response="Declined">Decline</button></div>`;
+ if(isStaffUser()&&s.status==="Published"&&s.assigned_staff_id===profile.id&&s.response==="Pending")actions=`<div class="actions"><button class="accept" data-shift-response="${s.id}" data-response="Accepted">Accept</button><button class="decline" data-shift-response="${s.id}" data-response="Declined">Decline</button></div>`;
  return `<article class="record"><div class="record-top"><div><h3>${esc(shiftName(s))}</h3><p>${esc(s.shift_type)} · ${esc(workerName(s))}</p></div>${badge(s.status)}</div><p><strong>Start:</strong> ${fmt(s.starts_at)}<br><strong>Finish:</strong> ${fmt(s.ends_at)}</p><div class="record-meta">${badge(s.response)}</div>${actions}</article>`
 }
 function renderDashboard(){
