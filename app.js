@@ -6,7 +6,7 @@ const fmt=v=>new Intl.DateTimeFormat("en-AU",{day:"numeric",month:"short",year:"
 const date=v=>v?new Intl.DateTimeFormat("en-AU",{day:"numeric",month:"short",year:"numeric"}).format(new Date(v)):"";
 const id=()=>crypto.randomUUID?.()||Date.now()+"-"+Math.random().toString(16).slice(2);
 let db=null, session=null, profile=null, organisation=null;
-let rosterTab="published",medTab="Regular",complianceTab="all",timelineFilter="all",portalFilter="active",pending=null,pendingMed=null,activePortalThread=null;
+let rosterTab="published",medTab="round",complianceTab="all",timelineFilter="all",portalFilter="active",pending=null,pendingMed=null,activePortalThread=null,marRoundParticipant="",marRoundDate="",marRoundName="Bedtime",marRoundSelections={};
 let state={staff:[],participants:[],shifts:[],medications:[],mar:[],notes:[],compliance:[],invoices:[],timeline:[],portalThreads:[],portalMessages:[]};
 
 function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),2500)}
@@ -161,11 +161,70 @@ function medicationCard(m){
  <div class="medication-details"><span><strong>Dose</strong>${esc(m.dose)}</span><span><strong>Route</strong>${esc(m.route)}</span><span><strong>Time</strong>${esc(m.administration_time||"PRN")}</span></div>
  ${m.instructions?`<p><strong>Instructions:</strong> ${esc(m.instructions)}</p>`:""}${marActionButtons(m)}</article>`;
 }
+function brisbaneYmd(value=new Date()){
+ return new Intl.DateTimeFormat("en-CA",{timeZone:"Australia/Brisbane",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(value));
+}
+function medicationRound(m){
+ if(!m.administration_time)return "Unscheduled";
+ const hour=Number(String(m.administration_time).slice(0,2));
+ if(hour<11)return "Morning";
+ if(hour<15)return "Lunch";
+ if(hour<19)return "Evening";
+ return "Bedtime";
+}
+function selectedRoundMeds(){
+ const participantId=marRoundParticipant||state.participants[0]?.id||"";
+ return state.medications.filter(m=>m.active&&m.participant_id===participantId&&m.medication_type==="Regular"&&medicationRound(m)===marRoundName);
+}
+function existingRoundEntry(m){
+ return state.mar.find(entry=>entry.medication_id===m.id&&brisbaneYmd(entry.recorded_at)===marRoundDate);
+}
+function roundOutcomeLabel(entry){
+ if(!entry)return "";
+ const special=String(entry.notes||"").match(/^Round outcome: ([^—]+)/);
+ return special?special[1].trim():(entry.status==="Administered"?"Given":entry.status);
+}
+function renderMarRound(){
+ if(!marRoundDate)marRoundDate=brisbaneYmd();
+ if(!marRoundParticipant)marRoundParticipant=state.participants[0]?.id||"";
+ const participants=state.participants;
+ const meds=selectedRoundMeds();
+ const completed=meds.filter(existingRoundEntry).length;
+ const allSigned=meds.length>0&&completed===meds.length;
+ const progress=meds.length?Math.round(completed/meds.length*100):0;
+ const outcomes=["Given","Refused","Withheld","Missed","Unavailable","Client absent","Other"];
+ const participantOptions=participants.map(p=>`<option value="${p.id}" ${p.id===marRoundParticipant?"selected":""}>${esc(p.preferred_name||p.full_name)}</option>`).join("");
+ const cards=meds.map(m=>{
+  const existing=existingRoundEntry(m);
+  const chosen=marRoundSelections[m.id]||"";
+  return `<article class="record mar-round-med">
+   <div class="record-top"><div><h3>💊 ${esc(m.medication_name)}</h3><p><strong>${esc(m.dose)}</strong><br>${esc(m.route)} · Due ${esc(String(m.administration_time||"").slice(0,5))}</p></div>${existing?badge(roundOutcomeLabel(existing)):badge(chosen||"Choose outcome")}</div>
+   <p>${esc(m.instructions||"No special instructions")}</p>
+   ${existing?`<div class="notice mar-signed-item">✓ Recorded ${fmt(existing.recorded_at)} by ${esc(existing.worker?.full_name||"staff")}</div>`:`<div class="mar-outcomes">${outcomes.map(outcome=>`<button type="button" class="${chosen===outcome?"selected":""}" data-round-status="${esc(outcome)}" data-medication-id="${m.id}">${esc(outcome)}</button>`).join("")}</div>`}
+  </article>`;
+ }).join("");
+ const signedNotice=allSigned?`<div class="notice mar-round-complete"><strong>✓ Round already signed</strong><br>All medications in this round have been recorded.</div>`:"";
+ $("#med-content").innerHTML=`
+  <article class="panel mar-round-header">
+   <div class="panel-head"><div><p class="eyebrow">Scheduled medication & MAR</p><h3>Daily medication round</h3></div><span class="badge ${allSigned?"good":"amber"}">${allSigned?"Completed":"In progress"}</span></div>
+   <div class="mar-round-controls">
+    <label>Participant<select id="mar-round-participant">${participantOptions}</select></label>
+    <label>Date<input id="mar-round-date" type="date" value="${esc(marRoundDate)}"></label>
+    <label>Round<select id="mar-round-name">${["Morning","Lunch","Evening","Bedtime"].map(r=>`<option ${r===marRoundName?"selected":""}>${r}</option>`).join("")}</select></label>
+   </div>
+   <div class="mar-progress"><strong>${completed} of ${meds.length} completed</strong><span><i style="width:${progress}%"></i></span></div>
+  </article>
+  ${signedNotice}
+  ${cards||empty("No regular medications are scheduled for this participant and round.")}
+  ${!allSigned&&meds.length?`<article class="panel mar-confirm"><h3>Confirm medication round</h3><p>You are confirming the correct participant, medication, dose, route, time and documentation.</p><label>Personal six-digit medication PIN<input id="mar-round-pin" type="password" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="off" placeholder="••••••"></label><button type="button" class="primary wide" id="confirm-mar-round">Confirm and sign round</button></article>`:""}
+ `;
+}
 function renderMeds(){
+ if(medTab==="round"){renderMarRound();return}
  if(medTab==="profiles"){
    $("#med-content").innerHTML=state.medications.map(m=>medicationCard(m)).join("")||empty("No medication profiles.");
  }else if(medTab==="history"){
-   $("#med-content").innerHTML=state.mar.map(m=>`<article class="record"><div class="record-top"><div><h3>${esc(m.medication?.medication_name)}</h3><p>${esc(m.participant?.full_name)} · Digitally signed by ${esc(m.worker?.full_name)}</p></div>${badge(m.status)}</div><p>${fmt(m.recorded_at)}</p>${m.notes?`<p><strong>Reason/notes:</strong> ${esc(m.notes)}</p>`:""}<div class="record-meta">${m.pin_verified?badge("PIN verified"):badge("Signature not verified")}</div></article>`).join("")||empty("No MAR history.");
+   $("#med-content").innerHTML=state.mar.map(m=>`<article class="record"><div class="record-top"><div><h3>${esc(m.medication?.medication_name)}</h3><p>${esc(m.participant?.full_name)} · Digitally signed by ${esc(m.worker?.full_name)}</p></div>${badge(roundOutcomeLabel(m))}</div><p>${fmt(m.recorded_at)}</p>${m.notes?`<p><strong>Reason/notes:</strong> ${esc(m.notes)}</p>`:""}<div class="record-meta">${m.pin_verified?badge("PIN verified"):badge("Recorded by staff")}</div></article>`).join("")||empty("No MAR history.");
  }else{
    const meds=state.medications.filter(m=>m.active&&m.medication_type===medTab);
    $("#med-content").innerHTML=meds.map(m=>medicationCard(m)).join("")||empty(`No ${medTab} medications.`);
@@ -274,9 +333,31 @@ $("#new-portal-item").onclick=()=>form("New portal message or request",[
 
 $("#portal-reply-form").onsubmit=async e=>{e.preventDefault();try{const text=$("#portal-reply-text").value.trim();if(!text||!activePortalThread)return;const {error}=await db.from("portal_messages").insert({organisation_id:profile.organisation_id,thread_id:activePortalThread,sender_id:profile.id,message:text});if(error)throw error;await db.from("portal_threads").update({updated_at:new Date().toISOString()}).eq("id",activePortalThread);$("#portal-reply-text").value="";await refreshAll();toast("Reply sent")}catch(err){toast(err.message)}};
 
+document.addEventListener("change",e=>{
+ if(e.target.id==="mar-round-participant"){marRoundParticipant=e.target.value;marRoundSelections={};renderMarRound()}
+ if(e.target.id==="mar-round-date"){marRoundDate=e.target.value;marRoundSelections={};renderMarRound()}
+ if(e.target.id==="mar-round-name"){marRoundName=e.target.value;marRoundSelections={};renderMarRound()}
+});
 document.addEventListener("click",async e=>{
  try{
-  let b=e.target.closest("[data-thread]");if(b){activePortalThread=b.dataset.thread;renderPortal();return}
+  let b=e.target.closest("[data-round-status]");if(b){marRoundSelections[b.dataset.medicationId]=b.dataset.roundStatus;renderMarRound();return}
+  b=e.target.closest("#confirm-mar-round");if(b){
+   const meds=selectedRoundMeds().filter(m=>!existingRoundEntry(m));
+   if(!meds.length)throw new Error("This medication round has already been signed");
+   const missing=meds.filter(m=>!marRoundSelections[m.id]);
+   if(missing.length)throw new Error("Choose an outcome for every medication");
+   const pin=$("#mar-round-pin")?.value||"";
+   if(!/^\d{6}$/.test(pin))throw new Error("Enter your six-digit medication PIN");
+   const map={Given:"Administered",Refused:"Refused",Withheld:"Withheld",Missed:"Missed",Unavailable:"Missed","Client absent":"Missed",Other:"Withheld"};
+   for(const med of meds){
+    const outcome=marRoundSelections[med.id];
+    const notes=["Unavailable","Client absent","Other"].includes(outcome)?`Round outcome: ${outcome}`:null;
+    const {error}=await db.rpc("record_medication_administration",{p_medication_id:med.id,p_pin:pin,p_status:map[outcome],p_notes:notes});
+    if(error)throw error;
+   }
+   marRoundSelections={};await refreshAll();return toast("Medication round signed and saved");
+  }
+  b=e.target.closest("[data-thread]");if(b){activePortalThread=b.dataset.thread;renderPortal();return}
   b=e.target.closest("[data-archive-thread]");if(b){if(!isStaffUser())throw new Error("This action is available to staff only");const archive=b.dataset.archive==="true";const {error}=await db.from("portal_threads").update({status:archive?"Closed":"Open",updated_at:new Date().toISOString()}).eq("id",b.dataset.archiveThread);if(error)throw error;activePortalThread=null;await refreshAll();return toast(archive?"Conversation archived":"Conversation restored")}
   b=e.target.closest("[data-mar-sign]");if(b){if(!isStaffUser())throw new Error("This action is available to staff only");pendingMed=state.medications.find(x=>x.id===b.dataset.marSign);if(!pendingMed)throw new Error("Medication profile not found");$("#mar-outcome").value=b.dataset.outcome||"Administered";$("#mar-reason").value="";$("#mar-notes").value="";$("#mar-reason-label").classList.toggle("required-reason",$("#mar-outcome").value!=="Administered");$("#pin-summary").textContent=`${pendingMed.medication_name} · ${pendingMed.dose} for ${pendingMed.participant?.full_name}`;openDialog($("#pin-dialog"));return}
   b=e.target.closest("[data-publish]");if(b){const {error}=await db.from("shifts").update({status:"Published",response:"Pending",published_at:new Date().toISOString()}).eq("id",b.dataset.publish);if(error)throw error;await refreshAll();return toast("Shift published")}
