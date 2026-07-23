@@ -185,3 +185,12 @@ create index if not exists incidents_org_date_idx on public.incidents(organisati
 create index if not exists complaints_org_date_idx on public.complaints(organisation_id,received_at desc);
 create index if not exists timesheets_staff_date_idx on public.timesheets(staff_id,clock_in desc);
 create index if not exists audit_events_org_date_idx on public.audit_events(organisation_id,occurred_at desc);
+
+-- Staff workflow permissions
+drop policy if exists timesheets_own_update on public.timesheets;
+create policy timesheets_own_update on public.timesheets for update
+using(organisation_id=public.current_org_id() and staff_id=auth.uid() and status in('Open','Submitted'))
+with check(organisation_id=public.current_org_id() and staff_id=auth.uid() and status in('Open','Submitted'));
+drop policy if exists participant_goals_staff_insert on public.participant_goals;
+create policy participant_goals_staff_insert on public.participant_goals for insert
+with check(public.current_role() in('staff','supervisor') and organisation_id=public.current_org_id() and created_by=auth.uid());
