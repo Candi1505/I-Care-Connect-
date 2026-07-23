@@ -121,10 +121,10 @@ async function refreshAll(){
 function expStatus(d){if(!d)return"No review date";const days=Math.ceil((new Date(d)-new Date())/86400000);return days<0?"Expired":days<=30?"Due soon":"Current"}
 function shiftName(s){return s.participant?.full_name||"Participant"}
 function workerName(s){return s.worker?.full_name||"Unassigned"}
-function shiftCard(s){
+function shiftCard(s,showOwnShiftActions=false){
  let actions="";
  if(isSupervisor()&&s.status==="Draft")actions=`<div class="actions"><button class="publish" data-publish="${s.id}">Publish shift</button></div>`;
- if(isStaffUser()&&s.status==="Published"&&s.assigned_staff_id===profile.id&&s.response==="Pending")actions=`<div class="actions"><button class="accept" data-shift-response="${s.id}" data-response="Accepted">Accept</button><button class="decline" data-shift-response="${s.id}" data-response="Declined">Decline</button></div>`;
+ if(isStaffUser()&&s.status==="Published"&&s.response==="Pending"&&(s.assigned_staff_id===profile.id||showOwnShiftActions))actions=`<div class="actions"><button class="accept" data-shift-response="${s.id}" data-response="Accepted">Accept</button><button class="decline" data-shift-response="${s.id}" data-response="Declined">Decline</button></div>`;
  return `<article class="record"><div class="record-top"><div><h3>${esc(shiftName(s))}</h3><p>${esc(s.shift_type)} · ${esc(workerName(s))}</p></div>${badge(s.status)}</div><p><strong>Start:</strong> ${fmt(s.starts_at)}<br><strong>Finish:</strong> ${fmt(s.ends_at)}</p><div class="record-meta">${badge(s.response)}</div>${actions}</article>`
 }
 function renderDashboard(){
@@ -145,7 +145,7 @@ function renderRoster(){
  if(isSupervisor()) list=list.filter(s=>rosterTab==="draft"?s.status==="Draft":rosterTab==="mine"?s.assigned_staff_id===profile.id:s.status==="Published");
  else if(profile.role==="staff") list=list.filter(s=>s.assigned_staff_id===profile.id);
  else list=list.filter(s=>s.participant_id===profile.participant_id&&s.status==="Published");
- $("#roster-list").innerHTML=list.length?list.map(shiftCard).join(""):empty("No shifts in this view.");
+ $("#roster-list").innerHTML=list.length?list.map(s=>shiftCard(s,rosterTab==="mine"&&s.assigned_staff_id===profile.id)).join(""):empty("No shifts in this view.");
 }
 function marActionButtons(m){
  if(!isStaffUser())return "";
