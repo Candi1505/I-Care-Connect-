@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260723-10">
+  <link rel="stylesheet" href="styles.css?v=20260723-11">
 </head>
 <body>
 <div id="toast" class="toast"></div>
@@ -197,12 +197,13 @@
       <div class="page-head"><div><p class="eyebrow">Safety and safeguarding</p><h2>Incidents & complaints</h2><p>Record, review and resolve safety events, medication errors, feedback and complaints.</p></div></div>
       <article class="panel"><div class="panel-head"><div><h3>Incident register</h3><p>All incidents, including potential reportable incidents.</p></div><button id="add-incident" class="primary">+ Incident</button></div><div id="incident-list" class="stack"></div></article>
       <article class="panel"><div class="panel-head"><div><h3>Medication errors</h3><p>Separate clinical safety and follow-up record.</p></div><button id="add-medication-error" class="primary">+ Medication error</button></div><div id="medication-error-list" class="stack"></div></article>
+      <article class="panel"><div class="panel-head"><div><h3>Schedule 8 stock register</h3><p>Every entry requires a second staff witness.</p></div><button id="add-controlled-drug" class="primary">+ Stock transaction</button></div><div id="controlled-drug-list" class="stack"></div></article>
       <article class="panel"><div class="panel-head"><div><h3>Complaints & feedback</h3><p>Welcomed, acknowledged, investigated and resolved.</p></div><button id="add-complaint" class="primary">+ Complaint</button></div><div id="complaint-list" class="stack"></div></article>
     </section>
 
     <section id="workforce-view" class="view">
       <div class="page-head"><div><p class="eyebrow">Workforce operations</p><h2>Timesheets & availability</h2><p>Clocking, approvals, availability, leave, travel and expenses.</p></div></div>
-      <article class="panel"><div class="panel-head"><div><h3>Time & attendance</h3><p>Submitted timesheets remain pending until supervisor approval.</p></div><div class="actions"><button id="clock-in" class="primary">Clock in</button><button id="clock-out" class="secondary">Clock out</button></div></div><div id="timesheet-list" class="stack"></div></article>
+      <article class="panel"><div class="panel-head"><div><h3>Time & attendance</h3><p>Submitted timesheets remain pending until supervisor approval.</p></div><div class="actions"><button id="clock-in" class="primary">Clock in</button><button id="clock-out" class="secondary">Clock out</button><button id="export-timesheets" class="secondary admin-only">Export CSV</button></div></div><div id="timesheet-list" class="stack"></div></article>
       <article class="panel"><div class="panel-head"><div><h3>Workforce requests</h3></div><div class="actions"><button id="add-availability" class="secondary">Availability</button><button id="add-leave" class="secondary">Leave</button><button id="add-travel" class="secondary">Travel/expense</button></div></div><div id="workforce-request-list" class="stack"></div></article>
     </section>
 
@@ -279,8 +280,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
-<script src="app.js?v=20260723-16"></script>
-<script src="operations.js?v=20260723-1"></script>
+<script src="app.js?v=20260723-17"></script>
+<script src="operations.js?v=20260723-2"></script>
 <script>
 if("serviceWorker" in navigator){
   window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));
