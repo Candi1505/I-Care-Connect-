@@ -44,3 +44,29 @@ dialog{width:min(94vw,620px);border:0;border-radius:24px;padding:0;box-shadow:0 
 .portal-archive{margin-left:10px}
 .required-reason select{border-color:var(--amber)}
 @media(max-width:560px){.medication-details{grid-template-columns:1fr}}
+
+
+/* Florence scheduled daily-use MAR */
+.mar-round-header{margin-bottom:18px}
+.mar-round-controls{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:12px;margin-top:18px}
+.mar-round-controls label,.mar-confirm label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.mar-round-controls input,.mar-round-controls select,.mar-confirm input{margin-top:8px}
+.mar-progress{display:grid;gap:10px;margin-top:18px;color:var(--deep)}
+.mar-progress span{display:block;height:10px;overflow:hidden;border-radius:999px;background:#e4e7e5}
+.mar-progress i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--primary),var(--deep));transition:width .25s}
+.mar-round-med{border-left:5px solid var(--primary)}
+.mar-outcomes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:16px}
+.mar-outcomes button{min-height:48px;padding:10px;border:1px solid #d9ded9;border-radius:15px;background:#fff;color:#4b4e57;font-weight:800}
+.mar-outcomes button.selected{border-color:#70bd91;background:#def3e7;color:#256746;box-shadow:0 0 0 2px rgba(112,189,145,.12)}
+.mar-confirm{margin-top:20px}
+.mar-confirm h3{color:#135495;font-size:24px}
+.mar-confirm p{color:var(--muted)}
+.mar-confirm input{text-align:center;font-size:22px;letter-spacing:.45em}
+.mar-confirm .wide{margin-top:16px}
+.mar-round-complete{margin:16px 0;border:1px solid #88dcb2;background:#e9fbf2;color:#176747}
+.mar-signed-item{margin-top:12px}
+@media(max-width:680px){
+ .mar-round-controls{grid-template-columns:1fr 1fr}
+ .mar-round-controls label:first-child{grid-column:1/-1}
+ .mar-outcomes{grid-template-columns:1fr 1fr}
+}
