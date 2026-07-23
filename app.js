@@ -154,14 +154,14 @@ function canSeePortalThread(t){
  return !!profile.participant_id&&t.participant_id===profile.participant_id;
 }
 function renderPortal(){
- const threads=state.portalThreads.filter(canSeePortalThread).filter(t=>portalFilter==="archived"?t.archived:!t.archived);
+ const threads=state.portalThreads.filter(canSeePortalThread).filter(t=>portalFilter==="archived"?t.status==="Closed":t.status!=="Closed");
  $("#portal-thread-list").innerHTML=threads.map(t=>`<button class="thread-button ${activePortalThread===t.id?"active":""}" data-thread="${t.id}"><strong>${esc(t.subject)}</strong><span>${esc(t.participant?.full_name)} · ${esc(t.thread_type)}</span><small>${esc(t.status)} · ${fmt(t.updated_at)}</small></button>`).join("")||empty(portalFilter==="archived"?"No archived conversations.":"No active portal conversations.");
  const thread=threads.find(t=>t.id===activePortalThread);
  if(!thread){$("#portal-thread-title").textContent="Select a conversation";$("#portal-messages").innerHTML=empty("Choose a message or request.");$("#portal-reply-form").classList.add("hidden");return}
- $("#portal-thread-title").innerHTML=`${esc(thread.subject)} ${isStaffUser()?`<button type="button" class="link portal-archive" data-archive-thread="${thread.id}" data-archive="${thread.archived?"false":"true"}>${thread.archived?"Restore":"Archive"}</button>`:""}`;
+ $("#portal-thread-title").innerHTML=`${esc(thread.subject)} ${isStaffUser()?`<button type="button" class="link portal-archive" data-archive-thread="${thread.id}" data-archive="${thread.status==="Closed"?"false":"true"}>${thread.status==="Closed"?"Restore":"Archive"}</button>`:""}`;
  const messages=state.portalMessages.filter(m=>m.thread_id===thread.id);
  $("#portal-messages").innerHTML=messages.map(m=>`<div class="message-bubble ${m.sender_id===profile.id?"mine":""}"><strong>${esc(m.sender?.full_name||"Florence user")}</strong><div>${esc(m.message)}</div><small>${fmt(m.created_at)}</small></div>`).join("")||empty("No messages yet.");
- $("#portal-reply-form").classList.toggle("hidden",thread.archived);
+ $("#portal-reply-form").classList.toggle("hidden",thread.status==="Closed");
 }
 function renderCompliance(){
  let docs=state.compliance;if(complianceTab!=="all")docs=docs.filter(d=>d.scope.toLowerCase()===complianceTab);
@@ -245,7 +245,7 @@ $("#portal-reply-form").onsubmit=async e=>{e.preventDefault();try{const text=$("
 document.addEventListener("click",async e=>{
  try{
   let b=e.target.closest("[data-thread]");if(b){activePortalThread=b.dataset.thread;renderPortal();return}
-  b=e.target.closest("[data-archive-thread]");if(b){if(!isStaffUser())throw new Error("This action is available to staff only");const {error}=await db.from("portal_threads").update({archived:b.dataset.archive==="true",updated_at:new Date().toISOString()}).eq("id",b.dataset.archiveThread);if(error)throw error;activePortalThread=null;await refreshAll();return toast(b.dataset.archive==="true"?"Conversation archived":"Conversation restored")}
+  b=e.target.closest("[data-archive-thread]");if(b){if(!isStaffUser())throw new Error("This action is available to staff only");const archive=b.dataset.archive==="true";const {error}=await db.from("portal_threads").update({status:archive?"Closed":"Open",updated_at:new Date().toISOString()}).eq("id",b.dataset.archiveThread);if(error)throw error;activePortalThread=null;await refreshAll();return toast(archive?"Conversation archived":"Conversation restored")}
   b=e.target.closest("[data-mar-sign]");if(b){if(!isStaffUser())throw new Error("This action is available to staff only");pendingMed=state.medications.find(x=>x.id===b.dataset.marSign);if(!pendingMed)throw new Error("Medication profile not found");$("#mar-outcome").value=b.dataset.outcome||"Administered";$("#mar-reason").value="";$("#mar-notes").value="";$("#mar-reason-label").classList.toggle("required-reason",$("#mar-outcome").value!=="Administered");$("#pin-summary").textContent=`${pendingMed.medication_name} · ${pendingMed.dose} for ${pendingMed.participant?.full_name}`;$("#pin-dialog").showModal();return}
   b=e.target.closest("[data-publish]");if(b){const {error}=await db.from("shifts").update({status:"Published",response:"Pending",published_at:new Date().toISOString()}).eq("id",b.dataset.publish);if(error)throw error;await refreshAll();return toast("Shift published")}
   b=e.target.closest("[data-shift-response]");if(b){const {error}=await db.from("shifts").update({response:b.dataset.response,responded_at:new Date().toISOString()}).eq("id",b.dataset.shiftResponse).eq("assigned_staff_id",profile.id);if(error)throw error;await refreshAll();return toast("Shift "+b.dataset.response.toLowerCase())}
