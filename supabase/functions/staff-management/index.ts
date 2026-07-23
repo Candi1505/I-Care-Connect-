@@ -48,12 +48,21 @@ Deno.serve(async req=>{
   if(action==="invite"){
    const email=String(body.email||"").trim().toLowerCase(),fullName=String(body.full_name||"").trim(),role=body.role==="supervisor"?"supervisor":"staff";
    if(!email||!fullName)throw new Error("Worker name and email are required");
-   const redirectTo=Deno.env.get("FLORENCE_APP_URL")||undefined;
-   const {data,error}=await db.auth.admin.inviteUserByEmail(email,{redirectTo,data:{full_name:fullName,organisation_id:profile.organisation_id,role}});
-   if(error||!data.user)throw new Error(error?.message||"Invitation could not be created");
-   const {error:profileError}=await db.from("profiles").upsert({id:data.user.id,organisation_id:profile.organisation_id,full_name:fullName,email,role,active:true},{onConflict:"id"});
-   if(profileError){await db.auth.admin.deleteUser(data.user.id);throw profileError}
-   return json({success:true,user_id:data.user.id});
+   const users=await authUsers(db);
+   let invitedUser=users.find(x=>String(x.email||"").toLowerCase()===email)||null;
+   const existing=!!invitedUser;
+   if(!invitedUser){
+    const redirectTo=Deno.env.get("FLORENCE_APP_URL")||undefined;
+    const {data,error}=await db.auth.admin.inviteUserByEmail(email,{redirectTo,data:{full_name:fullName,organisation_id:profile.organisation_id,role}});
+    if(error||!data.user)throw new Error(error?.message||"Invitation could not be created");
+    invitedUser=data.user;
+   }else{
+    const {error:authError}=await db.auth.admin.updateUserById(invitedUser.id,{ban_duration:"none",user_metadata:{...invitedUser.user_metadata,full_name:fullName,organisation_id:profile.organisation_id,role}});
+    if(authError)throw authError;
+   }
+   const {error:profileError}=await db.from("profiles").upsert({id:invitedUser.id,organisation_id:profile.organisation_id,full_name:fullName,email,role,active:true},{onConflict:"id"});
+   if(profileError){if(!existing)await db.auth.admin.deleteUser(invitedUser.id);throw profileError}
+   return json({success:true,user_id:invitedUser.id,existing,requires_password_reset:existing,email});
   }
   if(action==="set-active"){
    const userId=String(body.user_id||""),active=body.active===true;
@@ -84,5 +93,5 @@ Deno.serve(async req=>{
    return json({success:true});
   }
   return json({error:"Unknown staff-management action"},400);
- }catch(error){return json({error:error instanceof Error?error.message:"Staff management failed"},400)}
+ }catch(error){const message=error instanceof Error?error.message:"Staff management failed";console.error("staff-management error",message,error);return json({error:message},400)}
 });

@@ -51,9 +51,14 @@ function bindInvite(){
   B().field("email","Worker’s email","email"),
   B().field("role","Florence access","select",[{value:"staff",label:"Support worker"},{value:"supervisor",label:"Supervisor"}])
  ],async values=>{
-  await invoke({action:"invite",full_name:values.full_name.trim(),email:values.email.trim().toLowerCase(),role:values.role});
+  const email=values.email.trim().toLowerCase();
+  const result=await invoke({action:"invite",full_name:values.full_name.trim(),email,role:values.role});
+  if(result.requires_password_reset){
+   const {error}=await B().db.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+   if(error)throw error;
+  }
   await loadDirectory();
-  B().toast("Invitation sent securely");
+  B().toast(result.existing?"Existing account linked and access email sent":"Invitation sent securely");
  });
 }
 function bindAccountForms(){
