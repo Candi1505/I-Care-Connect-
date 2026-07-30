@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#5f8f72">
+  <title>Florence · SIL homes & compliance</title>
+  <link rel="icon" href="florence-icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=20260723-15">
+  <link rel="stylesheet" href="sil.css?v=20260730-1">
+</head>
+<body>
+<div id="sil-toast" class="toast"></div>
+<header class="topbar sil-topbar">
+  <button class="icon-btn" type="button" onclick="location.href='index.html'">←</button>
+  <div><h1>Florence</h1><p>SIL homes & compliance</p></div>
+  <button id="sil-refresh" class="icon-btn" type="button" aria-label="Refresh">↻</button>
+</header>
+
+<main class="sil-main">
+  <section class="welcome sil-welcome">
+    <div>
+      <p class="eyebrow">Supported Independent Living</p>
+      <h2>House, participant and provider evidence</h2>
+      <p>Complete live SIL records, track outstanding information and export an auditor-ready evidence pack.</p>
+    </div>
+    <span id="sil-storage-status" class="pill good">● Loading</span>
+  </section>
+
+  <article class="notice sil-notice">
+    <strong>Provider information has been pre-filled.</strong><br>
+    Participant decisions, signatures, tenancy conditions, financial amounts and individual risk findings must be confirmed with the participant or authorised person. Florence labels these fields instead of inventing answers.
+  </article>
+
+  <div id="sil-stats" class="stats"></div>
+
+  <div class="segmented sil-tabs" role="tablist">
+    <button class="active" data-sil-tab="dashboard">Overview</button>
+    <button data-sil-tab="houses">SIL homes</button>
+    <button data-sil-tab="participants">Participant SIL</button>
+    <button data-sil-tab="shift">Shift records</button>
+    <button data-sil-tab="workforce">Worker compliance</button>
+    <button data-sil-tab="provider">Provider governance</button>
+    <button data-sil-tab="evidence">Audit evidence</button>
+  </div>
+
+  <section id="sil-dashboard-panel" class="sil-panel active">
+    <div class="grid two">
+      <article class="panel">
+        <div class="panel-head"><div><p class="eyebrow">Attention required</p><h3>Outstanding SIL information</h3></div></div>
+        <div id="sil-outstanding" class="stack"></div>
+      </article>
+      <article class="panel">
+        <div class="panel-head"><div><p class="eyebrow">Audit readiness</p><h3>Evidence by category</h3></div></div>
+        <div id="sil-category-summary" class="stack"></div>
+      </article>
+    </div>
+    <div class="quick-grid sil-quick-grid">
+      <button data-open-form="house"><span>🏡</span><strong>Add SIL home</strong><small>Property, residents and safeguarding</small></button>
+      <button data-open-form="handover"><span>🔄</span><strong>Shift handover</strong><small>Outgoing and incoming worker record</small></button>
+      <button data-open-form="choice"><span>💬</span><strong>Participant choice</strong><small>Supported decision-making evidence</small></button>
+      <button data-open-form="meeting"><span>🤝</span><strong>House meeting</strong><small>Consultation and agreed actions</small></button>
+      <button data-open-form="visitor"><span>🚪</span><strong>Visitor or contractor</strong><small>Safeguarding and transparency log</small></button>
+      <button data-open-form="competency"><span>🎓</span><strong>Worker competency</strong><small>Training, induction and assessment</small></button>
+    </div>
+  </section>
+
+  <section id="sil-houses-panel" class="sil-panel">
+    <div class="page-head"><div><p class="eyebrow">Homes</p><h2>SIL house register</h2><p>Property details, occupancy, house governance, safeguarding and tenancy separation.</p></div><button class="primary" data-open-form="house">+ SIL home</button></div>
+    <div class="sil-action-grid">
+      <button class="secondary" data-open-form="safeguarding">House safeguarding assessment</button>
+      <button class="secondary" data-open-form="meeting">House meeting / consultation</button>
+      <button class="secondary" data-open-form="houseRules">House rules consultation</button>
+      <button class="secondary" data-open-form="compatibility">Co-tenant compatibility review</button>
+      <button class="secondary" data-open-form="visitor">Visitor / contractor log</button>
+      <button class="secondary" data-open-form="conflict">Housing-support conflict review</button>
+    </div>
+    <div id="sil-house-list" class="stack"></div>
+  </section>
+
+  <section id="sil-participants-panel" class="sil-panel">
+    <div class="page-head"><div><p class="eyebrow">Participant rights and supports</p><h2>Participant SIL records</h2><p>Communication, agreements, choices, instructions, rights and private-space preferences.</p></div></div>
+    <div class="sil-action-grid">
+      <button class="secondary" data-open-form="communication">Communication & decision-making profile</button>
+      <button class="secondary" data-open-form="instructions">Participant-specific worker instructions</button>
+      <button class="secondary" data-open-form="choice">Choice & daily life record</button>
+      <button class="secondary" data-open-form="agreementExplanation">Agreement explanation record</button>
+      <button class="secondary" data-open-form="serviceAgreement">SIL service agreement register</button>
+      <button class="secondary" data-open-form="tenancy">Tenancy / occupancy register</button>
+      <button class="secondary" data-open-form="rights">Welcome & rights acknowledgement</button>
+      <button class="secondary" data-open-form="privateSpace">Visitor & private-space preferences</button>
+    </div>
+    <div id="sil-participant-list" class="stack"></div>
+  </section>
+
+  <section id="sil-shift-panel" class="sil-panel">
+    <div class="page-head"><div><p class="eyebrow">Daily practice evidence</p><h2>Shift and household records</h2><p>Handover, participant choices, visitors and follow-up actions.</p></div><button class="primary" data-open-form="handover">+ Shift handover</button></div>
+    <div id="sil-shift-list" class="stack"></div>
+  </section>
+
+  <section id="sil-workforce-panel" class="sil-panel">
+    <div class="page-head"><div><p class="eyebrow">Workforce capability</p><h2>SIL worker compliance</h2><p>House induction, training, competency and observed practice.</p></div></div>
+    <div class="sil-action-grid">
+      <button class="secondary" data-open-form="induction">House induction checklist</button>
+      <button class="secondary" data-open-form="competency">Worker competency checklist</button>
+      <button class="secondary" data-open-form="training">Training register entry</button>
+      <button class="secondary" data-open-form="observation">Practice observation</button>
+    </div>
+    <div id="sil-worker-list" class="stack"></div>
+  </section>
+
+  <section id="sil-provider-panel" class="sil-panel">
+    <div class="page-head"><div><p class="eyebrow">Provider governance</p><h2>I-Care Connect SIL governance</h2><p>Pre-filled provider details, controlled documents, review cycles and responsibilities.</p></div><button id="edit-provider" class="primary">Edit provider profile</button></div>
+    <div id="sil-provider-profile"></div>
+    <article class="panel">
+      <div class="panel-head"><div><h3>Controlled SIL documents</h3><p>Module 5a policies, agreements, position descriptions and operational forms.</p></div></div>
+      <div id="sil-template-register" class="stack"></div>
+    </article>
+  </section>
+
+  <section id="sil-evidence-panel" class="sil-panel">
+    <div class="page-head"><div><p class="eyebrow">Audit export</p><h2>SIL evidence register</h2><p>Filter, review and export records for registration or surveillance audits.</p></div><div class="actions"><button id="sil-export-json" class="secondary">Export JSON</button><button id="sil-export-csv" class="primary">Export CSV</button></div></div>
+    <div class="sil-filters">
+      <label>Category<select id="sil-filter-category"><option value="all">All categories</option></select></label>
+      <label>Status<select id="sil-filter-status"><option value="all">All statuses</option><option>Complete</option><option>Draft</option><option>Needs confirmation</option><option>Overdue</option></select></label>
+      <label>Search<input id="sil-filter-search" type="search" placeholder="Participant, house, worker or record"></label>
+    </div>
+    <div id="sil-evidence-list" class="stack"></div>
+  </section>
+</main>
+
+<dialog id="sil-dialog">
+  <form id="sil-form">
+    <div class="dialog-head"><div><p class="eyebrow">Florence SIL</p><h3 id="sil-dialog-title">New record</h3></div><button id="sil-dialog-close" type="button" class="icon-btn dark">×</button></div>
+    <div id="sil-dialog-help" class="form-help"></div>
+    <div id="sil-dialog-fields" class="fields"></div>
+    <div id="sil-dialog-status" class="form-status hidden" role="alert"></div>
+    <div class="dialog-actions"><button id="sil-dialog-cancel" type="button" class="secondary">Cancel</button><button type="submit" class="primary">Save SIL record</button></div>
+  </form>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="sil.js?v=20260730-1"></script>
+</body>
+</html>
