@@ -10,7 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css?v=20260723-15">
-  <link rel="stylesheet" href="sil.css?v=20260730-1">
+  <link rel="stylesheet" href="sil.css?v=20260730-2">
+  <style>html.sil-auth-pending body{visibility:hidden}</style>
 </head>
 <body>
 <div id="sil-toast" class="toast"></div>
@@ -32,7 +33,7 @@
 
   <article class="notice sil-notice">
     <strong>Provider information has been pre-filled.</strong><br>
-    Participant decisions, signatures, tenancy conditions, financial amounts and individual risk findings must be confirmed with the participant or authorised person. Florence labels these fields instead of inventing answers.
+    Participant decisions, signatures, financial amounts and individual risk findings must be confirmed with the participant or authorised person. Florence labels these fields instead of inventing answers.
   </article>
 
   <div id="sil-stats" class="stats"></div>
@@ -43,6 +44,7 @@
     <button data-sil-tab="participants">Participant SIL</button>
     <button data-sil-tab="shift">Shift records</button>
     <button data-sil-tab="workforce">Worker compliance</button>
+    <button data-sil-tab="resources">Staff resources</button>
     <button data-sil-tab="provider">Provider governance</button>
     <button data-sil-tab="evidence">Audit evidence</button>
   </div>
@@ -69,14 +71,12 @@
   </section>
 
   <section id="sil-houses-panel" class="sil-panel">
-    <div class="page-head"><div><p class="eyebrow">Homes</p><h2>SIL house register</h2><p>Property details, occupancy, house governance, safeguarding and tenancy separation.</p></div><button class="primary" data-open-form="house">+ SIL home</button></div>
+    <div class="page-head"><div><p class="eyebrow">Homes</p><h2>SIL support-location register</h2><p>Support location, participant consultation, safeguarding and emergency arrangements. Florence does not treat I-Care Connect as the housing provider.</p></div><button class="primary" data-open-form="house">+ Support location</button></div>
     <div class="sil-action-grid">
       <button class="secondary" data-open-form="safeguarding">House safeguarding assessment</button>
-      <button class="secondary" data-open-form="meeting">House meeting / consultation</button>
-      <button class="secondary" data-open-form="houseRules">House rules consultation</button>
-      <button class="secondary" data-open-form="compatibility">Co-tenant compatibility review</button>
+      <button class="secondary" data-open-form="meeting">Participant consultation</button>
+      <button class="secondary" data-open-form="houseRules">Daily living consultation</button>
       <button class="secondary" data-open-form="visitor">Visitor / contractor log</button>
-      <button class="secondary" data-open-form="conflict">Housing-support conflict review</button>
     </div>
     <div id="sil-house-list" class="stack"></div>
   </section>
@@ -89,7 +89,6 @@
       <button class="secondary" data-open-form="choice">Choice & daily life record</button>
       <button class="secondary" data-open-form="agreementExplanation">Agreement explanation record</button>
       <button class="secondary" data-open-form="serviceAgreement">SIL service agreement register</button>
-      <button class="secondary" data-open-form="tenancy">Tenancy / occupancy register</button>
       <button class="secondary" data-open-form="rights">Welcome & rights acknowledgement</button>
       <button class="secondary" data-open-form="privateSpace">Visitor & private-space preferences</button>
     </div>
@@ -110,6 +109,21 @@
       <button class="secondary" data-open-form="observation">Practice observation</button>
     </div>
     <div id="sil-worker-list" class="stack"></div>
+  </section>
+
+  <section id="sil-resources-panel" class="sil-panel">
+    <div class="page-head"><div><p class="eyebrow">Read before supporting</p><h2>SIL staff handbook & role resources</h2><p>Current guidance for support workers, with additional leadership and governance resources for supervisors.</p></div></div>
+    <article class="notice sil-notice"><strong>Privacy reminder:</strong> these controlled documents contain practice guidance only. Participant-specific plans and instructions remain inside Florence and must not be downloaded to personal devices.</article>
+    <div class="grid two sil-resource-layout">
+      <article class="panel">
+        <div class="panel-head"><div><p class="eyebrow">Support workers</p><h3>Essential SIL resources</h3></div></div>
+        <div id="sil-worker-resources" class="stack"></div>
+      </article>
+      <article id="sil-supervisor-resource-panel" class="panel">
+        <div class="panel-head"><div><p class="eyebrow">Supervisors</p><h3>Leadership & assurance resources</h3></div></div>
+        <div id="sil-supervisor-resources" class="stack"></div>
+      </article>
+    </div>
   </section>
 
   <section id="sil-provider-panel" class="sil-panel">
@@ -144,6 +158,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
-<script src="sil.js?v=20260730-1"></script>
+<script src="sil.js?v=20260730-2"></script>
 </body>
 </html>
