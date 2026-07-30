@@ -14,6 +14,21 @@
     "medical",
     "productivity"
   ],
+  "shortcuts": [
+    {
+      "name": "SIL Homes & Compliance",
+      "short_name": "SIL Compliance",
+      "description": "Open Florence SIL house, participant, workforce and audit records.",
+      "url": "./sil.html",
+      "icons": [
+        {
+          "src": "florence-icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    }
+  ],
   "icons": [
     {
       "src": "florence-icon.svg",
