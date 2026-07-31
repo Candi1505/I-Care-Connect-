@@ -1,60 +1,69 @@
-# Florence Live Trial
+# Florence — reviewed production-hardening package
 
-Florence uses Supabase authentication and the clean **Florence Database V1** schema.
+Florence is I-Care Connect’s Supabase-backed support delivery, SIL operations and compliance application.
 
-## Important database warning
+This package is a **reviewed hardening release**, not a replacement database build. Follow [`PRODUCTION_SECURITY_SETUP.md`](PRODUCTION_SECURITY_SETUP.md) before entering real participant information.
 
-`supabase-schema.sql` is a **destructive initial setup/reset script**.
+## Critical database warning
 
-It drops and recreates Florence application tables. Do not run it again after entering real participant, roster, medication, note, portal, compliance or invoice data unless you intentionally want to reset Florence.
+`supabase-schema.sql` in the main Florence repository is a **destructive initial setup/reset script**. It drops and recreates Florence application tables. Do not run it again after entering real participant, roster, medication, note, portal, compliance, invoice or governance data unless an intentional full reset has been approved and backed up.
 
-Supabase Authentication users are not deleted by the script, but their Florence profile rows must be recreated after a reset.
+The file in this package, `florence-production-hardening-upgrade.sql`, is additive and is designed to run after the audit-readiness and operational-control upgrades.
+
+## Files in this package
+
+- `index.html` — updated Florence interface;
+- `styles.css` — application styling;
+- `app.js` — MFA-gated application, assignment-scoped data loading and controlled shift/MAR/note workflows;
+- `operations.js` — audit-readiness and operational modules;
+- `staff-management.js` — supervisor account and participant-access management;
+- `service-worker.js` — refreshed offline shell cache;
+- `florence-production-hardening-upgrade.sql` — non-destructive database and RLS hardening migration;
+- `supabase/functions/staff-management/index.ts` — MFA-enforced privileged account administration;
+- `supabase/functions/xero-connect/index.ts` — MFA-enforced Xero OAuth and invoice sync;
+- `PRODUCTION_SECURITY_SETUP.md` — required deployment and verification sequence;
+- `PRODUCTION_HARDENING_REVIEW.md` — review findings, corrections and validation record;
+- `SHA256SUMS.txt` — integrity hashes for the reviewed patch files.
+
+The package deliberately does **not** include `config.js` or the destructive base schema. Keep the live repository’s existing public Supabase configuration file. Never place a Supabase service-role secret in GitHub or browser code.
 
 ## Roles
 
-- Candice Long — `supervisor`
-- Victoria “VJ” Kussrow — `supervisor`
-- Amanda Buchanan — `staff`
-- Nita Caslick — `staff`
-- Authorised representatives — `family`
-- Participants — `client`
+- Candice Long — `supervisor`;
+- Victoria “VJ” Kussrow — `supervisor`;
+- Amanda Buchanan — `staff`;
+- Nita Caslick — `staff`;
+- authorised representatives — `family`;
+- participants — `client`.
 
-Family and client profiles must include the participant UUID in `participant_id`.
+Family and client profiles must include the linked participant UUID in `participant_id`.
 
-## Repository files
+## Hardening included
 
-- `index.html`
-- `styles.css`
-- `app.js`
-- `config.js`
-- `supabase-schema.sql`
-- `README.md`
+- mandatory authenticator-app MFA for sensitive Florence tables;
+- MFA checks inside privileged database and Edge Function pathways;
+- explicit and roster-window participant access for support workers;
+- server-controlled open-shift claiming and accept/decline;
+- PIN-signed, server-validated MAR and progress notes;
+- immutable browser pathway for signed progress notes;
+- assignment-scoped medications, MAR, notes, timeline, incidents, documents, goals, funding and portal records;
+- private document policies for metadata and storage objects;
+- access, download, encrypted export, sign-in and account-administration audit events;
+- retained participant-access history;
+- decision-controlled incident and complaint retention register;
+- restricted Edge Function origins;
+- supervisor-only AES-GCM encrypted organisation archives; browser-based clinical restore is disabled because the archive excludes private document bytes and is not a complete disaster-recovery backup;
+- secure supervisor-only Xero operations when the Xero integration is configured.
 
-## Current live-trial features
+## Validation completed on this package
 
-- secure Supabase email/password sign-in;
-- supervisor, staff, family and client workspaces;
-- participant creation and profiles;
-- supervisor-controlled rostering;
-- staff shift acceptance and decline;
-- medication profiles and six-digit medication PIN verification;
-- MAR history;
-- progress notes;
-- client timeline;
-- family/client portal messages and requests;
-- supervisor-created family and participant portal invitations;
-- fortnightly roster and pay-period timesheet export;
-- conflict-of-interest declarations and register;
-- management and staff meeting minutes;
-- recorded delegations and authority limits;
-- retained, timestamped operational history;
-- private document storage;
-- compliance evidence register;
-- supervisor-only invoicing;
-- Xero connection placeholder.
+- JavaScript syntax checks passed for `app.js`, `operations.js`, `staff-management.js` and `service-worker.js`;
+- TypeScript transpilation checks passed for both Edge Functions;
+- HTML and service-worker asset versions match;
+- no service-role secret value or live Supabase secret is included;
+- the family/client portal navigation crash in the uploaded patch was corrected;
+- direct unsigned MAR insertion code was removed;
+- direct worker roster updates were replaced by controlled RPC calls;
+- the SQL migration was revised to fail as one transaction when prerequisites are missing.
 
-## Security
-
-Only the public Supabase publishable key belongs in `config.js`.
-
-Never place a Supabase service-role secret in GitHub or browser code.
+A live Supabase test, access-control test matrix, backup restore test and independent privacy/cybersecurity review are still required before production participant data is entered.

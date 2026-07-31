@@ -2,7 +2,7 @@
 "use strict";
 const B=()=>window.FlorenceBridge;
 const q=s=>document.querySelector(s);
-let directory=[];
+let directory=[],assignments=[];
 const roleLabel=role=>({supervisor:"Supervisor",staff:"Support worker",family:"Family representative",client:"Participant"}[role]||role);
 const accountStatus=worker=>!worker.active?"Inactive":worker.banned_until?"Suspended":worker.last_sign_in_at?"Active":"Invited";
 async function invoke(body){
@@ -18,8 +18,13 @@ async function invoke(body){
 async function loadDirectory(){
  if(!B().isSupervisor())return;
  try{
-  const data=await invoke({action:"list"});
+  const [data,accessResult]=await Promise.all([
+   invoke({action:"list"}),
+   B().db.from("participant_access_assignments").select("*").eq("active",true).is("revoked_at",null)
+  ]);
+  if(accessResult.error)throw accessResult.error;
   directory=data.staff||[];
+  assignments=accessResult.data||[];
   renderDirectory();
  }catch(error){
   q("#staff-directory").innerHTML=`<div class="notice"><strong>Staff setup required.</strong><br>${B().esc(error.message)} Run the staff-management setup package before inviting workers.</div>`;
@@ -31,6 +36,10 @@ function renderDirectory(){
  target.innerHTML=directory.map(worker=>{
   const status=accountStatus(worker);
   const last=worker.last_sign_in_at?`Last sign-in ${B().fmt(worker.last_sign_in_at)}`:"Invitation not yet accepted";
+  const participantAccess=worker.role==="staff"?`<fieldset class="participant-access"><legend>Participant access</legend>
+   <p class="record-meta">Tick ongoing access only when this worker supports the participant. A published rostered shift also grants time-limited access.</p>
+   ${B().state.participants.map(participant=>{const checked=assignments.some(a=>a.staff_id===worker.id&&a.participant_id===participant.id);return `<label><input type="checkbox" data-participant-access="${worker.id}" data-participant-id="${participant.id}" ${checked?"checked":""}> ${B().esc(participant.preferred_name||participant.full_name)}</label>`}).join("")||"<small>Add a participant before assigning access.</small>"}
+  </fieldset>`:"";
   return `<article class="record staff-card ${worker.active?"":"inactive"}">
    <div class="record-top"><div><h3>${B().esc(worker.full_name)}</h3><p class="staff-email">${B().esc(worker.email||"No email")}</p></div>${B().badge(status)}</div>
    <div class="staff-invite-status">${B().badge(roleLabel(worker.role))}<span class="badge">${B().esc(last)}</span></div>
@@ -42,6 +51,7 @@ function renderDirectory(){
     <button class="secondary" data-resend-worker="${worker.id}">Resend access email</button>
     <button class="${worker.active?"decline":"accept"}" data-toggle-worker="${worker.id}" data-active="${worker.active?"false":"true"}">${worker.active?"Deactivate":"Reactivate"}</button>
    </div>
+   ${participantAccess}
   </article>`;
  }).join("")||B().empty("No staff accounts yet.");
 }
@@ -112,6 +122,27 @@ document.addEventListener("click",async event=>{
  }catch(error){B().toast(error.message)}
 });
 document.addEventListener("change",async event=>{
+ const access=event.target.closest("[data-participant-access]");
+ if(access){
+  access.disabled=true;
+  try{
+   const staffId=access.dataset.participantAccess,participantId=access.dataset.participantId;
+   if(access.checked){
+    const {error}=await B().db.from("participant_access_assignments").insert({
+     organisation_id:B().profile.organisation_id,participant_id:participantId,staff_id:staffId,
+     granted_by:B().profile.id,reason:"Ongoing support assignment"
+    });if(error)throw error;
+    B().toast("Participant access granted");
+   }else{
+    const {error}=await B().db.from("participant_access_assignments").update({
+     active:false,revoked_by:B().profile.id,revoked_at:new Date().toISOString()
+    }).eq("staff_id",staffId).eq("participant_id",participantId).eq("active",true);if(error)throw error;
+    B().toast("Participant access revoked");
+   }
+   await loadDirectory();
+  }catch(error){B().toast(error.message);access.checked=!access.checked;access.disabled=false}
+  return;
+ }
  const select=event.target.closest("[data-worker-role]");
  if(!select)return;
  try{
