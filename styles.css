@@ -151,3 +151,8 @@ dialog{width:min(94vw,620px);border:0;border-radius:24px;padding:0;box-shadow:0 
 .participant-access{margin-top:16px;border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;gap:10px}
 .participant-access legend{font-weight:700;padding:0 6px}
 .participant-access label{display:flex;align-items:center;gap:10px}
+
+
+/* People, time clock and controlled-resource improvements */
+.dashboard-timeclock{margin:18px 0}.timeclock-head{align-items:center}.dashboard-timeclock .actions{justify-content:flex-end}.dashboard-timeclock button[disabled]{opacity:.5;cursor:not-allowed}.controlled-library-card{margin:16px 0}.controlled-library-card .panel-head{align-items:center}.role-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}.role-control{margin:0}.role-control select:disabled{opacity:.65;background:var(--mist)}
+@media(max-width:720px){.timeclock-head,.controlled-library-card .panel-head{align-items:stretch}.dashboard-timeclock .actions,.controlled-library-card .actions{justify-content:stretch}.dashboard-timeclock .actions button,.controlled-library-card button{flex:1}.role-controls{grid-template-columns:1fr}}

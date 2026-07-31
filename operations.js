@@ -38,7 +38,87 @@ function renderSafety(){
  q("#medication-error-list").innerHTML=ops.medicationIncidents.map(x=>card(x.incident_type,`${person(x.participant_id)} · ${B().fmt(x.occurred_at)} · ${x.status}`,x.description)).join("")||B().empty("No medication errors recorded.");
  q("#controlled-drug-list").innerHTML=ops.controlledDrugs.map(x=>{const med=B().state.medications.find(m=>m.id===x.medication_id);return card(med?.medication_name||"Schedule 8 medication",`${person(x.participant_id)} · ${x.transaction_type} · Balance ${x.balance} · ${B().fmt(x.transaction_at)}`,x.reason||"",`Witness: ${B().esc(worker(x.witnessed_by))}`)}).join("")||B().empty("No Schedule 8 stock transactions.");
 }
+const WORK_TYPES=[
+ "Participant support",
+ "24-hour support",
+ "Personal care",
+ "Community access",
+ "Social support",
+ "Sleepover",
+ "Active night",
+ "Transport",
+ "Domestic assistance",
+ "Administration / office work",
+ "Training / staff meeting",
+ "On-call / coordination",
+ "Other"
+];
 function hours(t){if(!t.clock_out)return"Clocked in";const value=(new Date(t.clock_out)-new Date(t.clock_in))/3600000-(t.break_minutes||0)/60;return Math.max(0,value).toFixed(2)+" hours"}
+function timesheetWorkType(t){const match=String(t.notes||"").match(/^Work type:\s*(.+)$/m);return match?.[1]?.trim()||(t.shift_id?"Rostered support":"Work shift")}
+function timesheetDisplayNotes(t){return String(t.notes||"").split("\n").filter(line=>line&&!/^Work type:/i.test(line)).join(" · ")}
+function openTimesheet(){return ops.timesheets.find(t=>t.staff_id===B().profile.id&&!t.clock_out)||null}
+function rosterShiftOptions(){
+ const now=Date.now();
+ return B().state.shifts.filter(shift=>shift.assigned_staff_id===B().profile.id&&shift.status==="Published"&&new Date(shift.ends_at).getTime()>now-12*3600000).map(shift=>({
+  value:shift.id,
+  label:`${shift.shift_type} · ${shift.participant?.full_name||"Participant"} · ${B().fmt(shift.starts_at)}`
+ }));
+}
+async function openClockInForm(){
+ if(!B().isStaffUser())return B().toast("Clocking is available to workers and supervisors");
+ if(openTimesheet())return B().toast("You are already clocked in");
+ const {field,form}=B();
+ form("Clock in",[
+  field("work_type","Work type","select",WORK_TYPES),
+  field("shift_id","Related roster shift (optional)","select",[{value:"",label:"No roster shift — organisation or admin work"},...rosterShiftOptions()],false),
+  field("notes","Clock-in notes (optional)","textarea",[],false)
+ ],async values=>{
+  const notes=[`Work type: ${values.work_type}`,String(values.notes||"").trim()].filter(Boolean).join("\n");
+  const {error}=await B().db.from("timesheets").insert({
+   organisation_id:B().profile.organisation_id,
+   staff_id:B().profile.id,
+   shift_id:values.shift_id||null,
+   clock_in:new Date().toISOString(),
+   break_minutes:0,
+   notes,
+   status:"Open"
+  });
+  if(error)throw error;
+  await loadOperations();
+  return `Clocked in — ${values.work_type}`;
+ },{work_type:"Participant support"});
+}
+async function openClockOutForm(){
+ if(!B().isStaffUser())return B().toast("Clocking is available to workers and supervisors");
+ const open=openTimesheet();
+ if(!open)return B().toast("No open timesheet");
+ const {field,form}=B();
+ form("Clock out",[
+  field("break_minutes","Unpaid break minutes","number",[],false),
+  field("notes","Clock-out notes (optional)","textarea",[],false)
+ ],async values=>{
+  const breakMinutes=Math.max(0,Number(values.break_minutes||0));
+  const prior=String(open.notes||"").split("\n").filter(line=>!/^Clock-out note:/i.test(line)).join("\n");
+  const finishNote=String(values.notes||"").trim();
+  const notes=[prior,finishNote?`Clock-out note: ${finishNote}`:""].filter(Boolean).join("\n");
+  const {error}=await B().db.from("timesheets").update({
+   clock_out:new Date().toISOString(),
+   break_minutes:breakMinutes,
+   notes,
+   status:"Submitted"
+  }).eq("id",open.id).eq("staff_id",B().profile.id);
+  if(error)throw error;
+  await loadOperations();
+  return "Clocked out and timesheet submitted";
+ },{break_minutes:open.break_minutes||0});
+}
+function renderTimeClockStatus(){
+ const open=openTimesheet(),status=q("#dashboard-clock-status"),detail=q("#dashboard-clock-detail");
+ if(status)status.textContent=open?`Clocked in — ${timesheetWorkType(open)}`:"Not clocked in";
+ if(detail)detail.textContent=open?`Started ${B().fmt(open.clock_in)}. Clock out when this work period finishes.`:"Choose participant support, administration / office work, training or another work type when you clock in.";
+ document.querySelectorAll("#clock-in,#dashboard-clock-in").forEach(button=>{button.disabled=!!open;button.setAttribute("aria-disabled",String(!!open))});
+ document.querySelectorAll("#clock-out,#dashboard-clock-out").forEach(button=>{button.disabled=!open;button.setAttribute("aria-disabled",String(!open))});
+}
 function currentPayPeriod(){
  const today=new Date(),anchorValue=B().organisation?.pay_period_anchor;
  if(anchorValue){
@@ -53,9 +133,15 @@ function currentPayPeriod(){
  return {start,end};
 }
 function renderWorkforce(){
+ renderTimeClockStatus();
  if(!q("#timesheet-list"))return;
  const mine=ops.timesheets.filter(t=>B().isSupervisor()||t.staff_id===B().profile.id);
- q("#timesheet-list").innerHTML=mine.map(t=>card(worker(t.staff_id),`${B().fmt(t.clock_in)} · ${hours(t)} · ${t.status}`,"",B().isSupervisor()&&t.clock_out&&t.status!=="Approved"?`<button class="link" data-approve-timesheet="${t.id}">Approve</button>`:"")).join("")||B().empty("No timesheets.");
+ q("#timesheet-list").innerHTML=mine.map(t=>card(
+  worker(t.staff_id),
+  `${B().fmt(t.clock_in)} · ${timesheetWorkType(t)} · ${hours(t)} · ${t.status}`,
+  timesheetDisplayNotes(t),
+  B().isSupervisor()&&t.clock_out&&t.status!=="Approved"?`<button class="link" data-approve-timesheet="${t.id}">Approve</button>`:""
+ )).join("")||B().empty("No timesheets.");
  q("#workforce-request-list").innerHTML=[
   ...ops.leave.map(x=>card("Leave request",`${worker(x.staff_id)} · ${x.starts_on} to ${x.ends_on} · ${x.status}`,x.reason||"")),
   ...ops.availability.map(x=>card(x.availability_type,`${worker(x.staff_id)} · ${B().fmt(x.starts_at)} to ${B().fmt(x.ends_at)}`,x.notes||"")),
@@ -116,8 +202,8 @@ function bindForms(){
   field("quantity","Quantity","number"),field("balance","Balance after transaction","number"),
   field("witnessed_by","Witness","select",staffOptions().filter(x=>x.value!==B().profile.id)),field("reason","Reason or notes (optional)","textarea",[],false)
  ],async v=>{if(!v.witnessed_by)throw new Error("A second staff member must witness this Schedule 8 entry");const {error}=await B().db.from("controlled_drug_register").insert({...v,quantity:Number(v.quantity||0),balance:Number(v.balance),organisation_id:B().profile.organisation_id,recorded_by:B().profile.id,transaction_at:new Date().toISOString()});if(error)throw error;await loadOperations();B().toast("Witnessed Schedule 8 transaction saved")});
- q("#clock-in").onclick=async()=>{const open=ops.timesheets.find(t=>t.staff_id===B().profile.id&&!t.clock_out);if(open)return B().toast("You are already clocked in");const {error}=await B().db.from("timesheets").insert({organisation_id:B().profile.organisation_id,staff_id:B().profile.id,clock_in:new Date().toISOString(),status:"Open"});if(error)return B().toast(error.message);await loadOperations();B().toast("Clocked in")};
- q("#clock-out").onclick=async()=>{const open=ops.timesheets.find(t=>t.staff_id===B().profile.id&&!t.clock_out);if(!open)return B().toast("No open timesheet");const {error}=await B().db.from("timesheets").update({clock_out:new Date().toISOString(),status:"Submitted"}).eq("id",open.id).eq("staff_id",B().profile.id);if(error)return B().toast(error.message);await loadOperations();B().toast("Clocked out and submitted")};
+ document.querySelectorAll("#clock-in,#dashboard-clock-in").forEach(button=>button.onclick=openClockInForm);
+ document.querySelectorAll("#clock-out,#dashboard-clock-out").forEach(button=>button.onclick=openClockOutForm);
  q("#add-leave").onclick=()=>form("Request leave",[field("starts_on","First day","date"),field("ends_on","Last day","date"),field("leave_type","Leave type","select",["Annual leave","Personal or carers leave","Unpaid leave","Other"]),field("reason","Notes (optional)","textarea",[],false)],async v=>{const {error}=await B().db.from("leave_requests").insert({...v,organisation_id:B().profile.organisation_id,staff_id:B().profile.id,status:"Pending"});if(error)throw error;await loadOperations();B().toast("Leave request submitted")});
  q("#add-availability").onclick=()=>form("Add availability",[field("starts_at","Available from","datetime-local"),field("ends_at","Available until","datetime-local"),field("availability_type","Type","select",["Available","Unavailable","Preferred"]),field("notes","Notes (optional)","textarea",[],false)],async v=>{const {error}=await B().db.from("worker_availability").insert({...v,organisation_id:B().profile.organisation_id,staff_id:B().profile.id});if(error)throw error;await loadOperations();B().toast("Availability saved")});
  q("#add-travel").onclick=()=>form("Add travel or expense",[field("participant_id","Participant (optional)","select",[{value:"",label:"Not linked"},...participantOptions()],false),field("expense_date","Date","date"),field("expense_type","Type","select",["Participant transport","Provider travel","Parking","Toll","Meal allowance","Other"]),field("kilometres","Kilometres","number",[],false),field("amount","Expense amount","number",[],false),field("description","Description (optional)","textarea",[],false)],async v=>{const {error}=await B().db.from("travel_expenses").insert({...v,participant_id:v.participant_id||null,kilometres:Number(v.kilometres||0),amount:Number(v.amount||0),organisation_id:B().profile.organisation_id,staff_id:B().profile.id,status:"Pending"});if(error)throw error;await loadOperations();B().toast("Travel or expense submitted")});

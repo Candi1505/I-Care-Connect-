@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260731-3">
+  <link rel="stylesheet" href="styles.css?v=20260801-1">
 </head>
 <body>
 <div id="toast" class="toast"></div>
@@ -55,9 +55,9 @@
     <button data-view="workforce">⏱️ Workforce & timesheets</button>
     <button data-view="outcomes">🎯 Goals & funding</button>
     <button data-view="governance">🔐 Governance <span id="notification-count" class="badge amber">0</span></button>
-    <button class="admin-only" data-view="staff-management">👩‍⚕️ Staff management</button>
+    <button class="admin-only" data-view="staff-management">👥 People & access management</button>
     <button class="staff-only" data-view="my-account">🔑 My account & PIN</button>
-    <button class="staff-only" type="button" onclick="location.href='sil.html'">🏡 SIL workspace & staff resources</button>
+    <button class="staff-only" type="button" onclick="location.href='sil.html'">📚 Controlled policies, handbooks & SIL resources</button>
     <button data-view="finance">💳 Invoicing & Xero</button>
     <button id="backup" class="admin-only">🔐 Export encrypted archive</button>
     <button id="import-backup" class="admin-only">🛡️ Restore guidance</button>
@@ -69,6 +69,12 @@
     <section id="dashboard-view" class="view active">
       <div class="welcome"><div><p class="eyebrow" id="greeting">Good afternoon</p><h2 id="welcome-name">Welcome back, Candice</h2><p>Every small act of care makes a difference.</p></div><span class="pill good">● System ready</span></div>
       <div id="stats" class="stats"></div>
+      <article id="dashboard-timeclock-panel" class="panel dashboard-timeclock staff-only">
+        <div class="panel-head timeclock-head">
+<div><p class="eyebrow">Time & attendance</p><h3 id="dashboard-clock-status">Checking clock status…</h3><p id="dashboard-clock-detail">Workers and supervisors can record support, administration and other work.</p></div>
+<div class="actions"><button id="dashboard-clock-in" type="button" class="primary">Clock in</button><button id="dashboard-clock-out" type="button" class="secondary">Clock out</button><button type="button" class="link" data-view="workforce">Open timesheets</button></div>
+        </div>
+      </article>
       <div class="grid two">
         <article class="panel"><div class="panel-head"><div><p class="eyebrow">Medication safety</p><h3>Medication due</h3></div><button class="link" data-view="medications">Open MAR</button></div><div id="dashboard-medications" class="stack"></div></article>
         <article class="panel"><div class="panel-head"><div><p class="eyebrow">Daily documentation</p><h3>Recent progress notes</h3></div><button class="link" data-view="notes">Add note</button></div><div id="dashboard-notes" class="stack"></div></article>
@@ -177,8 +183,11 @@
 
     <section id="compliance-view" class="view">
       <div class="page-head"><div><p class="eyebrow">NDIS audit readiness</p><h2>Compliance centre</h2><p>Staff, participant and organisation evidence in one auditable register.</p></div><button type="button" id="upload-compliance" class="primary admin-only">+ Upload document</button></div>
+      <article class="panel controlled-library-card staff-only">
+        <div class="panel-head"><div><p class="eyebrow">Controlled document library</p><h3>Policies, handbooks, position descriptions and SIL forms</h3><p>The 44-document controlled library includes the SIL Staff Handbook, Disability Support Worker and SIL Team Leader position descriptions, worker declarations, participant forms and organisational policies. The evidence register below is for uploaded signed, current or participant-specific records.</p></div><button type="button" class="secondary" onclick="location.href='sil.html'">Open 44 controlled documents</button></div>
+      </article>
       <div class="segmented">
-        <button class="active" data-compliance-tab="all">All documents</button>
+        <button class="active" data-compliance-tab="all">Uploaded evidence</button>
         <button data-compliance-tab="staff">Staff</button>
         <button data-compliance-tab="participant">Participants</button>
         <button data-compliance-tab="organisation">Organisation</button>
@@ -316,9 +325,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
-<script src="app.js?v=20260801-2"></script>
-<script src="operations.js?v=20260731-3"></script>
-<script src="staff-management.js?v=20260731-3"></script>
+<script src="app.js?v=20260801-3"></script>
+<script src="operations.js?v=20260801-1"></script>
+<script src="staff-management.js?v=20260801-1"></script>
 <script>
 if("serviceWorker" in navigator){
   window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));
