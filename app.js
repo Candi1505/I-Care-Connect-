@@ -108,9 +108,11 @@ async function ensureMfa(){
  const factors=await readFactors();
  const factor=factors.find(x=>String(x.status).toLowerCase()==="verified");
  if(factor){
-  const code=await requestMfaCode("Verify your Florence sign-in");
-  const {data:challenge,error:challengeError}=await db.auth.mfa.challenge({factorId:factor.id});if(challengeError)throw challengeError;
-  const {error:verifyError}=await db.auth.mfa.verify({factorId:factor.id,challengeId:challenge.id,code});if(verifyError)throw verifyError;
+  await verifyMfaFactor({
+   factorId:factor.id,
+   title:"Verify your Florence sign-in",
+   message:"Open your authenticator app and enter the current six-digit Florence code."
+  });
   return;
  }
  await cleanupUnverified();
@@ -122,22 +124,54 @@ async function ensureMfa(){
   if(enrollError&&!/friendly name|already exists/i.test(enrollError.message||""))throw enrollError;
  }
  if(!enrolled)throw enrollError||new Error("Florence could not start authenticator setup");
- const code=await requestMfaCode("Protect your Florence account",enrolled.totp.qr_code,enrolled.totp.secret);
- const {data:challenge,error:challengeError}=await db.auth.mfa.challenge({factorId:enrolled.id});if(challengeError)throw challengeError;
- const {error:verifyError}=await db.auth.mfa.verify({factorId:enrolled.id,challengeId:challenge.id,code});if(verifyError)throw verifyError;
+ await verifyMfaFactor({
+  factorId:enrolled.id,
+  title:"Protect your Florence account",
+  message:"Add Florence to an authenticator app once. After this setup, future sign-ins will only ask for the six-digit code.",
+  qrCode:enrolled.totp?.qr_code||"",
+  uri:enrolled.totp?.uri||""
+ });
  await cleanupUnverified(enrolled.id).catch(()=>{});
  await db.rpc("record_access_event",{p_action:"MFA_ENROLLED",p_table_name:"auth",p_record_id:null,p_metadata:{factor_type:"totp"}}).catch(()=>{});
 }
-function requestMfaCode(title,qrCode="",secret=""){
+function verifyMfaFactor({factorId,title,message,qrCode="",uri=""}){
  return new Promise((resolve,reject)=>{
+  const isSetup=Boolean(qrCode);
   const overlay=document.createElement("div");overlay.className="mfa-gate";
   overlay.innerHTML=`<form class="panel mfa-gate-card"><p class="eyebrow">Required security</p><h2>${esc(title)}</h2>
-   ${qrCode?`<p>Scan this QR code with an authenticator app. If you are using this phone, copy the setup key into the app instead.</p><img class="mfa-qr" src="${qrCode}" alt="Authenticator QR code">${secret?`<label>Setup key<input value="${esc(secret)}" readonly></label>`:""}`:`<p>Enter the current code from your authenticator app.</p>`}
-   <label>Six-digit code<input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required autofocus></label>
-   <button class="primary wide">Continue securely</button><p class="mfa-gate-help">MFA is required before participant information can be opened.</p></form>`;
+   <p>${esc(message)}</p>
+   ${isSetup?`<img class="mfa-qr" src="${qrCode}" alt="Authenticator QR code">${uri?`<a class="secondary wide" href="${esc(uri)}">Open authenticator app</a>`:""}<p class="mfa-gate-help">Use the QR code or the button above. The private setup secret is not displayed. If an old unfinished Florence entry is in your authenticator, remove it before adding this new one.</p>`:""}
+   <label>Six-digit code<input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required></label>
+   <p class="notice hidden" data-mfa-status role="alert"></p>
+   <button class="primary wide" type="submit">Continue securely</button>
+   <button class="link wide" type="button" data-mfa-signout>Sign out</button>
+   <p class="mfa-gate-help">Florence keeps this screen open if a code expires or is mistyped, so you can enter a fresh code without restarting setup.</p></form>`;
   document.body.appendChild(overlay);
-  overlay.querySelector("form").onsubmit=event=>{event.preventDefault();const code=new FormData(event.currentTarget).get("code");if(!/^\d{6}$/.test(code))return;overlay.remove();resolve(code)};
-  addEventListener("beforeunload",()=>reject(new Error("Multi-factor authentication is required")),{once:true});
+  const form=overlay.querySelector("form"),input=form.querySelector('[name="code"]'),submit=form.querySelector('button[type="submit"]'),status=form.querySelector("[data-mfa-status]"),signOut=form.querySelector("[data-mfa-signout]");
+  const showError=text=>{status.textContent=text;status.classList.remove("hidden")};
+  form.onsubmit=async event=>{
+   event.preventDefault();
+   const code=String(new FormData(form).get("code")||"").replace(/\s+/g,"");
+   if(!/^\d{6}$/.test(code)){showError("Enter all six numbers from your authenticator app.");input.focus();return}
+   submit.disabled=true;submit.textContent="Checking code…";status.textContent="";status.classList.add("hidden");
+   try{
+    const {data:challenge,error:challengeError}=await db.auth.mfa.challenge({factorId});if(challengeError)throw challengeError;
+    const {error:verifyError}=await db.auth.mfa.verify({factorId,challengeId:challenge.id,code});if(verifyError)throw verifyError;
+    overlay.remove();resolve();
+   }catch(error){
+    const raw=String(error?.message||"Florence could not verify that code.");
+    const friendly=/invalid|expired|verification|challenge|code/i.test(raw)
+     ?(isSetup?"That code was not accepted. Make sure it comes from the Florence entry created by this screen, wait for a fresh code, then try again.":"That code was not accepted. Wait for a fresh Florence code in your authenticator and try again.")
+     :raw;
+    showError(friendly);input.value="";input.focus();
+   }finally{submit.disabled=false;submit.textContent="Continue securely"}
+  };
+  signOut.onclick=async()=>{
+   signOut.disabled=true;
+   await db.auth.signOut({scope:"local"}).catch(()=>{});
+   overlay.remove();reject(new Error("Signed out"));location.reload();
+  };
+  requestAnimationFrame(()=>input.focus());
  });
 }
 function startEnterApp(s){
