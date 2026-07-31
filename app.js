@@ -91,21 +91,42 @@ async function boot(){
  }catch(err){toast(err.message)}
 }
 async function ensureMfa(){
- const {data:list,error:listError}=await db.auth.mfa.listFactors();if(listError)throw listError;
- let factor=list?.totp?.find(x=>x.status==="verified");
- if(!factor){
-  for(const unfinished of list?.totp?.filter(x=>x.status!=="verified")||[])await db.auth.mfa.unenroll({factorId:unfinished.id});
-  const {data:enrolled,error:enrollError}=await db.auth.mfa.enroll({factorType:"totp",friendlyName:"Florence"});if(enrollError)throw enrollError;
-  const code=await requestMfaCode("Protect your Florence account",enrolled.totp.qr_code,enrolled.totp.secret);
-  const {data:challenge,error:challengeError}=await db.auth.mfa.challenge({factorId:enrolled.id});if(challengeError)throw challengeError;
-  const {error:verifyError}=await db.auth.mfa.verify({factorId:enrolled.id,challengeId:challenge.id,code});if(verifyError)throw verifyError;
-  await db.rpc("record_access_event",{p_action:"MFA_ENROLLED",p_table_name:"auth",p_record_id:null,p_metadata:{factor_type:"totp"}}).catch(()=>{});
+ const readFactors=async()=>{
+  const {data,error}=await db.auth.mfa.listFactors();if(error)throw error;
+  const factors=[...(data?.totp||[]),...(data?.all||[]).filter(x=>(x.factor_type||x.type)==="totp")];
+  return [...new Map(factors.map(x=>[x.id,x])).values()];
+ };
+ const cleanupUnverified=async(exceptId=null)=>{
+  const factors=await readFactors();
+  for(const unfinished of factors.filter(x=>x.id!==exceptId&&String(x.status).toLowerCase()!=="verified")){
+   const {error}=await db.auth.mfa.unenroll({factorId:unfinished.id});
+   if(error)console.warn("Florence could not remove an unfinished MFA factor",error.message);
+  }
+ };
+ const {data:aal,error:aalError}=await db.auth.mfa.getAuthenticatorAssuranceLevel();if(aalError)throw aalError;
+ if(aal?.currentLevel==="aal2")return;
+ const factors=await readFactors();
+ const factor=factors.find(x=>String(x.status).toLowerCase()==="verified");
+ if(factor){
+  const code=await requestMfaCode("Verify your Florence sign-in");
+  const {data:challenge,error:challengeError}=await db.auth.mfa.challenge({factorId:factor.id});if(challengeError)throw challengeError;
+  const {error:verifyError}=await db.auth.mfa.verify({factorId:factor.id,challengeId:challenge.id,code});if(verifyError)throw verifyError;
   return;
  }
- const {data:aal}=await db.auth.mfa.getAuthenticatorAssuranceLevel();if(aal?.currentLevel==="aal2")return;
- const code=await requestMfaCode("Verify your Florence sign-in");
- const {data:challenge,error:challengeError}=await db.auth.mfa.challenge({factorId:factor.id});if(challengeError)throw challengeError;
- const {error:verifyError}=await db.auth.mfa.verify({factorId:factor.id,challengeId:challenge.id,code});if(verifyError)throw verifyError;
+ await cleanupUnverified();
+ let enrolled=null,enrollError=null;
+ for(let attempt=0;attempt<2&&!enrolled;attempt++){
+  const suffix=`${Date.now().toString(36)}${attempt?`-${attempt}`:""}`;
+  const result=await db.auth.mfa.enroll({factorType:"totp",friendlyName:`Florence-${suffix}`});
+  enrolled=result.data;enrollError=result.error;
+  if(enrollError&&!/friendly name|already exists/i.test(enrollError.message||""))throw enrollError;
+ }
+ if(!enrolled)throw enrollError||new Error("Florence could not start authenticator setup");
+ const code=await requestMfaCode("Protect your Florence account",enrolled.totp.qr_code,enrolled.totp.secret);
+ const {data:challenge,error:challengeError}=await db.auth.mfa.challenge({factorId:enrolled.id});if(challengeError)throw challengeError;
+ const {error:verifyError}=await db.auth.mfa.verify({factorId:enrolled.id,challengeId:challenge.id,code});if(verifyError)throw verifyError;
+ await cleanupUnverified(enrolled.id).catch(()=>{});
+ await db.rpc("record_access_event",{p_action:"MFA_ENROLLED",p_table_name:"auth",p_record_id:null,p_metadata:{factor_type:"totp"}}).catch(()=>{});
 }
 function requestMfaCode(title,qrCode="",secret=""){
  return new Promise((resolve,reject)=>{
