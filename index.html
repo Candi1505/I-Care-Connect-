@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260723-15">
+  <link rel="stylesheet" href="styles.css?v=20260731-3">
 </head>
 <body>
 <div id="toast" class="toast"></div>
@@ -59,9 +59,8 @@
     <button class="staff-only" data-view="my-account">🔑 My account & PIN</button>
     <button class="staff-only" type="button" onclick="location.href='sil.html'">🏡 SIL workspace & staff resources</button>
     <button data-view="finance">💳 Invoicing & Xero</button>
-    <button id="backup">⬇️ Export backup to Drive</button>
-    <button id="import-backup">⬆️ Import backup from Drive</button>
-    <input id="backup-file" class="hidden" type="file" accept="application/json,.json">
+    <button id="backup" class="admin-only">🔐 Export encrypted archive</button>
+    <button id="import-backup" class="admin-only">🛡️ Restore guidance</button>
     <button id="logout">↩️ Log out</button>
   </aside>
   <div id="scrim" class="scrim hidden"></div>
@@ -233,7 +232,7 @@
   
     <section id="staff-management-view" class="view">
       <div class="page-head"><div><p class="eyebrow">Supervisor administration</p><h2>People & access management</h2><p>Invite workers, family representatives or participants, link portal access and manage active accounts without opening Supabase.</p></div><button id="invite-worker" class="primary admin-only">+ Invite person</button></div>
-      <article class="notice staff-security-note"><strong>Private and secure</strong><br>Workers set their own password and six-digit signing PIN. Supervisors cannot view either.</article>
+      <article class="notice staff-security-note"><strong>Private and secure</strong><br>Every person uses an individual login, mandatory authenticator verification and their own signing PIN. Supervisors cannot view passwords, authenticator codes or PINs.</article>
       <div id="staff-directory" class="stack"></div>
     </section>
 
@@ -317,9 +316,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
-<script src="app.js?v=20260731-1"></script>
-<script src="operations.js?v=20260731-1"></script>
-<script src="staff-management.js?v=20260731-1"></script>
+<script src="app.js?v=20260731-3"></script>
+<script src="operations.js?v=20260731-3"></script>
+<script src="staff-management.js?v=20260731-3"></script>
 <script>
 if("serviceWorker" in navigator){
   window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));

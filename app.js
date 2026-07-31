@@ -5,10 +5,11 @@ const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const fmt=v=>new Intl.DateTimeFormat("en-AU",{day:"numeric",month:"short",year:"numeric",hour:"numeric",minute:"2-digit"}).format(new Date(v));
 const date=v=>v?new Intl.DateTimeFormat("en-AU",{day:"numeric",month:"short",year:"numeric"}).format(new Date(v)):"";
 const id=()=>crypto.randomUUID?.()||Date.now()+"-"+Math.random().toString(16).slice(2);
-let db=null, session=null, profile=null, organisation=null;
+let db=null, session=null, profile=null, organisation=null, enterPromise=null, enteredUserId=null;
 let rosterTab="published",rosterWeekOffset=0,medTab="round",complianceTab="all",timelineFilter="all",portalFilter="active",pending=null,pendingMed=null,activePortalThread=null,marRoundParticipant="",marRoundDate="",marRoundName="Bedtime",marRoundSelections={};
 let xeroConnection={checked:false,connected:false,tenant_name:null};
 let state={staff:[],participants:[],shifts:[],medications:[],mar:[],notes:[],compliance:[],invoices:[],timeline:[],portalThreads:[],portalMessages:[]};
+const accessAuditTimes=new Map();
 
 function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),2500)}
 function empty(t){return `<div class="empty">${esc(t)}</div>`}
@@ -24,7 +25,20 @@ function requireConfig(){
  }
  db=window.supabase.createClient(C.supabaseUrl,C.supabaseAnonKey);
 }
-function showView(v){$$(".view").forEach(e=>e.classList.toggle("active",e.id===v+"-view"));$$("[data-view]").forEach(e=>e.classList.toggle("active",e.dataset.view===v));closeDrawer();scrollTo({top:0,behavior:"smooth"})}
+async function auditAccess(action,tableName,recordId=null,metadata={}){
+ if(!db||!profile)return;
+ const key=`${action}:${tableName}:${recordId||""}`,now=Date.now();
+ if(action==="VIEW"&&now-(accessAuditTimes.get(key)||0)<60000)return;
+ accessAuditTimes.set(key,now);
+ const {error}=await db.rpc("record_access_event",{p_action:action,p_table_name:tableName,p_record_id:recordId,p_metadata:metadata});
+ if(error&&!/record_access_event/i.test(error.message||""))console.warn("Florence audit event failed",error.message);
+}
+function showView(v){
+ $$(".view").forEach(e=>e.classList.toggle("active",e.id===v+"-view"));$$("[data-view]").forEach(e=>e.classList.toggle("active",e.dataset.view===v));
+ const audited={participants:"participants",roster:"shifts",medications:"medications",notes:"progress_notes",timeline:"client_timeline",portal:"portal_threads",safety:"incidents",workforce:"timesheets",outcomes:"participant_goals",compliance:"compliance_documents",finance:"invoices","staff-management":"profiles",governance:"governance_registers"};
+ if(audited[v])void auditAccess("VIEW",audited[v],null,{view:v});
+ closeDrawer();scrollTo({top:0,behavior:"smooth"})
+}
 function openDrawer(){$("#drawer").classList.add("open");$("#scrim").classList.remove("hidden")}
 function closeDrawer(){$("#drawer").classList.remove("open");$("#scrim").classList.add("hidden")}
 function openDialog(dialog){
@@ -68,29 +82,57 @@ async function boot(){
  try{
   requireConfig();
   const {data:{session:s}}=await db.auth.getSession();
-  if(s) await enterApp(s);
-  db.auth.onAuthStateChange(async(_event,newSession)=>{
-    if(newSession&&!session) await enterApp(newSession);
-    if(!newSession&&session) location.reload();
+  if(s) await startEnterApp(s);
+  db.auth.onAuthStateChange((_event,newSession)=>{
+    if(newSession)setTimeout(()=>void startEnterApp(newSession).catch(error=>toast(error.message)),0);
+    if(!newSession&&session)location.reload();
   });
   $("#connection-message").textContent="Secure sign-in ready.";
  }catch(err){toast(err.message)}
 }
 async function ensureMfa(){
  const {data:list,error:listError}=await db.auth.mfa.listFactors();if(listError)throw listError;
- const factor=list?.totp?.find(x=>x.status==="verified");if(!factor)return;
+ let factor=list?.totp?.find(x=>x.status==="verified");
+ if(!factor){
+  for(const unfinished of list?.totp?.filter(x=>x.status!=="verified")||[])await db.auth.mfa.unenroll({factorId:unfinished.id});
+  const {data:enrolled,error:enrollError}=await db.auth.mfa.enroll({factorType:"totp",friendlyName:"Florence"});if(enrollError)throw enrollError;
+  const code=await requestMfaCode("Protect your Florence account",enrolled.totp.qr_code,enrolled.totp.secret);
+  const {data:challenge,error:challengeError}=await db.auth.mfa.challenge({factorId:enrolled.id});if(challengeError)throw challengeError;
+  const {error:verifyError}=await db.auth.mfa.verify({factorId:enrolled.id,challengeId:challenge.id,code});if(verifyError)throw verifyError;
+  await db.rpc("record_access_event",{p_action:"MFA_ENROLLED",p_table_name:"auth",p_record_id:null,p_metadata:{factor_type:"totp"}}).catch(()=>{});
+  return;
+ }
  const {data:aal}=await db.auth.mfa.getAuthenticatorAssuranceLevel();if(aal?.currentLevel==="aal2")return;
- const code=prompt("Enter the six-digit code from your Florence authenticator app");
- if(!code)throw new Error("Multi-factor authentication is required");
+ const code=await requestMfaCode("Verify your Florence sign-in");
  const {data:challenge,error:challengeError}=await db.auth.mfa.challenge({factorId:factor.id});if(challengeError)throw challengeError;
  const {error:verifyError}=await db.auth.mfa.verify({factorId:factor.id,challengeId:challenge.id,code});if(verifyError)throw verifyError;
+}
+function requestMfaCode(title,qrCode="",secret=""){
+ return new Promise((resolve,reject)=>{
+  const overlay=document.createElement("div");overlay.className="mfa-gate";
+  overlay.innerHTML=`<form class="panel mfa-gate-card"><p class="eyebrow">Required security</p><h2>${esc(title)}</h2>
+   ${qrCode?`<p>Scan this QR code with an authenticator app. If you are using this phone, copy the setup key into the app instead.</p><img class="mfa-qr" src="${qrCode}" alt="Authenticator QR code">${secret?`<label>Setup key<input value="${esc(secret)}" readonly></label>`:""}`:`<p>Enter the current code from your authenticator app.</p>`}
+   <label>Six-digit code<input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required autofocus></label>
+   <button class="primary wide">Continue securely</button><p class="mfa-gate-help">MFA is required before participant information can be opened.</p></form>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector("form").onsubmit=event=>{event.preventDefault();const code=new FormData(event.currentTarget).get("code");if(!/^\d{6}$/.test(code))return;overlay.remove();resolve(code)};
+  addEventListener("beforeunload",()=>reject(new Error("Multi-factor authentication is required")),{once:true});
+ });
+}
+function startEnterApp(s){
+ if(!s)return Promise.resolve();
+ if(profile&&enteredUserId===s.user.id){session=s;return Promise.resolve()}
+ if(enterPromise){session=s;return enterPromise}
+ enterPromise=enterApp(s).then(()=>{enteredUserId=s.user.id}).catch(async error=>{session=null;profile=null;organisation=null;enteredUserId=null;await db?.auth.signOut({scope:"local"}).catch(()=>{});throw error}).finally(()=>{enterPromise=null});
+ return enterPromise;
 }
 async function enterApp(s){
  session=s;
  await ensureMfa();
  const {data:p,error}=await db.from("profiles").select("*, organisations(*)").eq("id",s.user.id).single();
- if(error||!p) throw new Error("Your Florence profile has not been activated.");
+ if(error||!p||!p.active) throw new Error("Your Florence profile has not been activated.");
  profile=p;organisation=p.organisations;
+ void auditAccess("LOGIN","auth",null,{role:profile.role});
  $("#signed-in-name").textContent=profile.full_name;
  $("#welcome-name").textContent=`Welcome back, ${profile.full_name.split(" ")[0]}`;
  const roleLabels={supervisor:"Supervisor workspace",staff:"Support worker workspace",family:"Family portal",client:"Client portal"};
@@ -101,7 +143,7 @@ async function enterApp(s){
  $$(`[data-view="finance"]`).forEach(e=>e.classList.toggle("hidden",!isSupervisor()));
  if(isPortalUser()){
    $$(`[data-view="notes"]`).forEach(e=>e.classList.add("hidden"));
-   $('[data-view="compliance"],[data-view="safety"],[data-view="workforce"],[data-view="governance"],[data-view="finance"]').forEach(e=>e.classList.add("hidden"));
+   $$('[data-view="compliance"],[data-view="safety"],[data-view="workforce"],[data-view="governance"],[data-view="finance"]').forEach(e=>e.classList.add("hidden"));
    $("#backup")?.classList.add("hidden");$("#import-backup")?.classList.add("hidden");
  }
  const h=new Date().getHours();$("#greeting").textContent=h<12?"Good morning":h<17?"Good afternoon":"Good evening";
@@ -363,53 +405,59 @@ function renderCompliance(){
  $("#compliance-summary").innerHTML=[["✅",docs.filter(d=>expStatus(d.review_date)==="Current").length,"Current"],["⏳",docs.filter(d=>expStatus(d.review_date)==="Due soon").length,"Due within 30 days"],["⚠️",docs.filter(d=>expStatus(d.review_date)==="Expired").length,"Expired"],["📄",docs.length,"Evidence files"]].map(x=>`<article class="stat"><span>${x[0]}</span><strong>${x[1]}</strong><small>${x[2]}</small></article>`).join("");
  $("#compliance-list").innerHTML=docs.map(d=>`<article class="record"><div class="record-top"><div><h3>${esc(d.title)}</h3><p>${esc(d.scope)} · ${esc(d.subject_name)} · ${esc(d.category)}</p></div>${badge(expStatus(d.review_date))}</div><p>📎 ${esc(d.original_filename)}</p><div class="record-meta">${d.review_date?badge("Review "+date(d.review_date)):badge("No expiry")}<button class="link" data-open-doc="${d.id}">Open securely</button></div></article>`).join("")||empty("No compliance documents.");
 }
-const BACKUP_FIELDS={
- participants:["id","organisation_id","full_name","preferred_name","date_of_birth","ndis_number","address","phone","emergency_contact","guardian_nominee","gp","pharmacy","communication_needs","diagnoses","allergies","goals","preferences","risks_and_safeguards","funding_start","funding_end","status","created_at"],
- shifts:["id","organisation_id","participant_id","assigned_staff_id","starts_at","ends_at","shift_type","status","response","instructions","created_by","published_at","responded_at","cancellation_reason","cancelled_at","recurrence_group","handover_notes","created_at"],
- medications:["id","organisation_id","participant_id","medication_name","dose","route","administration_time","medication_type","instructions","active","created_by","ceased_at","hold_from","hold_until","prn_indication","max_prn_dose","created_at"],
+const ARCHIVE_FIELDS={
+ participants:["id","organisation_id","full_name","preferred_name","date_of_birth","ndis_number","address","phone","emergency_contact","guardian_nominee","gp","pharmacy","communication_needs","diagnoses","allergies","goals","preferences","risks_and_safeguards","funding_start","funding_end","status","created_at","updated_at"],
+ shifts:["id","organisation_id","participant_id","assigned_staff_id","starts_at","ends_at","shift_type","status","response","instructions","created_by","published_at","responded_at","cancellation_reason","cancelled_at","recurrence_group","handover_notes","created_at","updated_at"],
+ medications:["id","organisation_id","participant_id","medication_name","dose","route","administration_time","medication_type","instructions","active","created_by","ceased_at","hold_from","hold_until","prn_indication","max_prn_dose","created_at","updated_at"],
  mar_entries:["id","organisation_id","medication_id","participant_id","staff_id","status","pin_verified","notes","effectiveness_review","amended_at","amendment_reason","recorded_at"],
- progress_notes:["id","organisation_id","participant_id","staff_id","shift_id","category","content","status","declaration_confirmed","pin_verified","signed_at","recorded_at"],
- client_timeline:["id","organisation_id","participant_id","event_type","severity","occurred_at","title","description","action_taken","follow_up","created_by","created_at"],
+ progress_notes:["id","organisation_id","participant_id","staff_id","shift_id","category","content","status","declaration_confirmed","pin_verified","signed_at","recorded_at","updated_at"],
+ client_timeline:["id","organisation_id","participant_id","event_type","severity","occurred_at","title","description","action_taken","follow_up","created_by","created_at","updated_at"],
  portal_threads:["id","organisation_id","participant_id","thread_type","subject","status","created_by","assigned_to","created_at","updated_at"],
  portal_messages:["id","organisation_id","thread_id","sender_id","message","created_at"],
  compliance_documents:["id","organisation_id","scope","subject_type","subject_id","subject_name","category","title","storage_path","original_filename","mime_type","review_date","version","uploaded_by","uploaded_at"],
- invoices:["id","organisation_id","participant_id","invoice_number","description","hours","rate","invoice_date","due_date","xero_invoice_id","status","created_by","created_at"]
+ invoices:["id","organisation_id","participant_id","invoice_number","description","hours","rate","invoice_date","due_date","xero_invoice_id","status","created_by","created_at","updated_at"]
 };
-const BACKUP_STATE={participants:"participants",shifts:"shifts",medications:"medications",mar_entries:"mar",progress_notes:"notes",client_timeline:"timeline",portal_threads:"portalThreads",portal_messages:"portalMessages",compliance_documents:"compliance",invoices:"invoices"};
-const OPERATIONAL_BACKUP_TABLES=["incidents","complaints","medication_incidents","emergency_plans","staff_credentials","timesheets","worker_availability","leave_requests","travel_expenses","participant_goals","funding_plans","ndis_support_items","controlled_drug_register"];
-function cleanBackupRow(row,fields){return Object.fromEntries(fields.filter(key=>row[key]!==undefined).map(key=>[key,row[key]]))}
+const ARCHIVE_STATE={participants:"participants",shifts:"shifts",medications:"medications",mar_entries:"mar",progress_notes:"notes",client_timeline:"timeline",portal_threads:"portalThreads",portal_messages:"portalMessages",compliance_documents:"compliance",invoices:"invoices"};
+const OPERATIONAL_ARCHIVE_TABLES=["incidents","complaints","medication_incidents","emergency_plans","staff_credentials","timesheets","worker_availability","leave_requests","travel_expenses","participant_goals","funding_plans","ndis_support_items","controlled_drug_register","conflict_declarations","meeting_minutes","delegations","participant_access_assignments","retention_rules","retention_register","notifications","audit_events"];
+function cleanArchiveRow(row,fields){return Object.fromEntries(fields.filter(key=>row[key]!==undefined).map(key=>[key,row[key]]))}
+function bytesToBase64(bytes){let binary="";for(let offset=0;offset<bytes.length;offset+=32768)binary+=String.fromCharCode(...bytes.subarray(offset,offset+32768));return btoa(binary)}
+async function encryptArchive(payload,passphrase){
+ const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),encoder=new TextEncoder();
+ const material=await crypto.subtle.importKey("raw",encoder.encode(passphrase),"PBKDF2",false,["deriveKey"]);
+ const key=await crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:310000,hash:"SHA-256"},material,{name:"AES-GCM",length:256},false,["encrypt"]);
+ const ciphertext=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv},key,encoder.encode(JSON.stringify(payload))));
+ return {format:"florence-encrypted-archive",version:2,kdf:{name:"PBKDF2",hash:"SHA-256",iterations:310000,salt:bytesToBase64(salt)},cipher:{name:"AES-GCM",iv:bytesToBase64(iv)},ciphertext:bytesToBase64(ciphertext)};
+}
 async function exportBackup(){
  if(!isSupervisor())throw new Error("Only supervisors can export organisation data");
- const data=Object.fromEntries(Object.entries(BACKUP_STATE).map(([table,key])=>[table,state[key].map(row=>cleanBackupRow(row,BACKUP_FIELDS[table]))]));
- const operational=await Promise.all(OPERATIONAL_BACKUP_TABLES.map(table=>db.from(table).select("*").eq("organisation_id",profile.organisation_id)));
- OPERATIONAL_BACKUP_TABLES.forEach((table,index)=>{if(!operational[index].error)data[table]=operational[index].data||[]});
- const payload={format:"florence-data-backup",version:1,exported_at:new Date().toISOString(),organisation_id:profile.organisation_id,organisation_name:organisation?.name||C.organisationName,data};
- const filename=`florence-backup-${brisbaneYmd()}.json`;
- const file=new File([JSON.stringify(payload,null,2)],filename,{type:"application/json"});
- if(navigator.canShare?.({files:[file]})){await navigator.share({title:"Florence data backup",text:"Save this Florence backup securely to Google Drive.",files:[file]})}
+ if(!crypto?.subtle)throw new Error("This browser cannot create an encrypted Florence archive");
+ if(!confirm("This archive contains sensitive participant information. Continue only when it will be stored in I-Care Connect’s approved secure location?"))return;
+ const passphrase=prompt("Create a unique archive passphrase of at least 14 characters. Do not use your Florence password.");
+ if(passphrase===null)return;
+ if(passphrase.length<14)throw new Error("Use an archive passphrase of at least 14 characters");
+ const confirmPassphrase=prompt("Enter the archive passphrase again. It cannot be recovered if lost.");
+ if(confirmPassphrase!==passphrase)throw new Error("The archive passphrases do not match");
+ const data=Object.fromEntries(Object.entries(ARCHIVE_STATE).map(([table,key])=>[table,state[key].map(row=>cleanArchiveRow(row,ARCHIVE_FIELDS[table]))]));
+ const [operational,profileResult,organisationResult]=await Promise.all([
+  Promise.all(OPERATIONAL_ARCHIVE_TABLES.map(table=>db.from(table).select("*").eq("organisation_id",profile.organisation_id))),
+  db.from("profiles").select("id,organisation_id,participant_id,full_name,email,phone,role,active,created_at,updated_at").eq("organisation_id",profile.organisation_id),
+  db.from("organisations").select("id,name,abn,phone,email,address,created_at,updated_at").eq("id",profile.organisation_id).single()
+ ]);
+ const failed=[];OPERATIONAL_ARCHIVE_TABLES.forEach((table,index)=>{if(operational[index].error)failed.push(table);else data[table]=operational[index].data||[]});
+ if(profileResult.error)failed.push("profiles");else data.profiles=profileResult.data||[];
+ if(organisationResult.error)failed.push("organisations");else data.organisations=[organisationResult.data];
+ if(failed.length)throw new Error(`Archive could not read: ${failed.join(", ")}`);
+ const payload={format:"florence-data-archive",version:2,exported_at:new Date().toISOString(),organisation_id:profile.organisation_id,organisation_name:organisation?.name||C.organisationName,scope_note:"Private document file bytes and Xero tokens are excluded. Use the approved Supabase backup and storage procedure for disaster recovery.",data};
+ const encrypted=await encryptArchive(payload,passphrase);
+ await auditAccess("EXPORT","organisation_archive",null,{tables:Object.keys(data),encrypted:true,document_files_included:false});
+ const filename=`florence-encrypted-archive-${brisbaneYmd()}.florence`;
+ const file=new File([JSON.stringify(encrypted)],filename,{type:"application/json"});
+ if(navigator.canShare?.({files:[file]}))await navigator.share({title:"Encrypted Florence archive",text:"Store this encrypted archive only in I-Care Connect’s approved secure location.",files:[file]});
  else{const url=URL.createObjectURL(file),a=document.createElement("a");a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
- toast("Backup ready to save");
+ toast("Encrypted archive created. Store the passphrase separately.");
 }
-async function importBackup(file){
- if(!isSupervisor())throw new Error("Only supervisors can import organisation data");
- if(!file) return;
- const payload=JSON.parse(await file.text());
- if(payload.format!=="florence-data-backup"||payload.version!==1||!payload.data)throw new Error("This is not a valid Florence backup");
- if(payload.organisation_id!==profile.organisation_id)throw new Error("This backup belongs to a different organisation");
- if(!confirm("Import this Florence backup? Existing matching records will be updated. Nothing will be deleted."))return;
- for(const [table] of Object.entries(BACKUP_STATE)){
-  const rows=Array.isArray(payload.data[table])?payload.data[table].map(row=>({...cleanBackupRow(row,BACKUP_FIELDS[table]),organisation_id:profile.organisation_id})):[];
-  if(!rows.length)continue;
-  const {error}=await db.from(table).upsert(rows,{onConflict:"id"});
-  if(error)throw new Error(`${table}: ${error.message}`);
- }
- for(const table of OPERATIONAL_BACKUP_TABLES){
-  const rows=Array.isArray(payload.data[table])?payload.data[table].map(row=>({...row,organisation_id:profile.organisation_id})):[];
-  if(!rows.length)continue;
-  const {error}=await db.from(table).upsert(rows,{onConflict:"id"});
-  if(error)throw new Error(`${table}: ${error.message}`);
- }
- await refreshAll();toast("Florence backup imported");
+function importBackup(){
+ throw new Error("Browser restore is disabled for production safety. Use I-Care Connect’s tested Supabase database and private-storage restore procedure.");
 }
 async function loadXeroStatus(){
  try{
@@ -427,7 +475,7 @@ function renderFinance(){
  $("#invoice-list").innerHTML=state.invoices.map(i=>`<article class="record"><div class="record-top"><div><h3>${esc(i.invoice_number)}</h3><p>${esc(i.participant?.full_name)} · ${esc(i.description)}</p></div>${badge(i.status)}</div><p>${i.hours} hours × ${Number(i.rate).toFixed(2)} = <strong>${Number(i.total).toFixed(2)}</strong></p><div class="record-meta">${i.xero_invoice_id?badge("Synced to Xero"):xeroConnection.connected?`<button class="link" data-xero-invoice="${i.id}">Send draft to Xero</button>`:""}</div></article>`).join("")||empty("No invoices.");
 }
 
-$("#login-form").onsubmit=async e=>{e.preventDefault();try{requireConfig();const {data,error}=await db.auth.signInWithPassword({email:$("#email").value.trim(),password:$("#password").value});if(error)throw error;await enterApp(data.session)}catch(err){toast(err.message)}};
+$("#login-form").onsubmit=async e=>{e.preventDefault();try{requireConfig();const {data,error}=await db.auth.signInWithPassword({email:$("#email").value.trim(),password:$("#password").value});if(error)throw error;await startEnterApp(data.session)}catch(err){toast(err.message)}};
 $("#forgot-password").onclick=async()=>{try{requireConfig();const email=$("#email").value.trim();if(!email)throw new Error("Enter your email first");const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:location.href});if(error)throw error;toast("Password reset email sent")}catch(err){toast(err.message)}};
 $("#menu").onclick=openDrawer;$("#scrim").onclick=closeDrawer;$("#logout").onclick=async()=>{await db.auth.signOut();location.reload()};$("#bell").onclick=()=>toast("Notifications are up to date");
 $$("[data-view]").forEach(b=>b.onclick=()=>showView(b.dataset.view));
@@ -533,7 +581,7 @@ document.addEventListener("click",async e=>{
    const map={Given:"Administered",Refused:"Refused",Withheld:"Withheld",Missed:"Missed",Unavailable:"Missed","Client absent":"Missed",Other:"Withheld"};
    for(const med of meds){
     const outcome=marRoundSelections[med.id];
-    const notes=["Unavailable","Client absent","Other"].includes(outcome)?`Round outcome: ${outcome}`:null;
+    const notes=outcome==="Given"?null:`Round outcome: ${outcome}`;
     const {error}=await db.rpc("record_medication_administration",{p_medication_id:med.id,p_pin:pin,p_status:map[outcome],p_notes:notes});
     if(error)throw error;
    }
@@ -543,13 +591,12 @@ document.addEventListener("click",async e=>{
   b=e.target.closest("[data-thread]");if(b){activePortalThread=b.dataset.thread;renderPortal();return}
   b=e.target.closest("[data-archive-thread]");if(b){if(!isStaffUser())throw new Error("This action is available to staff only");const archive=b.dataset.archive==="true";const {error}=await db.from("portal_threads").update({status:archive?"Closed":"Open",updated_at:new Date().toISOString()}).eq("id",b.dataset.archiveThread);if(error)throw error;activePortalThread=null;await refreshAll();return toast(archive?"Conversation archived":"Conversation restored")}
   b=e.target.closest("[data-mar-sign]");if(b){if(!isStaffUser())throw new Error("This action is available to staff only");pendingMed=state.medications.find(x=>x.id===b.dataset.marSign);if(!pendingMed)throw new Error("Medication profile not found");$("#mar-outcome").value=b.dataset.outcome||"Administered";$("#mar-reason").value="";$("#mar-notes").value="";$("#mar-reason-label").classList.toggle("required-reason",$("#mar-outcome").value!=="Administered");$("#pin-summary").textContent=`${pendingMed.medication_name} · ${pendingMed.dose} for ${pendingMed.participant?.full_name}`;openDialog($("#pin-dialog"));return}
-  b=e.target.closest("[data-claim-shift]");if(b){const {data,error}=await db.from("shifts").update({assigned_staff_id:profile.id,response:"Accepted",responded_at:new Date().toISOString()}).eq("id",b.dataset.claimShift).is("assigned_staff_id",null).eq("status","Published").select();if(error)throw error;if(!data?.length)throw new Error("This shift has already been claimed");await refreshAll();return toast("Open shift claimed")}
+  b=e.target.closest("[data-claim-shift]");if(b){const {error}=await db.rpc("claim_open_shift",{p_shift_id:b.dataset.claimShift});if(error)throw error;await refreshAll();return toast("Open shift claimed")}
   b=e.target.closest("[data-cancel-shift]");if(b){const reason=prompt("Why is this shift being cancelled?");if(!reason)return;const {error}=await db.from("shifts").update({status:"Cancelled",cancellation_reason:reason,cancelled_at:new Date().toISOString()}).eq("id",b.dataset.cancelShift);if(error)throw error;await refreshAll();return toast("Shift cancelled")}
   b=e.target.closest("[data-publish]");if(b){const {error}=await db.from("shifts").update({status:"Published",response:"Pending",published_at:new Date().toISOString()}).eq("id",b.dataset.publish);if(error)throw error;await refreshAll();return toast("Shift published")}
-  b=e.target.closest("[data-shift-response]");if(b){const {error}=await db.from("shifts").update({response:b.dataset.response,responded_at:new Date().toISOString()}).eq("id",b.dataset.shiftResponse).eq("assigned_staff_id",profile.id);if(error)throw error;await refreshAll();return toast("Shift "+b.dataset.response.toLowerCase())}
+  b=e.target.closest("[data-shift-response]");if(b){const {error}=await db.rpc("respond_to_shift",{p_shift_id:b.dataset.shiftResponse,p_response:b.dataset.response});if(error)throw error;await refreshAll();return toast("Shift "+b.dataset.response.toLowerCase())}
   b=e.target.closest("[data-administer]");if(b){pendingMed=state.medications.find(x=>x.id===b.dataset.administer);$("#pin-summary").textContent=`${pendingMed.medication_name} · ${pendingMed.dose} for ${pendingMed.participant?.full_name}`;openDialog($("#pin-dialog"));return}
-  b=e.target.closest("[data-mar-other]");if(b){if(!isStaffUser())throw new Error("This action is available to staff only");const m=state.medications.find(x=>x.id===b.dataset.marOther);const {error}=await db.from("mar_entries").insert({organisation_id:profile.organisation_id,medication_id:m.id,participant_id:m.participant_id,staff_id:profile.id,status:b.dataset.status,pin_verified:false});if(error)throw error;await refreshAll();return toast("MAR recorded")}
-  b=e.target.closest("[data-open-doc]");if(b){const d=state.compliance.find(x=>x.id===b.dataset.openDoc);const {data,error}=await db.storage.from(C.storageBucket).createSignedUrl(d.storage_path,60);if(error)throw error;window.open(data.signedUrl,"_blank");return}
+  b=e.target.closest("[data-open-doc]");if(b){const d=state.compliance.find(x=>x.id===b.dataset.openDoc);if(!d)throw new Error("Document record not found");await auditAccess("DOWNLOAD","compliance_documents",d.id,{title:d.title,scope:d.scope});const {data,error}=await db.storage.from(C.storageBucket).createSignedUrl(d.storage_path,60);if(error)throw error;window.open(data.signedUrl,"_blank");return}
   b=e.target.closest("[data-careplan]");if(b){const p=state.participants.find(x=>x.id===b.dataset.careplan);form("Upload PDF care plan",[field("title","Document title"),field("review_date","Review date","date"),field("file","PDF care plan","file")],async(v,fd)=>uploadDocument(fd.get("file"),{scope:"Participant",subject_name:p.full_name,subject_id:p.id,category:"Care plan",title:v.title,review_date:v.review_date}));return}
  }catch(err){toast(err.message)}
 });
@@ -557,7 +604,8 @@ async function uploadDocument(file,meta){
  if(!file)throw new Error("Choose a file");if(file.size>C.maxDocumentBytes)throw new Error("File exceeds the size limit");if(!C.acceptedDocumentTypes.includes(file.type))throw new Error("File type not accepted");
  const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,"_"),path=`${profile.organisation_id}/${meta.scope.toLowerCase()}/${id()}-${safe}`;
  const {error:upError}=await db.storage.from(C.storageBucket).upload(path,file,{contentType:file.type,upsert:false});if(upError)throw upError;
- const {file:_selectedFile,...documentMeta}=meta;const {error}=await db.from("compliance_documents").insert({organisation_id:profile.organisation_id,...documentMeta,subject_type:documentMeta.scope.toLowerCase(),storage_path:path,original_filename:file.name,mime_type:file.type,uploaded_by:profile.id});if(error)throw error;
+ const {file:_selectedFile,...documentMeta}=meta;const {error}=await db.from("compliance_documents").insert({organisation_id:profile.organisation_id,...documentMeta,subject_type:documentMeta.scope.toLowerCase(),storage_path:path,original_filename:file.name,mime_type:file.type,uploaded_by:profile.id});
+ if(error){await db.storage.from(C.storageBucket).remove([path]).catch(()=>{});throw error}
  await refreshAll();toast("Document uploaded securely")
 }
 $("#upload-compliance").onclick=()=>form("Upload compliance evidence",[field("scope","Document area","select",["Staff","Participant","Organisation"]),field("subject_name","Staff member, participant or organisation"),field("category","Document type","select",["Service agreement","Care plan","NDIS plan","Consent","Risk assessment","Medication chart","Allied health report","Police check","NDIS Worker Screening","Blue Card","First Aid","CPR","Medication competency","Driver licence","Vehicle registration","Vehicle insurance","Policy and procedure","Incident register","Complaints register","Continuous improvement","Internal audit","Staff meeting minutes","Emergency management","Other"]),field("title","Document title"),field("review_date","Expiry or review date","date"),field("file","Choose document or photo","file")],async(v,fd)=>uploadDocument(fd.get("file"),v));
@@ -586,14 +634,13 @@ $("#pin-form").onsubmit=async e=>{e.preventDefault();try{
 }catch(err){toast(err.message)}};
 $("#close-pin").onclick=$("#cancel-pin").onclick=()=>{closeDialog($("#pin-dialog"));pendingMed=null};
 $("#backup").onclick=async()=>{try{await exportBackup()}catch(err){if(err?.name!=="AbortError")toast(err.message)}};
-$("#import-backup").onclick=()=>$("#backup-file").click();
-$("#backup-file").onchange=async e=>{try{await importBackup(e.target.files?.[0])}catch(err){toast(err.message)}finally{e.target.value=""}};
+$("#import-backup").onclick=()=>{try{importBackup()}catch(err){toast(err.message)}};
 $("#connect-xero").onclick=async()=>{try{const {data,error}=await db.functions.invoke("xero-connect",{body:{action:"start"}});if(error||!data?.authorization_url)throw new Error("Xero setup is not deployed yet");location.href=data.authorization_url}catch(err){toast(err.message)}};
 $("#disconnect-xero").onclick=async()=>{try{if(!confirm("Disconnect Florence from Xero?"))return;const {data,error}=await db.functions.invoke("xero-connect",{body:{action:"disconnect"}});if(error||data?.error)throw new Error(data?.error||"Could not disconnect Xero");await loadXeroStatus();toast("Xero disconnected")}catch(err){toast(err.message)}};
 $("#mar-outcome").onchange=()=>{$("#mar-reason-label").classList.toggle("required-reason",$("#mar-outcome").value!=="Administered")};
 window.FlorenceBridge={
  get db(){return db},get profile(){return profile},get organisation(){return organisation},get state(){return state},
- toast,form,field,showView,openDialog,closeDialog,esc,fmt,date,badge,empty,isSupervisor,isStaffUser,refreshAll
+ toast,form,field,showView,openDialog,closeDialog,esc,fmt,date,badge,empty,isSupervisor,isStaffUser,refreshAll,auditAccess
 };
-boot();
+addEventListener("DOMContentLoaded",()=>void boot(),{once:true});
 })();
