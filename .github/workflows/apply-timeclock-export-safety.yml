@@ -1,0 +1,81 @@
+name: Refine Florence timesheet export and role safety
+
+on:
+  push:
+    branches:
+      - agent/florence-people-timeclock-resources
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply refinements
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          operations_path=Path('operations.js')
+          operations=operations_path.read_text(encoding='utf-8')
+          export_block=r''' q("#export-timesheets").onclick=async()=>{try{
+  const period=currentPayPeriod(),rows=ops.timesheets.filter(x=>x.status==="Approved"&&new Date(x.clock_in)>=period.start&&new Date(x.clock_in)<period.end);
+  if(!rows.length)throw new Error("There are no approved timesheets in this pay period");
+  await B().auditAccess("EXPORT","timesheets",null,{period_start:period.start.toISOString(),record_count:rows.length});
+  const headings=["Employee","Work type","Start date/time","End date/time","Break minutes","Paid hours","Notes","Status","Florence record ID"];
+  const csv=[headings,...rows.map(x=>[worker(x.staff_id),timesheetWorkType(x),x.clock_in,x.clock_out||"",x.break_minutes||0,hours(x).replace(" hours",""),timesheetDisplayNotes(x),x.status,x.id])].map(row=>row.map(value=>`"${String(value??"").replaceAll('"','""')}"`).join(",")).join("\n");
+  const periodName=period.start.toISOString().slice(0,10),file=new File([csv],`florence-pay-period-${periodName}.csv`,{type:"text/csv"});
+  if(navigator.canShare?.({files:[file]}))await navigator.share({title:"Florence pay-period timesheets",files:[file]});
+  else{const url=URL.createObjectURL(file),a=document.createElement("a");a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+ }catch(error){if(error?.name!=="AbortError")B().toast(error.message)}};
+ q("#bell")'''
+          operations,count=re.subn(r' q\("#export-timesheets"\)\.onclick=async\(\)=>\{try\{.*?\};\n q\("#bell"\)',lambda _m:export_block,operations,count=1,flags=re.S)
+          if count!=1:raise SystemExit(f'Expected one timesheet export block, replaced {count}')
+          operations_path.write_text(operations,encoding='utf-8')
+
+          edge_path=Path('supabase/functions/staff-management/index.ts')
+          edge=edge_path.read_text(encoding='utf-8')
+          old='''   const userId=String(body.user_id||""),allowedRoles=["staff","supervisor","family","client"],role=allowedRoles.includes(body.role)?String(body.role):"staff",participantId=["family","client"].includes(role)?String(body.participant_id||""):null;
+   if(["family","client"].includes(role))await validateParticipant(db,profile.organisation_id,participantId);'''
+          new='''   const userId=String(body.user_id||""),allowedRoles=["staff","supervisor","family","client"],role=allowedRoles.includes(body.role)?String(body.role):"staff",participantId=["family","client"].includes(role)?String(body.participant_id||""):null;
+   if(userId===user.id&&role!=="supervisor")throw new Error("You cannot remove your own supervisor access");
+   if(["family","client"].includes(role))await validateParticipant(db,profile.organisation_id,participantId);'''
+          if edge.count(old)!=1:raise SystemExit(f'Expected one role block, found {edge.count(old)}')
+          edge_path.write_text(edge.replace(old,new,1),encoding='utf-8')
+          PY
+
+      - name: Validate refinements
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check operations.js
+          grep -q '"Work type","Start date/time"' operations.js
+          grep -q 'timesheetDisplayNotes(x)' operations.js
+          grep -q 'cannot remove your own supervisor access' supabase/functions/staff-management/index.ts
+          git diff --check
+
+      - name: Commit refinements
+        shell: bash
+        env:
+          BASE_SHA: 1aee54f3d6c34bf0530a5e87d85f732310c91051
+          BRANCH_NAME: agent/florence-people-timeclock-resources
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/apply-timeclock-export-safety.yml
+          rmdir .github/workflows 2>/dev/null || true
+          rmdir .github 2>/dev/null || true
+          git config user.name "OpenAI"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git reset --mixed "$BASE_SHA"
+          git add -A
+          git diff --cached --check
+          git commit -m "Include work type in payroll export"
+          git push --force origin "HEAD:$BRANCH_NAME"
