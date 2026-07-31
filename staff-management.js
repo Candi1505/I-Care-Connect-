@@ -3,7 +3,7 @@
 const B=()=>window.FlorenceBridge;
 const q=s=>document.querySelector(s);
 let directory=[];
-const roleLabel=role=>role==="supervisor"?"Supervisor":"Support worker";
+const roleLabel=role=>({supervisor:"Supervisor",staff:"Support worker",family:"Family representative",client:"Participant"}[role]||role);
 const accountStatus=worker=>!worker.active?"Inactive":worker.banned_until?"Suspended":worker.last_sign_in_at?"Active":"Invited";
 async function invoke(body){
  const {data,error}=await B().db.functions.invoke("staff-management",{body});
@@ -35,10 +35,10 @@ function renderDirectory(){
    <div class="record-top"><div><h3>${B().esc(worker.full_name)}</h3><p class="staff-email">${B().esc(worker.email||"No email")}</p></div>${B().badge(status)}</div>
    <div class="staff-invite-status">${B().badge(roleLabel(worker.role))}<span class="badge">${B().esc(last)}</span></div>
    <div class="actions">
-    <select data-worker-role="${worker.id}" aria-label="Role for ${B().esc(worker.full_name)}">
+    ${["staff","supervisor"].includes(worker.role)?`<select data-worker-role="${worker.id}" aria-label="Role for ${B().esc(worker.full_name)}">
      <option value="staff" ${worker.role==="staff"?"selected":""}>Support worker</option>
      <option value="supervisor" ${worker.role==="supervisor"?"selected":""}>Supervisor</option>
-    </select>
+    </select>`:`<span class="badge">Linked to ${B().esc(B().state.participants.find(p=>p.id===worker.participant_id)?.full_name||"participant")}</span>`}
     <button class="secondary" data-resend-worker="${worker.id}">Resend access email</button>
     <button class="${worker.active?"decline":"accept"}" data-toggle-worker="${worker.id}" data-active="${worker.active?"false":"true"}">${worker.active?"Deactivate":"Reactivate"}</button>
    </div>
@@ -46,13 +46,15 @@ function renderDirectory(){
  }).join("")||B().empty("No staff accounts yet.");
 }
 function bindInvite(){
- q("#invite-worker").onclick=()=>B().form("Invite worker",[
-  B().field("full_name","Worker’s full name"),
-  B().field("email","Worker’s email","email"),
-  B().field("role","Florence access","select",[{value:"staff",label:"Support worker"},{value:"supervisor",label:"Supervisor"}])
+ q("#invite-worker").onclick=()=>B().form("Invite person",[
+  B().field("full_name","Full name"),
+  B().field("email","Email address","email"),
+  B().field("role","Florence access","select",[{value:"staff",label:"Support worker"},{value:"supervisor",label:"Supervisor"},{value:"family",label:"Family representative portal"},{value:"client",label:"Participant portal"}]),
+  B().field("participant_id","Linked participant (required for family or participant portal)","select",[{value:"",label:"Not applicable — staff account"},...B().state.participants.map(p=>({value:p.id,label:p.full_name}))],false)
  ],async values=>{
   const email=values.email.trim().toLowerCase();
-  const result=await invoke({action:"invite",full_name:values.full_name.trim(),email,role:values.role});
+  if(["family","client"].includes(values.role)&&!values.participant_id)throw new Error("Choose the participant this portal account belongs to");
+  const result=await invoke({action:"invite",full_name:values.full_name.trim(),email,role:values.role,participant_id:values.participant_id||null});
   if(result.requires_password_reset){
    const {error}=await B().db.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
    if(error)throw error;

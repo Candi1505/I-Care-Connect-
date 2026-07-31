@@ -38,7 +38,7 @@ Deno.serve(async req=>{
   const action=body.action||"list";
   if(action==="list"){
    const [{data:profiles,error},users]=await Promise.all([
-    db.from("profiles").select("id,full_name,email,role,active,created_at").eq("organisation_id",profile.organisation_id).in("role",["staff","supervisor"]).order("full_name"),
+    db.from("profiles").select("id,full_name,email,role,active,participant_id,created_at").eq("organisation_id",profile.organisation_id).order("full_name"),
     authUsers(db)
    ]);
    if(error)throw error;
@@ -46,21 +46,29 @@ Deno.serve(async req=>{
    return json({staff:(profiles||[]).map(x=>{const auth=byId.get(x.id);return {...x,email:x.email||auth?.email||null,last_sign_in_at:auth?.last_sign_in_at||null,email_confirmed_at:auth?.email_confirmed_at||null,banned_until:auth?.banned_until||null}})});
   }
   if(action==="invite"){
-   const email=String(body.email||"").trim().toLowerCase(),fullName=String(body.full_name||"").trim(),role=body.role==="supervisor"?"supervisor":"staff";
-   if(!email||!fullName)throw new Error("Worker name and email are required");
+   const email=String(body.email||"").trim().toLowerCase(),fullName=String(body.full_name||"").trim();
+   const allowedRoles=["staff","supervisor","family","client"],role=allowedRoles.includes(body.role)?body.role:"staff";
+   const participantId=["family","client"].includes(role)?String(body.participant_id||""):null;
+   if(!email||!fullName)throw new Error("Name and email are required");
+   if(["family","client"].includes(role)&&!participantId)throw new Error("A family or participant portal account must be linked to a participant");
+   if(participantId){
+    const {data:participant,error:participantError}=await db.from("participants").select("id").eq("id",participantId).eq("organisation_id",profile.organisation_id).single();
+    if(participantError||!participant)throw new Error("The selected participant was not found in this organisation");
+   }
    const users=await authUsers(db);
    let invitedUser=users.find(x=>String(x.email||"").toLowerCase()===email)||null;
    const existing=!!invitedUser;
    if(!invitedUser){
     const redirectTo=Deno.env.get("FLORENCE_APP_URL")||undefined;
-    const {data,error}=await db.auth.admin.inviteUserByEmail(email,{redirectTo,data:{full_name:fullName,organisation_id:profile.organisation_id,role}});
+    const creationRole=["family","client"].includes(role)?"staff":role;
+    const {data,error}=await db.auth.admin.inviteUserByEmail(email,{redirectTo,data:{full_name:fullName,organisation_id:profile.organisation_id,role:creationRole,requested_role:role,participant_id:participantId}});
     if(error||!data.user)throw new Error(error?.message||"Invitation could not be created");
     invitedUser=data.user;
    }else{
-    const {error:authError}=await db.auth.admin.updateUserById(invitedUser.id,{user_metadata:{...invitedUser.user_metadata,full_name:fullName,organisation_id:profile.organisation_id,role}});
+    const {error:authError}=await db.auth.admin.updateUserById(invitedUser.id,{user_metadata:{...invitedUser.user_metadata,full_name:fullName,organisation_id:profile.organisation_id,role,participant_id:participantId}});
     if(authError)throw new Error(authError.message||"The existing worker account could not be updated");
    }
-   const {error:profileError}=await db.from("profiles").upsert({id:invitedUser.id,organisation_id:profile.organisation_id,full_name:fullName,email,role,active:true},{onConflict:"id"});
+   const {error:profileError}=await db.from("profiles").upsert({id:invitedUser.id,organisation_id:profile.organisation_id,participant_id:participantId,full_name:fullName,email,role,active:true},{onConflict:"id"});
    if(profileError){if(!existing)await db.auth.admin.deleteUser(invitedUser.id);throw profileError}
    return json({success:true,user_id:invitedUser.id,existing,requires_password_reset:existing,email});
   }

@@ -94,7 +94,7 @@
     </section>
 
     <section id="roster-view" class="view">
-      <div class="page-head"><div><p class="eyebrow">Staff scheduling</p><h2>Roster</h2><p>Supervisors create, publish and assign shifts. Staff accept or decline.</p></div><button type="button" id="add-shift" class="primary admin-only">+ Create shift</button></div>
+      <div class="page-head"><div><p class="eyebrow">Staff scheduling</p><h2>Fortnightly roster</h2><p>Supervisors schedule by 14-day pay period. Staff accept or decline published shifts.</p></div><div class="actions"><button type="button" id="set-pay-period" class="secondary admin-only">Set pay period</button><button type="button" id="add-shift" class="primary admin-only">+ Create shift</button></div></div>
       <div class="segmented">
         <button class="active" data-roster-tab="published">Published</button>
         <button data-roster-tab="draft">Drafts</button>
@@ -206,7 +206,7 @@
 
     <section id="workforce-view" class="view">
       <div class="page-head"><div><p class="eyebrow">Workforce operations</p><h2>Timesheets & availability</h2><p>Clocking, approvals, availability, leave, travel and expenses.</p></div></div>
-      <article class="panel"><div class="panel-head"><div><h3>Time & attendance</h3><p>Submitted timesheets remain pending until supervisor approval.</p></div><div class="actions"><button id="clock-in" class="primary">Clock in</button><button id="clock-out" class="secondary">Clock out</button><button id="export-timesheets" class="secondary admin-only">Export CSV</button></div></div><div id="timesheet-list" class="stack"></div></article>
+      <article class="panel"><div class="panel-head"><div><h3>Time & attendance</h3><p>Submitted timesheets remain pending until supervisor approval. Payroll exports follow the configured 14-day pay period and can be handed to Deputy/payroll.</p></div><div class="actions"><button id="clock-in" class="primary">Clock in</button><button id="clock-out" class="secondary">Clock out</button><button id="export-timesheets" class="secondary admin-only">Export pay-period CSV</button></div></div><div id="timesheet-list" class="stack"></div></article>
       <article class="panel"><div class="panel-head"><div><h3>Workforce requests</h3></div><div class="actions"><button id="add-availability" class="secondary">Availability</button><button id="add-leave" class="secondary">Leave</button><button id="add-travel" class="secondary">Travel/expense</button></div></div><div id="workforce-request-list" class="stack"></div></article>
     </section>
 
@@ -222,13 +222,17 @@
       <article class="panel"><div class="panel-head"><div><h3>Emergency & continuity plans</h3></div><button id="add-emergency-plan" class="primary admin-only">+ Emergency plan</button></div><div id="emergency-list" class="stack"></div></article>
       <article class="panel"><div class="panel-head"><div><h3>Staff credentials</h3></div><button id="add-credential" class="primary admin-only">+ Credential</button></div><div id="credential-list" class="stack"></div></article>
       <article class="panel"><div class="panel-head"><div><h3>Notifications</h3></div><button id="mark-notifications" class="secondary">Mark all read</button></div><div id="notification-list" class="stack"></div></article>
+      <article class="panel"><div class="panel-head"><div><h3>Record history & retention</h3><p>Progress notes, MAR entries, forms and register records are not removed after one month. They remain securely available in Florence with their original date, time and author until disposal is formally authorised under I-Care Connect’s retention policy and applicable requirements.</p></div></div><div id="retention-summary" class="record-meta"></div></article>
+      <article class="panel"><div class="panel-head"><div><h3>Conflicts of interest & declarations</h3><p>Every worker records a declaration, including when they have no conflict. Supervisors review and manage disclosed conflicts.</p></div><button id="add-conflict" class="primary">+ Declaration</button></div><div id="conflict-list" class="stack"></div></article>
+      <article class="panel admin-only"><div class="panel-head"><div><h3>Management & staff meeting minutes</h3><p>Timestamped agendas, decisions and action owners.</p></div><button id="add-meeting-minutes" class="primary">+ Minutes</button></div><div id="meeting-minutes-list" class="stack"></div></article>
+      <article class="panel admin-only"><div class="panel-head"><div><h3>Delegations</h3><p>Record who may act, the limits of their authority and the effective dates.</p></div><button id="add-delegation" class="primary">+ Delegation</button></div><div id="delegation-list" class="stack"></div></article>
       <article class="panel admin-only"><div class="panel-head"><div><h3>Supervisor security</h3><p>Florence signs out after 30 minutes without activity.</p></div></div><div id="mfa-box"></div></article>
       <article class="panel admin-only"><div class="panel-head"><div><h3>Immutable audit activity</h3><p>Database changes are recorded automatically.</p></div></div><div id="audit-list" class="stack"></div></article>
     </section>
 
   
     <section id="staff-management-view" class="view">
-      <div class="page-head"><div><p class="eyebrow">Supervisor administration</p><h2>Staff management</h2><p>Invite workers, assign access and manage active accounts without opening Supabase.</p></div><button id="invite-worker" class="primary admin-only">+ Invite worker</button></div>
+      <div class="page-head"><div><p class="eyebrow">Supervisor administration</p><h2>People & access management</h2><p>Invite workers, family representatives or participants, link portal access and manage active accounts without opening Supabase.</p></div><button id="invite-worker" class="primary admin-only">+ Invite person</button></div>
       <article class="notice staff-security-note"><strong>Private and secure</strong><br>Workers set their own password and six-digit signing PIN. Supervisors cannot view either.</article>
       <div id="staff-directory" class="stack"></div>
     </section>
@@ -313,9 +317,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
-<script src="app.js?v=20260723-22"></script>
-<script src="operations.js?v=20260723-3"></script>
-<script src="staff-management.js?v=20260723-4"></script>
+<script src="app.js?v=20260731-1"></script>
+<script src="operations.js?v=20260731-1"></script>
+<script src="staff-management.js?v=20260731-1"></script>
 <script>
 if("serviceWorker" in navigator){
   window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));

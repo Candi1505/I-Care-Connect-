@@ -194,8 +194,15 @@ function renderParticipants(){
  $("#participant-list").innerHTML=state.participants.map(p=>`<article class="person"><div class="avatar">${initials(p.full_name)}</div><div><div class="record-top"><div><h3>${esc(p.preferred_name||p.full_name)}</h3><p>${esc(p.full_name)} · ${esc(p.address||"")}</p></div>${badge(p.status)}</div><p><strong>NDIS:</strong> ${esc(p.ndis_number||"Not entered")}</p><p><strong>Diagnoses:</strong> ${esc(p.diagnoses||"")}</p><p><strong>Communication:</strong> ${esc(p.communication_needs||"")}</p><p><strong>Goals:</strong> ${esc(p.goals||"")}</p><div class="record-meta">${isSupervisor()?`<button class="link" data-careplan="${p.id}">Upload PDF care plan</button>`:""}</div></div></article>`).join("")||empty("No participants.");
 }
 function rosterWeekStart(){
- const base=new Date(brisbaneYmd()+"T00:00:00Z"),mondayOffset=(base.getUTCDay()+6)%7;
- base.setUTCDate(base.getUTCDate()-mondayOffset+(rosterWeekOffset*7));
+ const today=new Date(brisbaneYmd()+"T00:00:00Z");
+ if(organisation?.pay_period_anchor){
+  const anchor=new Date(organisation.pay_period_anchor+"T00:00:00Z");
+  const elapsed=Math.floor((today-anchor)/86400000),period=Math.floor(elapsed/14);
+  anchor.setUTCDate(anchor.getUTCDate()+(period+rosterWeekOffset)*14);
+  return anchor;
+ }
+ const base=new Date(today),mondayOffset=(base.getUTCDay()+6)%7;
+ base.setUTCDate(base.getUTCDate()-mondayOffset+(rosterWeekOffset*14));
  return base;
 }
 function rosterDayKey(date){return date.toISOString().slice(0,10)}
@@ -216,9 +223,8 @@ function supervisorShiftCell(shifts){
  }).join("");
 }
 function renderSupervisorRoster(list){
- const start=rosterWeekStart(),days=Array.from({length:7},(_,index)=>{const day=new Date(start);day.setUTCDate(start.getUTCDate()+index);return day});
- const end=days[6],dayKeys=days.map(rosterDayKey),weekShifts=list.filter(s=>dayKeys.includes(brisbaneYmd(s.starts_at)));
- const assignedIds=new Set(weekShifts.map(s=>s.assigned_staff_id).filter(Boolean));
+ const start=rosterWeekStart(),days=Array.from({length:14},(_,index)=>{const day=new Date(start);day.setUTCDate(start.getUTCDate()+index);return day});
+ const end=days[13],dayKeys=days.map(rosterDayKey),weekShifts=list.filter(s=>dayKeys.includes(brisbaneYmd(s.starts_at)));
  const workers=state.staff.filter(s=>s.active&&(s.role==="staff"||s.role==="supervisor")&&(rosterTab!=="mine"||s.id===profile.id));
  weekShifts.forEach(s=>{if(s.assigned_staff_id&&!workers.some(w=>w.id===s.assigned_staff_id))workers.push({id:s.assigned_staff_id,full_name:workerName(s),role:"staff"})});
  workers.sort((a,b)=>String(a.full_name).localeCompare(String(b.full_name)));
@@ -227,15 +233,15 @@ function renderSupervisorRoster(list){
  workers.forEach(worker=>rows.push(worker));
  const range=new Intl.DateTimeFormat("en-AU",{day:"numeric",month:"short",year:"numeric",timeZone:"UTC"});
  const header=days.map(day=>`<th><span>${new Intl.DateTimeFormat("en-AU",{weekday:"short",timeZone:"UTC"}).format(day)}</span><strong>${new Intl.DateTimeFormat("en-AU",{day:"numeric",month:"short",timeZone:"UTC"}).format(day)}</strong></th>`).join("");
- const body=rows.length?rows.map(worker=>`<tr><th class="roster-worker"><strong>${esc(worker.full_name)}</strong><small>${esc(worker.role==="supervisor"?"Supervisor":worker.role==="staff"?"Support worker":"Unassigned")}</small></th>${dayKeys.map(key=>`<td>${supervisorShiftCell(weekShifts.filter(s=>(s.assigned_staff_id||null)===(worker.id||null)&&brisbaneYmd(s.starts_at)===key))}</td>`).join("")}</tr>`).join(""):`<tr><td colspan="8">${empty("No staff or shifts in this week.")}</td></tr>`;
+ const body=rows.length?rows.map(worker=>`<tr><th class="roster-worker"><strong>${esc(worker.full_name)}</strong><small>${esc(worker.role==="supervisor"?"Supervisor":worker.role==="staff"?"Support worker":"Unassigned")}</small></th>${dayKeys.map(key=>`<td>${supervisorShiftCell(weekShifts.filter(s=>(s.assigned_staff_id||null)===(worker.id||null)&&brisbaneYmd(s.starts_at)===key))}</td>`).join("")}</tr>`).join(""):`<tr><td colspan="15">${empty("No staff or shifts in this pay period.")}</td></tr>`;
  $("#roster-list").innerHTML=`<div class="roster-calendar-toolbar">
-  <button class="secondary" data-roster-week="-1" aria-label="Previous week">‹</button>
+  <button class="secondary" data-roster-week="-1" aria-label="Previous fortnight">‹</button>
   <button class="secondary roster-today" data-roster-week="today">Today</button>
-  <div><p class="eyebrow">Weekly schedule</p><strong>${range.format(start)} – ${range.format(end)}</strong></div>
-  <button class="secondary" data-roster-week="1" aria-label="Next week">›</button>
+  <div><p class="eyebrow">14-day pay period</p><strong>${range.format(start)} – ${range.format(end)}</strong></div>
+  <button class="secondary" data-roster-week="1" aria-label="Next fortnight">›</button>
  </div>
  <div class="roster-calendar-scroll"><table class="roster-calendar"><thead><tr><th class="roster-worker">Worker</th>${header}</tr></thead><tbody>${body}</tbody></table></div>
- <p class="roster-calendar-hint">Swipe sideways to see every day of the week.</p>`;
+ <p class="roster-calendar-hint">Swipe sideways to see all 14 days in the pay period.</p>`;
 }
 function renderRoster(){
  let list=state.shifts;
@@ -555,7 +561,17 @@ async function uploadDocument(file,meta){
  await refreshAll();toast("Document uploaded securely")
 }
 $("#upload-compliance").onclick=()=>form("Upload compliance evidence",[field("scope","Document area","select",["Staff","Participant","Organisation"]),field("subject_name","Staff member, participant or organisation"),field("category","Document type","select",["Service agreement","Care plan","NDIS plan","Consent","Risk assessment","Medication chart","Allied health report","Police check","NDIS Worker Screening","Blue Card","First Aid","CPR","Medication competency","Driver licence","Vehicle registration","Vehicle insurance","Policy and procedure","Incident register","Complaints register","Continuous improvement","Internal audit","Staff meeting minutes","Emergency management","Other"]),field("title","Document title"),field("review_date","Expiry or review date","date"),field("file","Choose document or photo","file")],async(v,fd)=>uploadDocument(fd.get("file"),v));
-$("#dynamic-form").onsubmit=async e=>{e.preventDefault();if(!pending)return;const formElement=e.currentTarget,fd=new FormData(formElement),v=Object.fromEntries(fd.entries()),submit=formElement.querySelector('button[type="submit"]'),status=$("#dialog-status"),isInvite=$("#dialog-title")?.textContent==="Invite worker";if(status){status.textContent="";status.classList.add("hidden")}if(submit){submit.disabled=true;submit.textContent=isInvite?"Sending invitation…":"Saving…"}try{await Promise.race([pending(v,fd),new Promise((_,reject)=>setTimeout(()=>reject(new Error("Florence did not receive a response. Check the Edge Function logs and try again.")),20000))]);closeDialog($("#dialog"));pending=null;formElement.reset();toast(isInvite?"Invitation sent securely":"Saved successfully")}catch(err){const message=err.message||"Florence could not save this form.";if(status){status.textContent=message;status.classList.remove("hidden")}else toast(message)}finally{if(submit){submit.disabled=false;submit.textContent="Save"}}};
+$("#set-pay-period").onclick=()=>form("Set fortnightly pay period",[
+ field("pay_period_anchor","First day of a known pay period","date")
+],async v=>{
+ const {error}=await db.from("organisations").update({pay_period_anchor:v.pay_period_anchor}).eq("id",profile.organisation_id);
+ if(error)throw error;
+ organisation.pay_period_anchor=v.pay_period_anchor;
+ rosterWeekOffset=0;
+ renderRoster();
+ toast("Fortnightly roster aligned to the pay period");
+},{pay_period_anchor:organisation?.pay_period_anchor||brisbaneYmd()});
+$("#dynamic-form").onsubmit=async e=>{e.preventDefault();if(!pending)return;const formElement=e.currentTarget,fd=new FormData(formElement),v=Object.fromEntries(fd.entries()),submit=formElement.querySelector('button[type="submit"]'),status=$("#dialog-status"),isInvite=$("#dialog-title")?.textContent.startsWith("Invite ");if(status){status.textContent="";status.classList.add("hidden")}if(submit){submit.disabled=true;submit.textContent=isInvite?"Sending invitation…":"Saving…"}try{await Promise.race([pending(v,fd),new Promise((_,reject)=>setTimeout(()=>reject(new Error("Florence did not receive a response. Check the Edge Function logs and try again.")),20000))]);closeDialog($("#dialog"));pending=null;formElement.reset();toast(isInvite?"Invitation sent securely":"Saved successfully")}catch(err){const message=err.message||"Florence could not save this form.";if(status){status.textContent=message;status.classList.remove("hidden")}else toast(message)}finally{if(submit){submit.disabled=false;submit.textContent="Save"}}};
 $("#close-dialog").onclick=$("#cancel-dialog").onclick=()=>{closeDialog($("#dialog"));pending=null};
 $("#pin-form").onsubmit=async e=>{e.preventDefault();try{
  const pin=$("#med-pin").value;

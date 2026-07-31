@@ -42,6 +42,12 @@ Family and client profiles must include the participant UUID in `participant_id`
 - progress notes;
 - client timeline;
 - family/client portal messages and requests;
+- supervisor-created family and participant portal invitations;
+- fortnightly roster and pay-period timesheet export;
+- conflict-of-interest declarations and register;
+- management and staff meeting minutes;
+- recorded delegations and authority limits;
+- retained, timestamped operational history;
 - private document storage;
 - compliance evidence register;
 - supervisor-only invoicing;

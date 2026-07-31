@@ -2,8 +2,8 @@
 "use strict";
 const B=()=>window.FlorenceBridge;
 const q=s=>document.querySelector(s);
-let ops={incidents:[],complaints:[],medicationIncidents:[],emergencyPlans:[],credentials:[],timesheets:[],availability:[],leave:[],travel:[],goals:[],funding:[],supportItems:[],controlledDrugs:[],notifications:[],audit:[]};
-const tableMap={incidents:"incidents",complaints:"complaints",medicationIncidents:"medication_incidents",emergencyPlans:"emergency_plans",credentials:"staff_credentials",timesheets:"timesheets",availability:"worker_availability",leave:"leave_requests",travel:"travel_expenses",goals:"participant_goals",funding:"funding_plans",supportItems:"ndis_support_items",controlledDrugs:"controlled_drug_register",notifications:"notifications",audit:"audit_events"};
+let ops={incidents:[],complaints:[],medicationIncidents:[],emergencyPlans:[],credentials:[],timesheets:[],availability:[],leave:[],travel:[],goals:[],funding:[],supportItems:[],controlledDrugs:[],notifications:[],audit:[],conflicts:[],meetings:[],delegations:[]};
+const tableMap={incidents:"incidents",complaints:"complaints",medicationIncidents:"medication_incidents",emergencyPlans:"emergency_plans",credentials:"staff_credentials",timesheets:"timesheets",availability:"worker_availability",leave:"leave_requests",travel:"travel_expenses",goals:"participant_goals",funding:"funding_plans",supportItems:"ndis_support_items",controlledDrugs:"controlled_drug_register",notifications:"notifications",audit:"audit_events",conflicts:"conflict_declarations",meetings:"meeting_minutes",delegations:"delegations"};
 const participantOptions=()=>B().state.participants.map(p=>({value:p.id,label:p.preferred_name||p.full_name}));
 const staffOptions=()=>B().state.staff.filter(p=>["staff","supervisor"].includes(p.role)).map(p=>({value:p.id,label:p.full_name}));
 const person=id=>B().state.participants.find(p=>p.id===id)?.full_name||"Organisation";
@@ -27,7 +27,7 @@ async function loadOperations(){
   Object.keys(tableMap).forEach((key,i)=>ops[key]=results[i].data||[]);
   renderAll();
  }catch(error){
-  ["#incident-list","#complaint-list","#medication-error-list","#timesheet-list","#workforce-request-list","#goal-list","#funding-list","#emergency-list","#credential-list","#notification-list","#audit-list"].forEach(id=>{if(q(id))q(id).innerHTML=setupMessage()});
+  ["#incident-list","#complaint-list","#medication-error-list","#timesheet-list","#workforce-request-list","#goal-list","#funding-list","#emergency-list","#credential-list","#notification-list","#audit-list","#conflict-list","#meeting-minutes-list","#delegation-list"].forEach(id=>{if(q(id))q(id).innerHTML=setupMessage()});
  }
 }
 function renderAll(){renderSafety();renderWorkforce();renderOutcomes();renderGovernance()}
@@ -39,6 +39,19 @@ function renderSafety(){
  q("#controlled-drug-list").innerHTML=ops.controlledDrugs.map(x=>{const med=B().state.medications.find(m=>m.id===x.medication_id);return card(med?.medication_name||"Schedule 8 medication",`${person(x.participant_id)} · ${x.transaction_type} · Balance ${x.balance} · ${B().fmt(x.transaction_at)}`,x.reason||"",`Witness: ${B().esc(worker(x.witnessed_by))}`)}).join("")||B().empty("No Schedule 8 stock transactions.");
 }
 function hours(t){if(!t.clock_out)return"Clocked in";const value=(new Date(t.clock_out)-new Date(t.clock_in))/3600000-(t.break_minutes||0)/60;return Math.max(0,value).toFixed(2)+" hours"}
+function currentPayPeriod(){
+ const today=new Date(),anchorValue=B().organisation?.pay_period_anchor;
+ if(anchorValue){
+  const anchor=new Date(anchorValue+"T00:00:00");
+  const periods=Math.floor(Math.floor((today-anchor)/86400000)/14);
+  const start=new Date(anchor);start.setDate(anchor.getDate()+periods*14);
+  const end=new Date(start);end.setDate(start.getDate()+14);
+  return {start,end};
+ }
+ const start=new Date(today);start.setHours(0,0,0,0);start.setDate(start.getDate()-((start.getDay()+6)%7));
+ const end=new Date(start);end.setDate(start.getDate()+14);
+ return {start,end};
+}
 function renderWorkforce(){
  if(!q("#timesheet-list"))return;
  const mine=ops.timesheets.filter(t=>B().isSupervisor()||t.staff_id===B().profile.id);
@@ -61,6 +74,15 @@ function renderGovernance(){
  q("#credential-list").innerHTML=ops.credentials.map(x=>{const days=x.expiry_date?Math.ceil((new Date(x.expiry_date)-new Date())/86400000):null,status=days===null?x.status:days<0?"Expired":days<=30?"Due soon":x.status;return card(x.credential_type,`${worker(x.staff_id)} · expires ${x.expiry_date||"not set"} · ${status}`,x.notes||"")}).join("")||B().empty("No staff credentials.");
  q("#notification-list").innerHTML=ops.notifications.map(x=>card(x.title,`${B().fmt(x.created_at)} · ${x.read_at?"Read":"Unread"}`,x.body)).join("")||B().empty("No notifications.");
  q("#audit-list").innerHTML=B().isSupervisor()?(ops.audit.map(x=>card(`${x.action} · ${x.table_name}`,`${B().fmt(x.occurred_at)} · ${worker(x.actor_id)}`,`Record ${x.record_id||""}`)).join("")||B().empty("No audit activity yet.")):B().empty("Audit history is supervisor-only.");
+ q("#retention-summary").innerHTML=[
+  B().badge(`${B().state.notes.length} progress notes retained`),
+  B().badge(`${B().state.mar.length} MAR entries retained`),
+  B().badge(`${B().state.timeline.length} timeline events retained`)
+ ].join("");
+ const visibleConflicts=ops.conflicts.filter(x=>B().isSupervisor()||x.staff_id===B().profile.id);
+ q("#conflict-list").innerHTML=visibleConflicts.map(x=>card(x.declaration_type,`${worker(x.staff_id)} · declared ${B().fmt(x.declared_at)} · ${x.status}`,x.details||"No conflict details required",x.management_actions?`Management: ${B().esc(x.management_actions)}`:"")).join("")||B().empty("No conflict declarations recorded.");
+ q("#meeting-minutes-list").innerHTML=ops.meetings.map(x=>card(x.meeting_type,`${B().fmt(x.meeting_at)} · recorded by ${worker(x.recorded_by)}`,x.decisions||x.discussion,`Attendees: ${B().esc(x.attendees)}`)).join("")||B().empty("No meeting minutes recorded.");
+ q("#delegation-list").innerHTML=ops.delegations.map(x=>card(x.responsibility,`${worker(x.delegator_id)} → ${worker(x.delegate_id)} · ${x.starts_on}${x.ends_on?` to ${x.ends_on}`:""} · ${x.status}`,x.authority_limits,x.confirmed_by_delegate?B().badge("Delegate confirmed"):B().badge("Confirmation pending"))).join("")||B().empty("No delegations recorded.");
  q("#notification-count").textContent=String(ops.notifications.filter(x=>!x.read_at).length);
 }
 function bindForms(){
@@ -104,8 +126,37 @@ function bindForms(){
  q("#add-support-item").onclick=()=>form("Add NDIS support item",[field("item_number","Support item number"),field("item_name","Support item name"),field("unit","Unit","select",["Hour","Each","Day","Kilometre"]),field("rate","Rate","number"),field("effective_from","Effective from (optional)","date",[],false)],async v=>{const {error}=await B().db.from("ndis_support_items").insert({...v,rate:Number(v.rate),effective_from:v.effective_from||null,organisation_id:B().profile.organisation_id,active:true});if(error)throw error;await loadOperations();B().toast("Support item saved")});
  q("#add-emergency-plan").onclick=()=>form("Participant emergency plan",[field("participant_id","Participant","select",participantOptions()),field("emergency_contacts","Emergency contacts","textarea"),field("evacuation_plan","Evacuation plan","textarea"),field("medical_emergency_plan","Medical emergency response","textarea"),field("communication_support","Communication support","textarea"),field("continuity_arrangements","Continuity of supports","textarea"),field("essential_equipment","Essential equipment (optional)","textarea",[],false),field("preferred_hospital","Preferred hospital (optional)","text",[],false),field("risks","Emergency risks","textarea"),field("last_tested_at","Last tested (optional)","date",[],false),field("next_review_date","Next review","date")],async v=>{const {error}=await B().db.from("emergency_plans").upsert({...v,organisation_id:B().profile.organisation_id,approved_by:B().profile.id},{onConflict:"participant_id"});if(error)throw error;await loadOperations();B().toast("Emergency plan saved")});
  q("#add-credential").onclick=()=>form("Add staff credential",[field("staff_id","Staff member","select",staffOptions()),field("credential_type","Credential","select",["NDIS Worker Screening","Police check","Blue Card","First Aid","CPR","Medication competency","Driver licence","Vehicle insurance","Training","Other"]),field("reference_number","Reference number (optional)","text",[],false),field("issued_date","Issued date (optional)","date",[],false),field("expiry_date","Expiry date (optional)","date",[],false),field("notes","Notes (optional)","textarea",[],false)],async v=>{const {error}=await B().db.from("staff_credentials").insert({...v,organisation_id:B().profile.organisation_id,status:"Current",verified_by:B().profile.id,verified_at:new Date().toISOString()});if(error)throw error;await loadOperations();B().toast("Credential saved")});
+ q("#add-conflict").onclick=()=>form("Conflict of interest declaration",[
+  field("declaration_type","Declaration","select",["No conflict declared","Actual conflict","Potential conflict","Perceived conflict"]),
+  field("details","Details (required when a conflict is disclosed)","textarea",[],false)
+ ],async v=>{
+  if(v.declaration_type!=="No conflict declared"&&!v.details.trim())throw new Error("Describe the disclosed conflict");
+  const {error}=await B().db.from("conflict_declarations").insert({...v,details:v.details||null,organisation_id:B().profile.organisation_id,staff_id:B().profile.id,status:"Current"});
+  if(error)throw error;await loadOperations();B().toast("Conflict declaration timestamped and saved")
+ });
+ q("#add-meeting-minutes").onclick=()=>form("Meeting minutes",[
+  field("meeting_type","Meeting type","select",["Management meeting","Staff meeting"]),
+  field("meeting_at","Meeting date and time","datetime-local"),field("attendees","Attendees"),
+  field("apologies","Apologies (optional)","textarea",[],false),field("agenda","Agenda","textarea"),
+  field("discussion","Discussion","textarea"),field("decisions","Decisions (optional)","textarea",[],false),
+  field("actions","Actions, owners and due dates (optional)","textarea",[],false),
+  field("next_meeting_at","Next meeting (optional)","datetime-local",[],false)
+ ],async v=>{
+  const {error}=await B().db.from("meeting_minutes").insert({...v,next_meeting_at:v.next_meeting_at||null,apologies:v.apologies||null,decisions:v.decisions||null,actions:v.actions||null,organisation_id:B().profile.organisation_id,recorded_by:B().profile.id});
+  if(error)throw error;await loadOperations();B().toast("Meeting minutes timestamped and saved")
+ });
+ q("#add-delegation").onclick=()=>form("Record delegation",[
+  field("delegator_id","Delegated by","select",staffOptions()),
+  field("delegate_id","Delegated to","select",staffOptions()),
+  field("responsibility","Responsibility or function"),field("authority_limits","Authority limits and escalation requirements","textarea"),
+  field("starts_on","Starts","date"),field("ends_on","Ends (optional)","date",[],false)
+ ],async v=>{
+  if(v.delegator_id===v.delegate_id)throw new Error("The delegator and delegate must be different people");
+  const {error}=await B().db.from("delegations").insert({...v,ends_on:v.ends_on||null,organisation_id:B().profile.organisation_id,status:"Active"});
+  if(error)throw error;await loadOperations();B().toast("Delegation recorded")
+ });
  q("#mark-notifications").onclick=async()=>{const {error}=await B().db.from("notifications").update({read_at:new Date().toISOString()}).eq("recipient_id",B().profile.id).is("read_at",null);if(error)return B().toast(error.message);await loadOperations();B().toast("Notifications marked read")};
- q("#export-timesheets").onclick=async()=>{try{const rows=ops.timesheets.filter(x=>x.status==="Approved");if(!rows.length)throw new Error("There are no approved timesheets to export");const headings=["Staff","Clock in","Clock out","Break minutes","Hours","Status"],csv=[headings,...rows.map(x=>[worker(x.staff_id),x.clock_in,x.clock_out||"",x.break_minutes||0,hours(x).replace(" hours",""),x.status])].map(row=>row.map(value=>`"${String(value??"").replaceAll('"','""')}"`).join(",")).join("\n");const file=new File([csv],`florence-approved-timesheets-${new Date().toISOString().slice(0,10)}.csv`,{type:"text/csv"});if(navigator.canShare?.({files:[file]}))await navigator.share({title:"Florence approved timesheets",files:[file]});else{const url=URL.createObjectURL(file),a=document.createElement("a");a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}}catch(error){if(error?.name!=="AbortError")B().toast(error.message)}};
+ q("#export-timesheets").onclick=async()=>{try{const period=currentPayPeriod(),rows=ops.timesheets.filter(x=>x.status==="Approved"&&new Date(x.clock_in)>=period.start&&new Date(x.clock_in)<period.end);if(!rows.length)throw new Error("There are no approved timesheets in this pay period");const headings=["Employee","Start date/time","End date/time","Break minutes","Paid hours","Status","Florence record ID"],csv=[headings,...rows.map(x=>[worker(x.staff_id),x.clock_in,x.clock_out||"",x.break_minutes||0,hours(x).replace(" hours",""),x.status,x.id])].map(row=>row.map(value=>`"${String(value??"").replaceAll('"','""')}"`).join(",")).join("\n");const periodName=period.start.toISOString().slice(0,10),file=new File([csv],`florence-pay-period-${periodName}.csv`,{type:"text/csv"});if(navigator.canShare?.({files:[file]}))await navigator.share({title:"Florence pay-period timesheets",files:[file]});else{const url=URL.createObjectURL(file),a=document.createElement("a");a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}}catch(error){if(error?.name!=="AbortError")B().toast(error.message)}};
  q("#bell").onclick=()=>{B().showView("governance");loadOperations()};
 }
 async function setupMfa(){

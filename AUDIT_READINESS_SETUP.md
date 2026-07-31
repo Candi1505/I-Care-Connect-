@@ -7,8 +7,10 @@ This release adds software controls that support I-Care Connect's audit evidence
 1. Open the I-Care Connect Supabase project.
 2. Open **SQL Editor** and create a new query.
 3. Copy and run `florence-audit-readiness-upgrade.sql`.
-4. Sign out of Florence and sign in again.
-5. Open each new workspace and complete the verification checklist below.
+4. Copy and run `florence-operational-controls-upgrade.sql`.
+5. Redeploy `supabase/functions/staff-management` so family and participant invitations are available.
+6. Sign out of Florence and sign in again.
+7. Open each new workspace and complete the verification checklist below.
 
 The migration is non-destructive and does not delete existing Florence records.
 
@@ -19,6 +21,17 @@ The migration is non-destructive and does not delete existing Florence records.
 - Support worker can report incidents and medication errors, clock in/out, submit leave, availability and expenses, and record goals.
 - Participant/family accounts cannot see internal safety, workforce, governance or finance areas.
 - Participant/family portal can submit **Complaint or feedback**.
+- Supervisor can invite a family representative or participant and link the account to the correct participant.
+- Support workers can open the controlled position descriptions in the SIL library.
+
+### Operational governance
+- Set the first day of a known fortnightly pay period in Roster.
+- Confirm the supervisor roster displays 14 days.
+- Record a no-conflict declaration from a worker account.
+- Record and review a disclosed conflict.
+- Save management and staff meeting minutes.
+- Record a delegation with authority limits and effective dates.
+- Confirm progress notes and other historical records remain visible after changing months.
 
 ### Incident and complaint management
 - Submit a test incident and confirm a supervisor notification appears.
