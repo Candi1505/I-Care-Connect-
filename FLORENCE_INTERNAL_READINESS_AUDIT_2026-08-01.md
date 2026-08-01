@@ -12,15 +12,17 @@
 |---|---|
 | Static application and repository audit | **PASS — 114 checks** |
 | JavaScript syntax | **PASS** |
+| Full PostgreSQL migration build | **PASS — base schema and every production migration** |
+| Database cleanup and RLS smoke test | **PASS — worker, family and supervisor boundaries exercised** |
 | Controlled private document library | **PASS — 44-document manifest** |
 | Code-level security baseline | **PASS FOR LIVE UAT** |
-| Known fake participant and medication cleanup | **Prepared — runs in the final SQL migration** |
+| Known fake participant and medication cleanup | **PASS in an isolated database; pending one live migration run** |
 | Live role-based user acceptance testing | **Not yet completed** |
 | Backup and restore test | **Not yet evidenced** |
 | Independent privacy/cybersecurity review | **Not yet completed** |
 | Approval for real participant information | **NOT YET APPROVED** |
 
-Florence has passed the completed code-level and static release checks. It is suitable to proceed to controlled live user-acceptance testing with fake information after the final migration succeeds. It must not yet be treated as independently certified or approved for unrestricted real participant use.
+Florence has passed the completed code-level, static and isolated-database release checks. It is suitable to proceed to controlled live user-acceptance testing with fake information after the final migration succeeds in the live Supabase project. It must not yet be treated as independently certified or approved for unrestricted real participant use.
 
 ## Scope reviewed
 
@@ -39,7 +41,9 @@ The review covered:
 - SIL operational records;
 - service-worker caching and browser dependency versions;
 - audit and retention controls;
-- known pre-production test data.
+- known pre-production test data;
+- execution order and compatibility of every Florence database migration;
+- representative RLS behaviour for worker, family and supervisor sessions.
 
 ## Critical findings corrected in this release
 
@@ -67,6 +71,8 @@ The fake participant **Mary Jane** and fake medication **Sifrol** are database r
 
 **Correction:** `florence-final-readiness-upgrade.sql` performs a narrowly scoped transactional cleanup. It removes dependent test records and then verifies that neither name remains. The migration stops and rolls back instead of guessing if it detects duplicate matching names, an unexpected Sifrol association, a linked portal account or participant-scoped private documents.
 
+The cleanup was exercised in an isolated PostgreSQL 16 database containing Mary Jane, Sifrol and dependent MAR, progress-note, timeline, incident, complaint, timesheet, travel and invoice records. The target test records were removed, while a separate participant and medication were retained.
+
 ### 5. Legacy SIL optional-field flags were not interpreted correctly
 
 Some SIL schema fields used the earlier four-item optional-field format. The renderer treated those fields as required.
@@ -79,7 +85,9 @@ Some SIL schema fields used the earlier four-item optional-field format. The ren
 
 ## Automated checks completed
 
-The release workflow completed all of the following before producing the reviewed commit:
+The release workflow completed all of the following on the reviewed branch:
+
+### Static and browser checks
 
 - Node syntax checks for `app.js`, `operations.js`, `staff-management.js`, `sil.js` and `service-worker.js`;
 - duplicate HTML ID checks;
@@ -98,11 +106,39 @@ The release workflow completed all of the following before producing the reviewe
 - known fake-record cleanup and final verification markers;
 - repository whitespace/patch checks.
 
-**Automated result:** `114 checks passed` — `PASS_FOR_LIVE_UAT`.
+### Database migration and RLS checks
 
-## Final migration result required
+An ephemeral PostgreSQL 16 database was created and the following were executed in production order:
 
-After deployment, `florence-final-readiness-upgrade.sql` must finish successfully and return:
+1. Supabase compatibility test layer;
+2. `supabase-schema.sql`;
+3. `florence-audit-readiness-upgrade.sql`;
+4. `florence-operational-controls-upgrade.sql`;
+5. `florence-production-hardening-upgrade.sql`;
+6. `florence-controlled-library-access-upgrade.sql`;
+7. `florence-controlled-library-upload-hotfix.sql`;
+8. representative pre-final data seed;
+9. `florence-final-readiness-upgrade.sql`.
+
+The database test then confirmed:
+
+- the final migration returned `PASS_FOR_LIVE_UAT`;
+- Mary Jane remaining count was zero;
+- Sifrol remaining count was zero;
+- dependent fake records were removed;
+- non-target participant and medication records remained;
+- an assigned worker saw the assigned participant and medication;
+- database-timestamped administration clock-in and clock-out completed successfully;
+- direct worker timesheet, MAR and progress-note inserts were denied;
+- a worker could create a permitted participant-choice SIL record but not a supervisor-only SIL record;
+- a family portal account saw the linked participant and portal messages but no raw medication, MAR, progress-note, timeline, incident, roster or SIL staff records;
+- the supervisor retained organisation oversight.
+
+**Automated result:** `114 static checks passed` and the full database migration/RLS smoke test passed — **PASS FOR LIVE UAT**.
+
+## Final live migration result required
+
+After deployment, `florence-final-readiness-upgrade.sql` must finish successfully in the live Supabase project and return:
 
 - `florence_final_readiness_migration = PASS_FOR_LIVE_UAT`;
 - `mary_jane_remaining = 0`;
@@ -114,7 +150,7 @@ A red SQL error is a failed deployment condition. The query must not be repeated
 
 ## Live tests still required before real participant information
 
-The following tests require actual authenticated accounts and the live Supabase project and therefore cannot be established by static source review alone.
+The following tests require actual authenticated accounts and the live Supabase project and therefore cannot be established by static or isolated-database source review alone.
 
 ### Supervisor account
 
