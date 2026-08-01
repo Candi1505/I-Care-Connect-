@@ -48,6 +48,12 @@ jobs:
           test -f docs/security/FLORENCE_PRIVACY_AND_DIGITAL_RECORDS_ADDENDUM.md
           test -f docs/security/FLORENCE_USER_ACCESS_AND_CONFIDENTIALITY_ACKNOWLEDGEMENT.md
 
+      - name: Cloudflare Workers static-assets allowlist
+        run: python tests/cloudflare_static_assets_audit.py
+
+      - name: Wrangler deployment dry run
+        run: npx --yes wrangler@4 deploy --dry-run --outdir /tmp/florence-worker
+
       - name: Repository whitespace and patch validation
         run: git diff --check
 
