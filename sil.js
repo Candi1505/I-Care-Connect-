@@ -112,6 +112,7 @@ function fieldHtml(f,recordType){
   return`<label>${label}${hint}<select name="${name}"${req}><option value="">Select participant…</option>${options}</select></label>`
  }
  if(name==="worker"){
+  if(!workerRecordTypes.has(recordType))return`<label>${label}<input name="${name}" value="${esc(currentProfile?.full_name||"Signed-in worker")}" readonly required></label>`;
   const options=directory.staff.map(item=>`<option value="${item.id}">${esc(item.full_name)}</option>`).join("");
   return`<label>${label}${hint}<select name="${name}"${req}><option value="">Select worker…</option>${options}</select></label>`
  }
@@ -312,7 +313,7 @@ async function authorise(){
   if(!session){location.replace("index.html");return}
   const {data:aal,error:aalError}=await db.auth.mfa.getAuthenticatorAssuranceLevel();
   if(aalError||aal?.currentLevel!=="aal2"){location.replace("index.html");return}
-  const {data,error}=await db.from("profiles").select("id,role,active,organisation_id").eq("id",session.user.id).single();
+  const {data,error}=await db.from("profiles").select("id,full_name,role,active,organisation_id").eq("id",session.user.id).single();
   if(error||!data?.active||!["staff","supervisor"].includes(data.role)){location.replace("index.html");return}
   currentProfile=data;
   const supervisor=data.role==="supervisor";
