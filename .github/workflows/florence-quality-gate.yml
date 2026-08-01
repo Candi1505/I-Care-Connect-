@@ -24,7 +24,6 @@ jobs:
           node --check app.js
           node --check operations.js
           node --check staff-management.js
-          node --check sil-rpc-audit-fix.js
           node --check sil.js
           node --check service-worker.js
 
@@ -53,6 +52,33 @@ jobs:
 
       - name: Wrangler deployment dry run
         run: npx --yes wrangler@4 deploy --dry-run --outdir /tmp/florence-worker
+
+      - name: Cloudflare multi-page route smoke test
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 dev --local --ip 127.0.0.1 --port 8788 > /tmp/florence-wrangler.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true' EXIT
+          ready=false
+          for attempt in $(seq 1 40); do
+            if curl --fail --silent http://127.0.0.1:8788/ > /tmp/florence-index.html; then
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" != "true" ]; then
+            cat /tmp/florence-wrangler.log
+            exit 1
+          fi
+          grep -q '<title>Florence · I-Care Connect</title>' /tmp/florence-index.html
+          curl --fail --silent --location http://127.0.0.1:8788/sil.html > /tmp/florence-sil.html
+          grep -q '<title>Florence · SIL homes & compliance</title>' /tmp/florence-sil.html
+          curl --fail --silent --location http://127.0.0.1:8788/sil > /tmp/florence-sil-canonical.html
+          grep -q '<title>Florence · SIL homes & compliance</title>' /tmp/florence-sil-canonical.html
+          blocked_status=$(curl --silent --output /tmp/florence-blocked.txt --write-out '%{http_code}' http://127.0.0.1:8788/florence-final-readiness-upgrade.sql)
+          test "$blocked_status" = "404"
+          ! grep -q '<title>Florence · I-Care Connect</title>' /tmp/florence-blocked.txt
 
       - name: Repository whitespace and patch validation
         run: git diff --check
