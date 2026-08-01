@@ -1,86 +1,13 @@
-name: Temporary private library security refiner
+name: Temporary private library workflow disabled
 
 on:
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  refine:
+  disabled:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Enforce worker and supervisor document boundaries
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          from pathlib import Path
-
-          path=Path('sil.js')
-          source=path.read_text(encoding='utf-8')
-
-          old='''  const approvedTitles=new Set(controlledDocuments.map(document=>document[2]));
-  const bucket=window.FLORENCE_CONFIG.storageBucket;
-  for(let index=0;index<manifest.documents.length;index++){
-   const document=manifest.documents[index];
-   if(!approvedTitles.has(document.title))throw new Error(`Unexpected document in ZIP: ${document.title}`);'''
-          new='''  const approvedByTitle=new Map(controlledDocuments.map(document=>[document[2],document[4]]));
-  const manifestTitles=manifest.documents.map(document=>document.title);
-  const manifestFilenames=manifest.documents.map(document=>document.filename);
-  if(new Set(manifestTitles).size!==controlledDocuments.length||manifestTitles.some(title=>!approvedByTitle.has(title)))throw new Error("The ZIP does not contain the exact approved Florence document register");
-  if(new Set(manifestFilenames).size!==manifest.documents.length)throw new Error("The ZIP contains duplicate PDF filenames");
-  const bucket=window.FLORENCE_CONFIG.storageBucket;
-  for(let index=0;index<manifest.documents.length;index++){
-   const document=manifest.documents[index];
-   if(typeof document.worker_access!=="boolean"||document.worker_access!==approvedByTitle.get(document.title))throw new Error(`Access classification does not match for ${document.title}`);
-   if(!/^[A-Za-z0-9._-]+\\.pdf$/i.test(document.filename))throw new Error(`Unsafe PDF filename in ZIP: ${document.filename}`);'''
-          if source.count(old)!=1:raise SystemExit(f'manifest validation block: expected one match, found {source.count(old)}')
-          source=source.replace(old,new,1)
-
-          old_payload='''   const payload={organisation_id:currentProfile.organisation_id,scope:"Organisation",subject_type:"organisation",subject_name:"I-Care Connect",category:"Controlled library",title:document.title,storage_path:storagePath,original_filename:document.filename,mime_type:"application/pdf",version:1,uploaded_by:currentProfile.id,uploaded_at:new Date().toISOString()};'''
-          new_payload='''   const workerAccess=document.worker_access===true;
-   const payload={organisation_id:currentProfile.organisation_id,scope:workerAccess?"Organisation":"Staff",subject_type:workerAccess?"organisation":"staff",subject_id:workerAccess?null:currentProfile.id,subject_name:workerAccess?"I-Care Connect":"Supervisor-controlled library",category:"Controlled library",title:document.title,storage_path:storagePath,original_filename:document.filename,mime_type:"application/pdf",version:1,uploaded_by:currentProfile.id,uploaded_at:new Date().toISOString()};'''
-          if source.count(old_payload)!=1:raise SystemExit(f'access payload block: expected one match, found {source.count(old_payload)}')
-          source=source.replace(old_payload,new_payload,1)
-          path.write_text(source,encoding='utf-8')
-          PY
-
-      - name: Validate final private library
-        shell: bash
-        run: |
-          set -euo pipefail
-          node --check sil.js
-          node --check service-worker.js
-          grep -q 'Import 44 private PDFs' sil.html
-          grep -q 'sil.js?v=20260801-2' sil.html
-          grep -q 'florence-shell-20260801-4' service-worker.js
-          grep -q 'approvedByTitle' sil.js
-          grep -q 'workerAccess?"Organisation":"Staff"' sil.js
-          grep -q 'subject_id:workerAccess?null:currentProfile.id' sil.js
-          ! grep -q 'docs.google.com' sil.js
-          git diff --check
-
-      - name: Publish final clean branch commit
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -f .github/workflows/temporary-private-library-patcher.yml
-          rm -f .github/workflows/apply-private-controlled-library.yml
-          rm -f .github/workflows/bootstrap-private-library.yml
-          rm -f .private-library-trigger .private-library-run
-          rmdir .github/workflows 2>/dev/null || true
-          rmdir .github 2>/dev/null || true
-          git config user.name "OpenAI"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git reset --mixed origin/main
-          git add -A
-          git diff --cached --check
-          git commit -m "Move controlled documents into private Florence storage"
-          git push --force origin HEAD:agent/private-controlled-library
+      - run: echo "The temporary private library workflow has been disabled."
