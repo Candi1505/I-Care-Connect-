@@ -15,11 +15,12 @@ jobs:
   static-audit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: JavaScript syntax checks
         run: |
           set -euo pipefail
+          node --check config.js
           node --check app.js
           node --check operations.js
           node --check staff-management.js
@@ -29,6 +30,23 @@ jobs:
 
       - name: Florence security and readiness audit
         run: python tests/florence_static_audit.py
+
+      - name: Sydney invocation and governance-pack checks
+        run: |
+          set -euo pipefail
+          grep -q 'functionRegion: "ap-southeast-2"' config.js
+          grep -q 'region: safeOptions.region || window.FLORENCE_CONFIG.functionRegion' config.js
+          grep -q 'Content-Security-Policy:' _headers
+          grep -q 'Disallow: /' robots.txt
+          test -f SECURITY.md
+          test -f docs/security/FLORENCE_SECURITY_ASSURANCE_PACK.md
+          test -f docs/security/FLORENCE_IMMEDIATE_ACTION_PLAN.md
+          test -f docs/security/FLORENCE_LIVE_UAT_CHECKLIST.md
+          test -f docs/security/FLORENCE_BACKUP_AND_RECOVERY_PROCEDURE.md
+          test -f docs/security/FLORENCE_CYBER_AND_DATA_BREACH_RESPONSE_PLAN.md
+          test -f docs/security/FLORENCE_MANAGEMENT_RISK_ACCEPTANCE.md
+          test -f docs/security/FLORENCE_PRIVACY_AND_DIGITAL_RECORDS_ADDENDUM.md
+          test -f docs/security/FLORENCE_USER_ACCESS_AND_CONFIDENTIALITY_ACKNOWLEDGEMENT.md
 
       - name: Repository whitespace and patch validation
         run: git diff --check
@@ -55,7 +73,7 @@ jobs:
       PGPASSWORD: postgres
       PGDATABASE: florence_test
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Confirm PostgreSQL client
         run: psql --version
