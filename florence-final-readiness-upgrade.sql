@@ -16,6 +16,8 @@ begin
     or to_regclass('public.audit_events') is null
     or to_regprocedure('public.require_verified_mfa()') is null
     or to_regprocedure('public.can_access_participant(uuid)') is null
+    or to_regprocedure('public.current_participant_id()') is null
+    or to_regprocedure('public.is_worker_controlled_document(text)') is null
     or to_regprocedure('public.audit_row_change()') is null then
   raise exception 'Run the Florence audit, operational and production-hardening migrations before this final readiness upgrade';
  end if;
@@ -112,7 +114,7 @@ begin
  if v_profile.id is null then
   raise exception 'Only active workers and supervisors can clock in';
  end if;
- if p_work_type not in(
+ if p_work_type is null or p_work_type not in(
   'Participant support','24-hour support','Personal care','Community access',
   'Social support','Sleepover','Active night','Transport','Domestic assistance',
   'Administration / office work','Training / staff meeting','On-call / coordination','Other'
@@ -357,6 +359,35 @@ drop trigger if exists sil_provider_profiles_touch_updated_at on public.sil_prov
 create trigger sil_provider_profiles_touch_updated_at
 before update on public.sil_provider_profiles
 for each row execute function public.touch_updated_at();
+
+create or replace function public.validate_sil_provider_profile()
+returns trigger
+language plpgsql
+security definer
+set search_path=public,pg_temp
+as $$
+declare
+ v_profile public.profiles%rowtype;
+begin
+ select * into v_profile from public.profiles where id=new.updated_by and active=true;
+ if v_profile.id is null or v_profile.role<>'supervisor' or v_profile.organisation_id<>new.organisation_id then
+  raise exception 'The SIL provider profile must be signed by an active supervisor in this organisation';
+ end if;
+ if auth.uid() is not null and new.updated_by<>auth.uid() then
+  raise exception 'The signed-in supervisor must sign the SIL provider profile update';
+ end if;
+ if octet_length(new.profile::text)>262144 then
+  raise exception 'The SIL provider profile is too large';
+ end if;
+ new.updated_at=now();
+ return new;
+end;
+$$;
+
+drop trigger if exists sil_provider_profiles_validate on public.sil_provider_profiles;
+create trigger sil_provider_profiles_validate
+before insert or update on public.sil_provider_profiles
+for each row execute function public.validate_sil_provider_profile();
 
 alter table public.sil_records enable row level security;
 alter table public.sil_provider_profiles enable row level security;
@@ -607,18 +638,26 @@ declare
  v_incident_ids uuid[];
  v_complaint_ids uuid[];
 begin
- select count(*),min(id),min(organisation_id)
- into v_participant_count,v_participant_id,v_participant_org
+ select count(*) into v_participant_count
  from public.participants
  where lower(btrim(full_name))='mary jane';
+ select id,organisation_id into v_participant_id,v_participant_org
+ from public.participants
+ where lower(btrim(full_name))='mary jane'
+ order by id
+ limit 1;
  if v_participant_count>1 then
   raise exception 'More than one participant is named Mary Jane. No test data was removed.';
  end if;
 
- select count(*),min(id),min(participant_id)
- into v_sifrol_count,v_sifrol_id,v_sifrol_participant
+ select count(*) into v_sifrol_count
  from public.medications
  where lower(btrim(medication_name))='sifrol';
+ select id,participant_id into v_sifrol_id,v_sifrol_participant
+ from public.medications
+ where lower(btrim(medication_name))='sifrol'
+ order by id
+ limit 1;
  if v_sifrol_count>1 then
   raise exception 'More than one medication is named Sifrol. No test data was removed.';
  end if;
@@ -760,7 +799,10 @@ select
   when to_regclass('public.sil_records') is null then 'FAIL'
   when to_regprocedure('public.clock_in_timesheet(uuid,text,text)') is null then 'FAIL'
   when to_regprocedure('public.clock_out_timesheet(integer,text)') is null then 'FAIL'
-  else 'PASS'
+  else 'PASS_FOR_LIVE_UAT'
  end as florence_final_readiness_migration,
+ (select count(*) from public.participants where lower(btrim(full_name))='mary jane') as mary_jane_remaining,
+ (select count(*) from public.medications where lower(btrim(medication_name))='sifrol') as sifrol_remaining,
+ (select count(*) from public.compliance_documents where category='Controlled library') as private_controlled_documents,
  (select count(*) from public.sil_records) as existing_sil_records,
  (select count(*) from public.timesheets where clock_out is null and status='Open') as currently_open_timesheets;
