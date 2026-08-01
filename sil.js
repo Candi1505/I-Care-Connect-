@@ -7,6 +7,28 @@ let directory={participants:[],staff:[]};
 const participantRecordTypes=new Set(["visitor","communication","instructions","choice","agreementExplanation","serviceAgreement","rights","privateSpace","handover"]);
 const workerRecordTypes=new Set(["induction","competency","training","observation"]);
 const workerCreateRecordTypes=new Set(["visitor","choice","handover"]);
+function redirectThroughFlorence(reason=""){
+ try{sessionStorage.setItem("florence:return-to","sil")}catch(_ignored){}
+ const target=new URL("index.html",location.href);
+ target.searchParams.set("return","sil");
+ if(reason)target.searchParams.set("reason",reason);
+ location.replace(target.toString());
+}
+function showSilStartupError(error){
+ const message=String(error?.message||error||"Florence could not open the SIL workspace").slice(0,800);
+ document.documentElement.classList.remove("sil-auth-pending");
+ document.body.innerHTML=`<main class="sil-main"><article class="panel sil-startup-error"><p class="eyebrow">Florence SIL</p><h1>The SIL workspace could not open</h1><p>Florence kept you signed in and stopped the silent redirect so the problem can be corrected safely.</p><pre id="sil-startup-error-detail"></pre><div class="actions"><button id="sil-startup-retry" type="button" class="primary">Try again</button><button id="sil-startup-home" type="button" class="secondary">Return to Florence Home</button></div></article></main>`;
+ const detail=document.querySelector("#sil-startup-error-detail");
+ if(detail)detail.textContent=message;
+ document.querySelector("#sil-startup-retry")?.addEventListener("click",()=>location.reload());
+ document.querySelector("#sil-startup-home")?.addEventListener("click",()=>location.replace("index.html"));
+}
+async function auditSilAccess(action,tableName,recordId=null,metadata={}){
+ try{
+  const {error}=await db.rpc("record_access_event",{p_action:action,p_table_name:tableName,p_record_id:recordId,p_metadata:metadata});
+  if(error)console.warn("Florence SIL audit event failed",error.message||error);
+ }catch(error){console.warn("Florence SIL audit event failed",error)}
+}
 const PROVIDER={legalName:"I-Care Connect PTY LTD",abn:"55 699 493 457",address:"1387 Amiens Rd, Amiens, QLD 4380",registrationGroup:"0138 — Assistance with Supported Independent Living",jurisdiction:"Queensland, Australia",keyManagementPersonnel:"Victoria Kussrow",seniorWorker:"Candice Long",reviewCycle:"At least annually, and earlier following legislative, service or risk changes",houseSafeguardingReview:"Every 6 months, after a significant incident, household change or environmental change",houseMeetingFrequency:"At least monthly and whenever a proposed change affects the home",recordRetention:"Retain in accordance with NDIS, privacy, incident and employment obligations",status:"Provider details pre-filled — verify registration and contact details before audit"};
 const controlledDocuments=[
 ["Principal documents","📗","SIL Staff Handbook","Employee rights, responsibilities, conduct, incidents, safeguarding and SIL practice.",true],
@@ -210,15 +232,21 @@ function renderResources(){
  renderLibraryStatus();
 }
 async function openPrivateDocument(recordId){
+ const openedWindow=window.open("about:blank","_blank");
+ if(openedWindow)openedWindow.opener=null;
  try{
   const document=[...privateDocuments.values()].find(item=>item.id===recordId);
   if(!document)throw new Error("The private document record is not available");
-  await db.rpc("record_access_event",{p_action:"DOWNLOAD",p_table_name:"controlled_library",p_record_id:document.id,p_metadata:{title:document.title}}).catch(()=>{});
+  void auditSilAccess("DOWNLOAD","controlled_library",document.id,{title:document.title});
   const bucket=window.FLORENCE_CONFIG.storageBucket;
   const {data,error}=await db.storage.from(bucket).createSignedUrl(document.storage_path,120);
   if(error||!data?.signedUrl)throw error||new Error("Florence could not create the private document link");
-  window.open(data.signedUrl,"_blank","noopener,noreferrer");
- }catch(error){toast(error.message||"Florence could not open that private document")}
+  if(openedWindow)openedWindow.location.replace(data.signedUrl);
+  else location.assign(data.signedUrl);
+ }catch(error){
+  try{openedWindow?.close()}catch(_ignored){}
+  toast(error.message||"Florence could not open that private document")
+ }
 }
 async function sha256Hex(buffer){
  const digest=await crypto.subtle.digest("SHA-256",buffer);
@@ -280,7 +308,7 @@ function exportFile(kind){
   const keys=[...new Set(rows.flatMap(Object.keys))],csv=[keys.join(","),...rows.map(row=>keys.map(key=>'"'+String(row[key]??"").replaceAll('"','""')+'"').join(","))].join("\n");
   blob=new Blob([csv],{type:"text/csv"});name="Florence-SIL-audit-evidence.csv"
  }
- void db.rpc("record_access_event",{p_action:"EXPORT",p_table_name:"sil_records",p_record_id:null,p_metadata:{format:kind,record_count:rows.length}}).catch(()=>{});
+ void auditSilAccess("EXPORT","sil_records",null,{format:kind,record_count:rows.length});
  const link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download=name;link.click();URL.revokeObjectURL(link.href)
 }
 $$('[data-sil-tab]').forEach(button=>button.onclick=()=>{activeTab=button.dataset.silTab;$$('[data-sil-tab]').forEach(item=>item.classList.toggle("active",item===button));$$('.sil-panel').forEach(panel=>panel.classList.toggle("active",panel.id===`sil-${activeTab}-panel`));if(activeTab==="evidence")renderEvidence()});
@@ -309,12 +337,19 @@ async function authorise(){
  try{
   if(!window.supabase||!window.FLORENCE_CONFIG?.supabaseUrl||!window.FLORENCE_CONFIG?.supabaseAnonKey)throw new Error("Florence configuration is unavailable.");
   db=window.supabase.createClient(window.FLORENCE_CONFIG.supabaseUrl,window.FLORENCE_CONFIG.supabaseAnonKey);
-  const {data:{session}}=await db.auth.getSession();
-  if(!session){location.replace("index.html");return}
+  const sessionResult=await db.auth.getSession();
+  if(sessionResult.error)throw sessionResult.error;
+  let session=sessionResult.data.session;
+  if(!session){redirectThroughFlorence("sign-in-required");return}
+  const refreshed=await db.auth.refreshSession();
+  if(!refreshed.error&&refreshed.data.session)session=refreshed.data.session;
   const {data:aal,error:aalError}=await db.auth.mfa.getAuthenticatorAssuranceLevel();
-  if(aalError||aal?.currentLevel!=="aal2"){location.replace("index.html");return}
+  if(aalError)throw aalError;
+  if(aal?.currentLevel!=="aal2"){redirectThroughFlorence("mfa-required");return}
   const {data,error}=await db.from("profiles").select("id,full_name,role,active,organisation_id").eq("id",session.user.id).single();
-  if(error||!data?.active||!["staff","supervisor"].includes(data.role)){location.replace("index.html");return}
+  if(error)throw error;
+  if(!data?.active)throw new Error("Your Florence account is inactive.");
+  if(!["staff","supervisor"].includes(data.role))throw new Error("This account has portal access only and cannot open staff or SIL records.");
   currentProfile=data;
   const supervisor=data.role==="supervisor";
   $('[data-sil-tab="provider"]')?.classList.toggle("hidden",!supervisor);
@@ -325,9 +360,10 @@ async function authorise(){
   await Promise.all([loadSilState(),loadPrivateDocuments()]);
   render();
   document.documentElement.classList.remove("sil-auth-pending");
+  try{sessionStorage.removeItem("florence:return-to")}catch(_ignored){}
  }catch(error){
   console.error("SIL access check failed",error);
-  location.replace("index.html");
+  showSilStartupError(error);
  }
 }
 authorise();

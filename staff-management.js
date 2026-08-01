@@ -16,7 +16,7 @@ async function invoke(body){
  if(error){
   let message=data?.error||error.message||"Staff management is unavailable";
   try{if(error.context instanceof Response){const payload=await error.context.clone().json();message=payload?.error||message}}catch(_ignored){}
-  if(/failed to send|fetch/i.test(message))message="Florence could not reach the staff-management Edge Function. Redeploy the updated function and confirm the live origin is https://candi1505.github.io.";
+  if(/failed to send|fetch/i.test(message))message="Florence could not reach the staff-management Edge Function. Confirm the Edge Function secrets allow https://i-care-connect.candi1505.workers.dev and redeploy the current function if required.";
   throw new Error(message);
  }
  if(data?.error)throw new Error(data.error);

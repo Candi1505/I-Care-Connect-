@@ -76,11 +76,11 @@ for path in ["index.html", "sil.html"]:
 index = text("index.html")
 sil_html = text("sil.html")
 service_worker = text("service-worker.js")
-require('app.js?v=20260801-4' in index, "index loads final app asset")
+require('app.js?v=20260801-5' in index, "index loads final app asset")
 require('operations.js?v=20260801-2' in index, "index loads final operations asset")
-require('sil.js?v=20260801-3' in sil_html, "SIL page loads final SIL asset")
-require('florence-shell-20260801-5' in service_worker, "service worker uses final cache namespace")
-for marker in ['app.js?v=20260801-4', 'operations.js?v=20260801-2', 'sil.js?v=20260801-3']:
+require('sil.js?v=20260801-4' in sil_html, "SIL page loads final SIL asset")
+require('florence-shell-20260801-6' in service_worker, "service worker uses final cache namespace")
+for marker in ['app.js?v=20260801-5', 'operations.js?v=20260801-2', 'sil.js?v=20260801-4']:
     require(marker in service_worker, f"service worker caches {marker}")
 
 # No browser-side secrets or old public Drive links.
@@ -189,6 +189,18 @@ for path in ["app.js", "operations.js", "sil.js", "index.html", "sil.html"]:
     source = text(path).lower()
     require("mary jane" not in source, f"{path} has no hardcoded Mary Jane test participant")
     require("sifrol" not in source, f"{path} has no hardcoded Sifrol test medication")
+
+# Cloudflare SIL routing and private-document regression controls.
+require('new URL(location.href).searchParams.get("return")' in app, "main app honours return-to-SIL after MFA")
+require('showSilStartupError(error)' in sil, "SIL startup failures remain visible instead of silently redirecting Home")
+require('await db.auth.refreshSession()' in sil, "SIL refreshes the session before checking MFA assurance")
+require('window.open("about:blank","_blank")' in sil, "private PDF opens a browser target before asynchronous signing")
+private_document_match = re.search(r'async function openPrivateDocument.*?async function sha256Hex', sil, re.S)
+require(private_document_match is not None, "private PDF function is present")
+if private_document_match:
+    require('.catch(()=>{})' not in private_document_match.group(0), "private PDF audit does not call catch on a PostgREST builder")
+require('sil-rpc-audit-fix.js' not in sil_html, "SIL no longer depends on the RPC monkey-patch")
+require(not (ROOT / "sil-rpc-audit-fix.js").exists(), "obsolete SIL RPC monkey-patch file is removed")
 
 print(f"Florence static audit: {len(PASSES)} checks passed")
 if FAILURES:

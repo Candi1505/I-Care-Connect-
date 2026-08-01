@@ -206,6 +206,12 @@ async function enterApp(s){
  }
  const h=new Date().getHours();$("#greeting").textContent=h<12?"Good morning":h<17?"Good afternoon":"Good evening";
  await refreshAll();
+ const requestedReturn=new URL(location.href).searchParams.get("return");
+ if(requestedReturn==="sil"&&isStaffUser()){
+  history.replaceState({},"",location.pathname);
+  location.replace("sil.html");
+  return;
+ }
  if(isPortalUser())showView("portal");
  if(isSupervisor()){
   await loadXeroStatus();
