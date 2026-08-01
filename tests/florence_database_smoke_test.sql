@@ -29,6 +29,13 @@ begin
  end if;
 end $$;
 
+-- Supabase grants API roles table privileges separately from RLS. Recreate those
+-- grants in the ephemeral PostgreSQL database so the assertions exercise RLS.
+grant usage on schema public to authenticated;
+grant select,insert,update,delete on all tables in schema public to authenticated;
+grant usage,select on all sequences in schema public to authenticated;
+grant execute on all functions in schema public to authenticated;
+
 -- Worker session with verified MFA.
 set role authenticated;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000002',false);
