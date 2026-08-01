@@ -1,0 +1,27 @@
+name: Florence live Cloudflare route diagnostic
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect live Florence and SIL routes
+        run: |
+          set -u
+          base='https://i-care-connect.candi1505.workers.dev'
+          for path in '/' '/index.html' '/sil.html' '/sil' '/florence-final-readiness-upgrade.sql'; do
+            echo "===== ${path} ====="
+            curl --silent --show-error --location --dump-header "/tmp/headers-$(echo "$path" | tr '/.' '__')" \
+              --output "/tmp/body-$(echo "$path" | tr '/.' '__')" \
+              "${base}${path}" || true
+            sed -n '1,20p' "/tmp/headers-$(echo "$path" | tr '/.' '__')" || true
+            grep -io '<title>[^<]*</title>' "/tmp/body-$(echo "$path" | tr '/.' '__')" | head -1 || true
+            wc -c "/tmp/body-$(echo "$path" | tr '/.' '__')" || true
+          done
