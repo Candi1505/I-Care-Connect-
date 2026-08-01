@@ -1,4 +1,4 @@
-name: Temporary private library patch runner
+name: Temporary private library security refiner
 
 on:
   pull_request:
@@ -9,69 +9,77 @@ permissions:
   contents: write
 
 jobs:
-  apply:
+  refine:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Apply patch script from the staging branch
+      - name: Enforce worker and supervisor document boundaries
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          workflow=Path('.github/workflows/apply-private-controlled-library.yml').read_text(encoding='utf-8')
-          start="          python - <<'PY'\n"
-          if start not in workflow:raise SystemExit('Embedded patch script was not found')
-          block=workflow.split(start,1)[1].split('\n          PY',1)[0]
-          block='\n'.join(line[10:] if line.startswith('          ') else line for line in block.splitlines())
-          exec(compile(block,'private-library-patch','exec'),{})
+
+          path=Path('sil.js')
+          source=path.read_text(encoding='utf-8')
+
+          old='''  const approvedTitles=new Set(controlledDocuments.map(document=>document[2]));
+  const bucket=window.FLORENCE_CONFIG.storageBucket;
+  for(let index=0;index<manifest.documents.length;index++){
+   const document=manifest.documents[index];
+   if(!approvedTitles.has(document.title))throw new Error(`Unexpected document in ZIP: ${document.title}`);'''
+          new='''  const approvedByTitle=new Map(controlledDocuments.map(document=>[document[2],document[4]]));
+  const manifestTitles=manifest.documents.map(document=>document.title);
+  const manifestFilenames=manifest.documents.map(document=>document.filename);
+  if(new Set(manifestTitles).size!==controlledDocuments.length||manifestTitles.some(title=>!approvedByTitle.has(title)))throw new Error("The ZIP does not contain the exact approved Florence document register");
+  if(new Set(manifestFilenames).size!==manifest.documents.length)throw new Error("The ZIP contains duplicate PDF filenames");
+  const bucket=window.FLORENCE_CONFIG.storageBucket;
+  for(let index=0;index<manifest.documents.length;index++){
+   const document=manifest.documents[index];
+   if(typeof document.worker_access!=="boolean"||document.worker_access!==approvedByTitle.get(document.title))throw new Error(`Access classification does not match for ${document.title}`);
+   if(!/^[A-Za-z0-9._-]+\\.pdf$/i.test(document.filename))throw new Error(`Unsafe PDF filename in ZIP: ${document.filename}`);'''
+          if source.count(old)!=1:raise SystemExit(f'manifest validation block: expected one match, found {source.count(old)}')
+          source=source.replace(old,new,1)
+
+          old_payload='''   const payload={organisation_id:currentProfile.organisation_id,scope:"Organisation",subject_type:"organisation",subject_name:"I-Care Connect",category:"Controlled library",title:document.title,storage_path:storagePath,original_filename:document.filename,mime_type:"application/pdf",version:1,uploaded_by:currentProfile.id,uploaded_at:new Date().toISOString()};'''
+          new_payload='''   const workerAccess=document.worker_access===true;
+   const payload={organisation_id:currentProfile.organisation_id,scope:workerAccess?"Organisation":"Staff",subject_type:workerAccess?"organisation":"staff",subject_id:workerAccess?null:currentProfile.id,subject_name:workerAccess?"I-Care Connect":"Supervisor-controlled library",category:"Controlled library",title:document.title,storage_path:storagePath,original_filename:document.filename,mime_type:"application/pdf",version:1,uploaded_by:currentProfile.id,uploaded_at:new Date().toISOString()};'''
+          if source.count(old_payload)!=1:raise SystemExit(f'access payload block: expected one match, found {source.count(old_payload)}')
+          source=source.replace(old_payload,new_payload,1)
+          path.write_text(source,encoding='utf-8')
           PY
 
-      - name: Validate private library update
+      - name: Validate final private library
         shell: bash
         run: |
           set -euo pipefail
           node --check sil.js
           node --check service-worker.js
           grep -q 'Import 44 private PDFs' sil.html
-          grep -q 'jszip@3.10.1' sil.html
           grep -q 'sil.js?v=20260801-2' sil.html
           grep -q 'florence-shell-20260801-4' service-worker.js
-          grep -q 'Controlled library' sil.js
-          grep -q 'data-open-private-document' sil.js
-          grep -q 'sha256Hex' sil.js
+          grep -q 'approvedByTitle' sil.js
+          grep -q 'workerAccess?"Organisation":"Staff"' sil.js
+          grep -q 'subject_id:workerAccess?null:currentProfile.id' sil.js
           ! grep -q 'docs.google.com' sil.js
-          python - <<'PY'
-          from html.parser import HTMLParser
-          from collections import Counter
-          from pathlib import Path
-          class Parser(HTMLParser):
-              def __init__(self):super().__init__();self.ids=[]
-              def handle_starttag(self,tag,attrs):
-                  for key,value in attrs:
-                      if key=='id' and value:self.ids.append(value)
-          parser=Parser();parser.feed(Path('sil.html').read_text())
-          duplicates={key:value for key,value in Counter(parser.ids).items() if value>1}
-          if duplicates:raise SystemExit(f'Duplicate HTML ids: {duplicates}')
-          PY
           git diff --check
 
-      - name: Publish one clean branch commit
+      - name: Publish final clean branch commit
         shell: bash
         run: |
           set -euo pipefail
+          rm -f .github/workflows/temporary-private-library-patcher.yml
           rm -f .github/workflows/apply-private-controlled-library.yml
           rm -f .github/workflows/bootstrap-private-library.yml
-          rm -f .private-library-trigger
-          rm -f .private-library-run
+          rm -f .private-library-trigger .private-library-run
           rmdir .github/workflows 2>/dev/null || true
           rmdir .github 2>/dev/null || true
           git config user.name "OpenAI"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git reset --mixed cc66a7303bb32d729aa94e6f021dd96e822b5aa4
+          git reset --mixed origin/main
           git add -A
           git diff --cached --check
           git commit -m "Move controlled documents into private Florence storage"
