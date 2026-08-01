@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /
+
+# Florence is an invite-only internal application. Search-engine exclusion is a
+# privacy control for discovery only; authentication, MFA and database RLS remain
+# the actual access controls.

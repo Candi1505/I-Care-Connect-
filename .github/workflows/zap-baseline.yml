@@ -1,0 +1,39 @@
+name: Florence OWASP ZAP passive baseline
+
+on:
+  schedule:
+    - cron: "41 3 1 * *"
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Approved Florence URL to scan"
+        required: false
+        default: "https://candi1505.github.io/I-Care-Connect-/"
+
+permissions:
+  contents: read
+
+jobs:
+  baseline:
+    name: Passive public-host security baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out Florence
+        uses: actions/checkout@v5
+
+      - name: Run ZAP baseline
+        uses: zaproxy/action-baseline@v0.15.0
+        with:
+          target: ${{ inputs.target || 'https://candi1505.github.io/I-Care-Connect-/' }}
+          fail_action: false
+          allow_issue_writing: false
+          artifact_name: florence-zap-baseline
+          cmd_options: "-I"
+
+      - name: Record review reminder
+        run: |
+          echo "Review the ZAP HTML report artifact."
+          echo "Enter new medium/high findings into the Florence risk or continuous-improvement register."
+          echo "This passive baseline does not replace an independent penetration test."
