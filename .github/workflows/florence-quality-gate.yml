@@ -38,6 +38,7 @@ jobs:
           grep -q 'region: safeOptions.region || window.FLORENCE_CONFIG.functionRegion' config.js
           grep -q 'Content-Security-Policy:' _headers
           grep -q 'Disallow: /' robots.txt
+          grep -q "notify pgrst, 'reload schema'" florence-sil-schema-cache-repair.sql
           test -f SECURITY.md
           test -f docs/security/FLORENCE_SECURITY_ASSURANCE_PACK.md
           test -f docs/security/FLORENCE_IMMEDIATE_ACTION_PLAN.md
@@ -127,6 +128,15 @@ jobs:
           grep -q 'PASS_FOR_LIVE_UAT' /tmp/florence-final-migration.txt
           psql -v ON_ERROR_STOP=1 -f florence-remove-mary-jane-sifrol-hotfix.sql | tee /tmp/florence-demo-cleanup.txt
           grep -q 'REMOVED' /tmp/florence-demo-cleanup.txt
+
+      - name: Reproduce and repair the live missing SIL table condition
+        run: |
+          set -euo pipefail
+          psql -v ON_ERROR_STOP=1 -c 'drop table public.sil_records cascade; drop table public.sil_provider_profiles cascade;'
+          psql -v ON_ERROR_STOP=1 -f florence-sil-schema-cache-repair.sql | tee /tmp/florence-sil-repair.txt
+          grep -q 'SIL_SCHEMA_READY_CACHE_RELOAD_SENT' /tmp/florence-sil-repair.txt
+          psql -v ON_ERROR_STOP=1 -f florence-sil-schema-cache-repair.sql | tee /tmp/florence-sil-repair-repeat.txt
+          grep -q 'SIL_SCHEMA_READY_CACHE_RELOAD_SENT' /tmp/florence-sil-repair-repeat.txt
 
       - name: Exercise cleanup, server time clock and role RLS boundaries
         run: psql -v ON_ERROR_STOP=1 -f tests/florence_database_smoke_test.sql
