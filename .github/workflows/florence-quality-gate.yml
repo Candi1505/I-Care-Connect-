@@ -1,0 +1,33 @@
+name: Florence production quality gate
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  static-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JavaScript syntax checks
+        run: |
+          set -euo pipefail
+          node --check app.js
+          node --check operations.js
+          node --check staff-management.js
+          node --check sil.js
+          node --check service-worker.js
+
+      - name: Florence security and readiness audit
+        run: python tests/florence_static_audit.py
+
+      - name: Repository whitespace and patch validation
+        run: git diff --check
