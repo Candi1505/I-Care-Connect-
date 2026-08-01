@@ -38,6 +38,7 @@ jobs:
           grep -q 'region: safeOptions.region || window.FLORENCE_CONFIG.functionRegion' config.js
           grep -q 'Content-Security-Policy:' _headers
           grep -q 'Disallow: /' robots.txt
+          grep -q "notify pgrst, 'reload schema'" florence-sil-schema-cache-repair.sql
           test -f SECURITY.md
           test -f docs/security/FLORENCE_SECURITY_ASSURANCE_PACK.md
           test -f docs/security/FLORENCE_IMMEDIATE_ACTION_PLAN.md
@@ -48,38 +49,11 @@ jobs:
           test -f docs/security/FLORENCE_PRIVACY_AND_DIGITAL_RECORDS_ADDENDUM.md
           test -f docs/security/FLORENCE_USER_ACCESS_AND_CONFIDENTIALITY_ACKNOWLEDGEMENT.md
 
-      - name: Cloudflare Workers static-assets allowlist
+      - name: Cloudflare Workers static-assets and multi-page routing audit
         run: python tests/cloudflare_static_assets_audit.py
 
       - name: Wrangler deployment dry run
         run: npx --yes wrangler@4 deploy --dry-run --outdir /tmp/florence-worker
-
-      - name: Cloudflare multi-page route smoke test
-        run: |
-          set -euo pipefail
-          npx --yes wrangler@4 dev --local --ip 127.0.0.1 --port 8788 > /tmp/florence-wrangler.log 2>&1 &
-          pid=$!
-          trap 'kill "$pid" 2>/dev/null || true; pkill -f "wrangler.*8788" 2>/dev/null || true' EXIT
-          ready=false
-          for attempt in $(seq 1 40); do
-            if curl --connect-timeout 2 --max-time 5 --fail --silent http://127.0.0.1:8788/ > /tmp/florence-index.html; then
-              ready=true
-              break
-            fi
-            sleep 1
-          done
-          if [ "$ready" != "true" ]; then
-            cat /tmp/florence-wrangler.log
-            exit 1
-          fi
-          grep -q '<title>Florence · I-Care Connect</title>' /tmp/florence-index.html
-          curl --connect-timeout 2 --max-time 10 --fail --silent --location http://127.0.0.1:8788/sil.html > /tmp/florence-sil.html
-          grep -q '<title>Florence · SIL homes & compliance</title>' /tmp/florence-sil.html
-          curl --connect-timeout 2 --max-time 10 --fail --silent --location http://127.0.0.1:8788/sil > /tmp/florence-sil-canonical.html
-          grep -q '<title>Florence · SIL homes & compliance</title>' /tmp/florence-sil-canonical.html
-          blocked_status=$(curl --connect-timeout 2 --max-time 10 --silent --output /tmp/florence-blocked.txt --write-out '%{http_code}' http://127.0.0.1:8788/florence-final-readiness-upgrade.sql)
-          test "$blocked_status" = "404"
-          ! grep -q '<title>Florence · I-Care Connect</title>' /tmp/florence-blocked.txt
 
       - name: Repository whitespace and patch validation
         run: git diff --check
@@ -127,6 +101,15 @@ jobs:
           grep -q 'PASS_FOR_LIVE_UAT' /tmp/florence-final-migration.txt
           psql -v ON_ERROR_STOP=1 -f florence-remove-mary-jane-sifrol-hotfix.sql | tee /tmp/florence-demo-cleanup.txt
           grep -q 'REMOVED' /tmp/florence-demo-cleanup.txt
+
+      - name: Reproduce and repair the live missing SIL table condition
+        run: |
+          set -euo pipefail
+          psql -v ON_ERROR_STOP=1 -c 'drop table public.sil_records cascade; drop table public.sil_provider_profiles cascade;'
+          psql -v ON_ERROR_STOP=1 -f florence-sil-schema-cache-repair.sql | tee /tmp/florence-sil-repair.txt
+          grep -q 'SIL_SCHEMA_READY_CACHE_RELOAD_SENT' /tmp/florence-sil-repair.txt
+          psql -v ON_ERROR_STOP=1 -f florence-sil-schema-cache-repair.sql | tee /tmp/florence-sil-repair-repeat.txt
+          grep -q 'SIL_SCHEMA_READY_CACHE_RELOAD_SENT' /tmp/florence-sil-repair-repeat.txt
 
       - name: Exercise cleanup, server time clock and role RLS boundaries
         run: psql -v ON_ERROR_STOP=1 -f tests/florence_database_smoke_test.sql
