@@ -39,6 +39,8 @@ jobs:
           grep -q 'Content-Security-Policy:' _headers
           grep -q 'Disallow: /' robots.txt
           grep -q "notify pgrst, 'reload schema'" florence-sil-schema-cache-repair.sql
+          grep -q 'set search_path=public,extensions,pg_temp' florence-pgcrypto-pin-signing-hotfix.sql
+          grep -q 'PIN_SIGNING_CRYPTO_READY' florence-pgcrypto-pin-signing-hotfix.sql
           test -f SECURITY.md
           test -f docs/security/FLORENCE_SECURITY_ASSURANCE_PACK.md
           test -f docs/security/FLORENCE_IMMEDIATE_ACTION_PLAN.md
@@ -90,10 +92,13 @@ jobs:
         run: |
           set -euo pipefail
           psql -v ON_ERROR_STOP=1 -f tests/supabase_postgres_stub.sql
+          psql -v ON_ERROR_STOP=1 -f tests/supabase_pgcrypto_schema.sql
           psql -v ON_ERROR_STOP=1 -f supabase-schema.sql
           psql -v ON_ERROR_STOP=1 -f florence-audit-readiness-upgrade.sql
           psql -v ON_ERROR_STOP=1 -f florence-operational-controls-upgrade.sql
           psql -v ON_ERROR_STOP=1 -f florence-production-hardening-upgrade.sql
+          psql -v ON_ERROR_STOP=1 -f florence-pgcrypto-pin-signing-hotfix.sql | tee /tmp/florence-pin-hotfix.txt
+          grep -q 'PIN_SIGNING_CRYPTO_READY' /tmp/florence-pin-hotfix.txt
           psql -v ON_ERROR_STOP=1 -f florence-controlled-library-access-upgrade.sql
           psql -v ON_ERROR_STOP=1 -f florence-controlled-library-upload-hotfix.sql
           psql -v ON_ERROR_STOP=1 -f tests/florence_pre_final_seed.sql
@@ -113,3 +118,6 @@ jobs:
 
       - name: Exercise cleanup, server time clock and role RLS boundaries
         run: psql -v ON_ERROR_STOP=1 -f tests/florence_database_smoke_test.sql
+
+      - name: Exercise Supabase pgcrypto PIN signing
+        run: psql -v ON_ERROR_STOP=1 -f tests/florence_pin_crypto_smoke_test.sql
