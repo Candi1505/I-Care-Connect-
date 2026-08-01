@@ -114,6 +114,7 @@
   <section id="sil-resources-panel" class="sil-panel">
     <div class="page-head"><div><p class="eyebrow">Read before supporting</p><h2>SIL staff handbook & role resources</h2><p>Current guidance for support workers, with additional leadership and governance resources for supervisors.</p></div></div>
     <article class="notice sil-notice"><strong>Privacy reminder:</strong> these controlled documents contain practice guidance only. Participant-specific plans and instructions remain inside Florence and must not be downloaded to personal devices.</article>
+    <article id="sil-library-status" class="notice sil-notice"><strong>Checking private Florence document copies…</strong></article>
     <div class="grid two sil-resource-layout">
       <article class="panel">
         <div class="panel-head"><div><p class="eyebrow">Support workers</p><h3>Current SIL practice library</h3><p>Controlled documents needed for safe daily support.</p></div></div>
@@ -128,9 +129,14 @@
 
   <section id="sil-provider-panel" class="sil-panel">
     <div class="page-head"><div><p class="eyebrow">Provider governance</p><h2>I-Care Connect SIL governance</h2><p>Pre-filled provider details, controlled documents, review cycles and responsibilities.</p></div><button id="edit-provider" class="primary">Edit provider profile</button></div>
+    <article id="sil-library-import-panel" class="panel">
+      <div class="panel-head"><div><p class="eyebrow">One-time secure migration</p><h3>Install private controlled-document copies</h3><p>Choose the approved Florence private-library ZIP. Florence verifies and uploads all 44 PDFs into I-Care Connect’s private Supabase Storage. The app does not retain or open Google Drive links.</p></div><button id="sil-import-library" type="button" class="primary">Import 44 private PDFs</button></div>
+      <input id="sil-library-zip" type="file" accept=".zip,application/zip" hidden>
+      <p id="sil-library-import-status" class="record-meta">No private-library import has been started.</p>
+    </article>
     <div id="sil-provider-profile"></div>
     <article class="panel">
-      <div class="panel-head"><div><h3>Controlled SIL documents</h3><p>The complete 44-document Core and Module 5A working pack. The business plan and unfinished self-assessment are intentionally not published here.</p></div></div>
+      <div class="panel-head"><div><h3>Controlled SIL documents</h3><p>The complete private 44-document Core and Module 5A PDF pack. The business plan and unfinished self-assessment are intentionally not published here.</p></div></div>
       <div id="sil-template-register" class="stack"></div>
     </article>
   </section>
@@ -158,6 +164,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
-<script src="sil.js?v=20260731-1"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="sil.js?v=20260801-2"></script>
 </body>
 </html>
