@@ -26,16 +26,7 @@ jobs:
              && grep -q 'clock_in_timesheet' operations.js; then
             echo 'Final-readiness patch is already applied.'
           else
-            python - <<'PY'
-            from pathlib import Path
-            path=Path('tools/apply_final_readiness_patch.py')
-            source=path.read_text(encoding='utf-8')
-            old='updated, count = re.subn(pattern, replacement, text, count=1, flags=re.S)'
-            new='updated, count = re.subn(pattern, lambda _match: replacement, text, count=1, flags=re.S)'
-            if old not in source:
-                raise SystemExit('Could not locate regex_once implementation')
-            path.write_text(source.replace(old,new,1),encoding='utf-8')
-            PY
+            python -c "from pathlib import Path; p=Path('tools/apply_final_readiness_patch.py'); s=p.read_text(encoding='utf-8'); old='updated, count = re.subn(pattern, replacement, text, count=1, flags=re.S)'; new='updated, count = re.subn(pattern, lambda _match: replacement, text, count=1, flags=re.S)'; assert old in s, 'Could not locate regex_once implementation'; p.write_text(s.replace(old,new,1),encoding='utf-8')"
             python tools/apply_final_readiness_patch.py
           fi
 
