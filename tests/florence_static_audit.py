@@ -190,6 +190,18 @@ for path in ["app.js", "operations.js", "sil.js", "index.html", "sil.html"]:
     require("mary jane" not in source, f"{path} has no hardcoded Mary Jane test participant")
     require("sifrol" not in source, f"{path} has no hardcoded Sifrol test medication")
 
+# Cloudflare SIL routing and private-document regression controls.
+require('new URL(location.href).searchParams.get("return")' in app, "main app honours return-to-SIL after MFA")
+require('showSilStartupError(error)' in sil, "SIL startup failures remain visible instead of silently redirecting Home")
+require('await db.auth.refreshSession()' in sil, "SIL refreshes the session before checking MFA assurance")
+require('window.open("about:blank","_blank")' in sil, "private PDF opens a browser target before asynchronous signing")
+private_document_match = re.search(r'async function openPrivateDocument.*?async function sha256Hex', sil, re.S)
+require(private_document_match is not None, "private PDF function is present")
+if private_document_match:
+    require('.catch(()=>{})' not in private_document_match.group(0), "private PDF audit does not call catch on a PostgREST builder")
+require('sil-rpc-audit-fix.js' not in sil_html, "SIL no longer depends on the RPC monkey-patch")
+require(not (ROOT / "sil-rpc-audit-fix.js").exists(), "obsolete SIL RPC monkey-patch file is removed")
+
 print(f"Florence static audit: {len(PASSES)} checks passed")
 if FAILURES:
     print(f"Florence static audit: {len(FAILURES)} checks FAILED", file=sys.stderr)
@@ -198,11 +210,3 @@ if FAILURES:
     raise SystemExit(1)
 
 print("Florence static audit result: PASS_FOR_LIVE_UAT")
-
-# Cloudflare SIL routing and private-document regression controls.
-require('new URL(location.href).searchParams.get("return")' in app, "main app honours return-to-SIL after MFA")
-require('showSilStartupError(error)' in sil, "SIL startup failures remain visible instead of silently redirecting Home")
-require('await db.auth.refreshSession()' in sil, "SIL refreshes the session before checking MFA assurance")
-require('window.open("about:blank","_blank")' in sil, "private PDF opens a browser target before asynchronous signing")
-require('.catch(()=>{})' not in re.search(r'async function openPrivateDocument.*?async function sha256Hex',sil,re.S).group(0), "private PDF audit does not call catch on a PostgREST builder")
-require('sil-rpc-audit-fix.js' not in sil_html, "SIL no longer depends on the RPC monkey-patch")
