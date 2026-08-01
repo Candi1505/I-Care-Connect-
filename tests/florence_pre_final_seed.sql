@@ -12,7 +12,7 @@ values('20000000-0000-0000-0000-000000000001','I-Care Connect Test','55 699 493 
 insert into public.participants(
  id,organisation_id,full_name,preferred_name,status
 ) values
- ('10000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','Mary Jane','Mary','Active'),
+ ('10000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','Florence Demo Participant','Mary  Jane','Active'),
  ('10000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000001','Retained Test Participant','Retained','Active');
 
 insert into public.profiles(
@@ -33,7 +33,7 @@ insert into public.participant_access_assignments(
 insert into public.medications(
  id,organisation_id,participant_id,medication_name,dose,route,administration_time,medication_type,active,created_by
 ) values
- ('30000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001','Sifrol','1 tablet','Oral','08:00','Regular',true,'00000000-0000-0000-0000-000000000001'),
+ ('30000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001','Sifrol 0.25 mg','1 tablet','Oral','08:00','Regular',true,'00000000-0000-0000-0000-000000000001'),
  ('30000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000002','Retained Test Medication','1 tablet','Oral','09:00','Regular',true,'00000000-0000-0000-0000-000000000001');
 
 insert into public.shifts(

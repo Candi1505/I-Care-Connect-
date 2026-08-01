@@ -72,6 +72,8 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f tests/florence_pre_final_seed.sql
           psql -v ON_ERROR_STOP=1 -f florence-final-readiness-upgrade.sql | tee /tmp/florence-final-migration.txt
           grep -q 'PASS_FOR_LIVE_UAT' /tmp/florence-final-migration.txt
+          psql -v ON_ERROR_STOP=1 -f florence-remove-mary-jane-sifrol-hotfix.sql | tee /tmp/florence-demo-cleanup.txt
+          grep -q 'REMOVED' /tmp/florence-demo-cleanup.txt
 
       - name: Exercise cleanup, server time clock and role RLS boundaries
         run: psql -v ON_ERROR_STOP=1 -f tests/florence_database_smoke_test.sql
