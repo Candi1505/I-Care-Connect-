@@ -1,0 +1,56 @@
+name: Temporary Cloudflare SIL route fixer
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.ref == 'agent/fix-cloudflare-sil-and-pdf'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Apply reviewed Florence SIL and PDF correction
+        run: |
+          set -euo pipefail
+          if grep -q 'showSilStartupError(error)' sil.js \
+             && grep -q '"not_found_handling": "none"' wrangler.jsonc; then
+            echo 'Correction is already applied.'
+          else
+            python tools/apply_cloudflare_sil_route_fix.py
+          fi
+
+      - name: Validate corrected application files
+        run: |
+          set -euo pipefail
+          node --check config.js
+          node --check app.js
+          node --check operations.js
+          node --check staff-management.js
+          node --check sil.js
+          node --check service-worker.js
+          python tests/florence_static_audit.py
+          python tests/cloudflare_static_assets_audit.py
+          git diff --check
+
+      - name: Commit reviewed changes to the fix branch
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo 'No patch commit required.'
+            exit 0
+          fi
+          git config user.name "OpenAI"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.js sil.js sil.html index.html service-worker.js staff-management.js wrangler.jsonc .assetsignore .github/workflows/florence-quality-gate.yml tests/florence_static_audit.py tests/cloudflare_static_assets_audit.py
+          git diff --cached --check
+          git commit -m "Fix Cloudflare SIL route and private PDF opening"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
