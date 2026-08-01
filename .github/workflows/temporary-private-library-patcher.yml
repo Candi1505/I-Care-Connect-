@@ -1,9 +1,9 @@
 name: Temporary private library patch runner
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/private-controlled-library
+      - main
 
 permissions:
   contents: write
@@ -66,6 +66,7 @@ jobs:
           rm -f .github/workflows/apply-private-controlled-library.yml
           rm -f .github/workflows/bootstrap-private-library.yml
           rm -f .private-library-trigger
+          rm -f .private-library-run
           rmdir .github/workflows 2>/dev/null || true
           rmdir .github 2>/dev/null || true
           git config user.name "OpenAI"
