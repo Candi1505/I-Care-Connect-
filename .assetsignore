@@ -1,0 +1,19 @@
+# Florence is deployed from the repository root, but only these browser files
+# may become public Cloudflare static assets. Everything else (SQL migrations,
+# security records, tests, workflows and Edge Function source) is excluded.
+*
+!index.html
+!styles.css
+!config.js
+!app.js
+!operations.js
+!staff-management.js
+!sil.html
+!sil.css
+!sil-rpc-audit-fix.js
+!sil.js
+!manifest.webmanifest
+!florence-icon.svg
+!service-worker.js
+!robots.txt
+!_headers
