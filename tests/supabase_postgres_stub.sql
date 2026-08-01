@@ -68,7 +68,7 @@ immutable
 as $$
  select case
   when array_length(string_to_array(name,'/'),1)>1
-   then string_to_array(name,'/')[1:array_length(string_to_array(name,'/'),1)-1]
+   then (string_to_array(name,'/'))[1:array_length(string_to_array(name,'/'),1)-1]
   else array[]::text[]
  end
 $$;
