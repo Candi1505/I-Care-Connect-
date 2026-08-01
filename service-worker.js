@@ -1,10 +1,13 @@
-const CACHE="florence-shell-20260801-5";
-const SHELL=["./","./index.html","./styles.css?v=20260801-1","./config.js","./app.js?v=20260801-4","./operations.js?v=20260801-2","./staff-management.js?v=20260801-1","./sil.html","./sil.css?v=20260731-1","./sil-rpc-audit-fix.js?v=20260801-1","./sil.js?v=20260801-3","./manifest.webmanifest","./florence-icon.svg"];
+const CACHE="florence-shell-20260801-6";
+const SHELL=["./","./index.html","./styles.css?v=20260801-1","./config.js","./app.js?v=20260801-5","./operations.js?v=20260801-2","./staff-management.js?v=20260801-1","./sil.html","./sil.css?v=20260731-1","./sil.js?v=20260801-4","./manifest.webmanifest","./florence-icon.svg"];
 self.addEventListener("install",event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener("activate",event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 self.addEventListener("fetch",event=>{
  if(event.request.method!=="GET")return;
  const url=new URL(event.request.url);
  if(url.origin!==self.location.origin)return;
- event.respondWith(fetch(event.request).then(response=>{const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(event.request,copy));return response}).catch(()=>caches.match(event.request).then(hit=>hit||caches.match("./index.html"))));
+ event.respondWith(fetch(event.request).then(response=>{
+  if(response.ok){const copy=response.clone();void caches.open(CACHE).then(cache=>cache.put(event.request,copy))}
+  return response;
+ }).catch(()=>caches.match(event.request).then(hit=>hit||new Response("Florence is temporarily offline.",{status:503,headers:{"Content-Type":"text/plain; charset=utf-8"}}))));
 });

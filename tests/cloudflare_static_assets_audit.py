@@ -14,7 +14,6 @@ EXPECTED_ASSETS = {
     "staff-management.js",
     "sil.html",
     "sil.css",
-    "sil-rpc-audit-fix.js",
     "sil.js",
     "service-worker.js",
     "manifest.webmanifest",
@@ -27,7 +26,8 @@ config = json.loads((ROOT / "wrangler.jsonc").read_text(encoding="utf-8"))
 assert config.get("name") == "i-care-connect", "Cloudflare Worker name must match the dashboard project"
 assert config.get("workers_dev") is True, "workers.dev must remain available during controlled cutover testing"
 assert config.get("assets", {}).get("directory") == ".", "Wrangler must read the repository-root allowlist"
-assert config.get("assets", {}).get("not_found_handling") == "single-page-application"
+assert config.get("assets", {}).get("html_handling") == "auto-trailing-slash"
+assert config.get("assets", {}).get("not_found_handling") == "none", "Florence is multi-page; missing routes must not silently return Home"
 
 ignore_lines = [
     line.strip()
