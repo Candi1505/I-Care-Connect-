@@ -5,55 +5,52 @@ document.documentElement.classList.add("sil-auth-pending");
 let db=null,currentProfile=null;
 const PROVIDER={legalName:"I-Care Connect PTY LTD",abn:"55 699 493 457",address:"1387 Amiens Rd, Amiens, QLD 4380",registrationGroup:"0138 — Assistance with Supported Independent Living",jurisdiction:"Queensland, Australia",keyManagementPersonnel:"Victoria Kussrow",seniorWorker:"Candice Long",reviewCycle:"At least annually, and earlier following legislative, service or risk changes",houseSafeguardingReview:"Every 6 months, after a significant incident, household change or environmental change",houseMeetingFrequency:"At least monthly and whenever a proposed change affects the home",recordRetention:"Retain in accordance with NDIS, privacy, incident and employment obligations",status:"Provider details pre-filled — verify registration and contact details before audit"};
 const controlledDocuments=[
-["Principal documents","📗","SIL Staff Handbook","Employee rights, responsibilities, conduct, incidents, safeguarding and SIL practice.","1hChpVu1uZW7NjfLS4aIxH4VlCxd4X4MQ6EP_hnpGzj0",true],
-["Principal documents","👩‍⚕️","Position Description — Disability Support Worker (SIL)","Role duties, qualifications, documentation and professional obligations.","1ss2V02PJXCDf01yebRVtl41R3jgbBFRD5LXqOjZ0QFQ",true],
-["Principal documents","🧭","Position Description — SIL Team Leader","Practice leadership, supervision, safeguarding oversight and quality responsibilities.","1RXfd6gzSqbv37Ivd2w0PdAqIp94XMMIGCIYGPx1TUDY",false],
-["Principal documents","🤝","SIL Service Agreement","Current participant agreement template for I-Care Connect SIL services.","1IQFt49aSvlX_rwxCYddQN6tOePZ_nmsdYvz-Pw8B_O8",false],
-
-["Governance and safeguarding","💬","SIL Supported Decision-Making Policy","Supporting genuine participant choice, communication and dignity of risk.","1mEWLGYqd1iyCBtQzjbdGewPbwC1thxOjODguzSszRmE",true],
-["Governance and safeguarding","🛡️","SIL Safeguarding Policy","Recognising and responding to harm, conflict, neglect and exploitation.","1Xv79mc-ApR6CN20TwJc1DiJ_OsJnfAx-225Rjr8XJKQ",true],
-["Governance and safeguarding","🔐","SIL Practice Governance Policy","Workforce capability, supervision, evidence-informed practice and assurance.","1LIgBS4xPKgJsBkmK2pAighkhXH-bPRnGwpJ96tlcaCk",true],
-["Governance and safeguarding","📝","SIL Participant Agreement Explanation Record","Records accessible explanation and participant understanding of the SIL agreement.","1Hf29Qq7jbNaUkL2Piy6SaYMblqASKMUTRyQvgWqMT1U",false],
-["Governance and safeguarding","🧡","SIL Participant Welcome and Rights Guide","Accessible introduction to rights, choices, complaints and safeguards.","1BZPkDaM90pOD69Nyn4i6HDYat01RMVPcslO2UFHRa2E",true],
-
-["SIL operations and worker tools","🗣️","SIL Participant Communication and Decision-Making Profile","Participant communication preferences and supported decision-making instructions.","1OrkHzVgH8Te5Uv2bdV3pjHHAS_tbs3sBJvsqWalbqaE",true],
-["SIL operations and worker tools","✅","SIL Worker Competency Checklist","Evidence-based competency assessment before unsupervised work and during refreshers.","1Bj1ztzYYlPg0AbpLCAp5a2t7NTXugz_sJKZJCc5rRoY",true],
-["SIL operations and worker tools","📌","SIL Participant-Specific Worker Instruction Form","Current authorised instructions required for safe, consistent participant support.","1jmwfD4xgLBeCpDd9BPnN1fXk9uh0I_xLPsb_g0JOdyk",true],
-["SIL operations and worker tools","🏡","SIL Worker House Induction Checklist","Property and participant-specific checks before an unsupervised shift.","1eBw46_lqh13Of5y6Xkuu4xa7v9MPlHmUp7BHZtYj-ng",true],
-["SIL operations and worker tools","🎓","SIL Worker Training and Competency Register","Training currency, competency outcomes and refresher tracking.","1p16XNUQnONYSgOLA50En9XCjv1cqKv8umz4lMnf6Zlo",false],
-["SIL operations and worker tools","👀","SIL Practice Observation Checklist","Structured observation and development actions for frontline practice.","1EzzHgjF6-tYhCMqDOFPOv3mLVwhFNU08GN8tffDl-lM",false],
-["SIL operations and worker tools","🔄","SIL Shift Handover Form","Required factual handover information for outgoing and incoming workers.","1ojxbFtgzGAVYhY665T3ywRvvIi1vvMxDa3C7Fs-eq5E",true],
-["SIL operations and worker tools","🌱","SIL Participant Choice and Daily Life Record","Records options, communication support and the participant’s own choice.","10y9WZk7EhciCPRD1WSup9eJnng2A4fCMnv4ShexacR4",true],
-
-["Participant records and service delivery","🚨","Participant Emergency Plan — SIL","Participant-specific emergency, evacuation and continuity arrangements.","1MSvX9vQHyIxk8VI_mXyfWVWQyifmmpx6ko-jN0DiBPM",true],
-["Participant records and service delivery","⚠️","Participant Risk Assessment Form — SIL","Identifies participant risks, safeguards, controls and review actions.","1_YLuGzYblxAeVOlxxdxyqxpO1pJYtcCXKVyUgqkBVR4",true],
-["Participant records and service delivery","📥","Participant Intake Form — SIL","Captures intake, consent, support needs and commencement information.","1hU0B50KGTOfZ-qJ0G7BsjyTSGLWlnep4QNBtk34aiOM",false],
-["Participant records and service delivery","⚖️","Participant Rights and Responsibilities Policy","Rights, responsibilities, choice, dignity, privacy and complaint pathways.","1CmrQ73K26Nm5uiBcYanKm5doD7eiqDYhrlDxCYx41A4",true],
-["Participant records and service delivery","📣","Incident Report Form","Factual reporting and escalation of incidents and reportable incidents.","1195yxmbeW3u1ie0AEtEl6zom4Mp623V-DGBS_Qr2eV4",true],
-["Participant records and service delivery","💭","Feedback and Complaints Form","Accessible record for feedback, concerns and complaints.","1Ja186gNpv1Nwr18kqeAVpg2GB0bamPmnHoRDkjJLk3Q",true],
-["Participant records and service delivery","🤲","Advocate or Support Person Request Form","Records a participant request for an advocate or support person.","1Dj55mMc9IAsXZoMJ9JU2xO7yzYVKtji5lvPsjWJCdU8",true],
-["Participant records and service delivery","🚪","Participant Exit and Transition Form","Plans safe, coordinated service exit or transition.","1yIV64k5xNZlg3LCBiAOd_XpouXOiAWHcgmcUZwfEZoM",false],
-["Participant records and service delivery","🧩","Participant Support Plan — SIL","Participant goals, preferences, routines and agreed supports.","1JowDkvlkcASkCWrYh3hDDZ3c2FO3-BwmZ-rkcIGyPtA",true],
-["Participant records and service delivery","🔏","Privacy Consent Form — Easy Read","Accessible consent choices for collecting, using and sharing information.","1IXE8aOcDz0klRr57yn8x3ymxO0-g7ClfeSkEQzwHRzU",true],
-["Participant records and service delivery","🔏","Privacy Consent Form","Consent choices for collecting, using and sharing participant information.","1iOq6DBcpPlyiC1w8ZPqU8ETQn4LWFKIHwzq5mJ9HV7w",true],
-["Participant records and service delivery","🗒️","Participant File Notes — SIL","Controlled participant file-note template.","1SsMfO2BWjtZk8Lbmp1BaM-6zxJh38oCKhVZ3_c1XTKI",true],
-
-["Organisational compliance","🛑","Violence, Abuse, Neglect, Exploitation and Discrimination Policy","Prevention, identification, response and escalation obligations.","1zJsqz4iOE9z-Ol4s9d0GgZBknFHh5x-49qcpjjDqaJM",true],
-["Organisational compliance","✍️","Worker Declarations","Worker acknowledgements, conflicts, conduct and compliance declarations.","1dqu3MABleb0fH9GgtPZfyXVFRH-OVPnnJ4z4U3QCilk",true],
-["Organisational compliance","⚖️","Conflict of Interest Policy","Identification, disclosure and management of actual or perceived conflicts.","1b412quihH7K3ena9anQkhkQJWHp892Fa3Vizz-prNUk",true],
-["Organisational compliance","🧭","Assessment and Provision of Supports Policy — SIL","Safe, suitable and participant-centred assessment and delivery of SIL supports.","1Mgd2uV1Aa6wMSjKK6KfKSZ3YSgvfEAZoKqnyJlMH8R0",true],
-["Organisational compliance","📋","Worker Induction Checklist — SIL","Organisation-wide induction and compliance onboarding checklist.","1TUbMRlWAKd_h-JR3hdKViw8JMafOlxDn9T68cNURqjs",true],
-["Organisational compliance","🧼","Infection Prevention and Control Policy","Standard precautions, infection risks, outbreaks and worker responsibilities.","1E-vgzek2z_OBqIBUAghZ6IDlJXQ4IHVk5qIl3BT4xzQ",true],
-["Organisational compliance","⛑️","Work Health and Safety Policy","Safe work practices, consultation, hazards and incident response.","1snZ6i5Zl5QoL3EyXd64trrqkEt08fzKNe2LrNDgqmNM",true],
-["Organisational compliance","🏢","Governance and Operational Management Policy","Governance, delegations, accountability and operational oversight.","1mEbLjL05Zb7P5pt0_bRP3jTe3gU7jsSDNKgcOujNSbc",false],
-["Organisational compliance","👥","Human Resources Management Policy","Recruitment, screening, induction, supervision and workforce management.","17dkJjdVFcRFWfjaPWm9gGQ2J3a2OaLjurd9dKfTg5vc",false],
-["Organisational compliance","📈","Continuous Improvement Policy","Improvement identification, action tracking and effectiveness review.","1i5x9JJlInoGWhXfij2EVM39vqdMP7nouHutSX5918Ow",true],
-["Organisational compliance","🔒","Privacy and Information Management Policy","Collection, access, storage, disclosure and breach response obligations.","1RlGhg4vr13aGJSQ1XvMtPny2l-0TnbO1SD6fJ2YXvHI",true],
-["Organisational compliance","💬","Feedback and Complaints Policy","Accessible, fair and non-retaliatory feedback and complaint management.","1-CZTaaSLMfxstt-Soxqx6bPDrFlhcTNRsCdZXoO5LmU",true],
-["Organisational compliance","🌧️","Emergency and Disaster Management Policy","Preparedness, continuity, communication, response and recovery.","1xhc8Y_Qf9Pxey2eDYrMjccARgKFL4JOTGR_B0Fk4uBI",true],
-["Organisational compliance","📊","Risk Management Policy","Organisation-wide identification, treatment and review of risk.","1jaLiJp9J2LgZGbb7N-IK6YqXi70dbQ4K1Kq5Ef1gAtk",false],
-["Organisational compliance","🚩","Incident Management Policy","Incident identification, response, investigation, notification and learning.","1upAqhCHRwtE4GDF1rPefjEIKnGSkOOcUrot-pERZ-O8",true]
+["Principal documents","📗","SIL Staff Handbook","Employee rights, responsibilities, conduct, incidents, safeguarding and SIL practice.",true],
+["Principal documents","👩‍⚕️","Position Description — Disability Support Worker (SIL)","Role duties, qualifications, documentation and professional obligations.",true],
+["Principal documents","🧭","Position Description — SIL Team Leader","Practice leadership, supervision, safeguarding oversight and quality responsibilities.",false],
+["Principal documents","🤝","SIL Service Agreement","Current participant agreement template for I-Care Connect SIL services.",false],
+["Governance and safeguarding","💬","SIL Supported Decision-Making Policy","Supporting genuine participant choice, communication and dignity of risk.",true],
+["Governance and safeguarding","🛡️","SIL Safeguarding Policy","Recognising and responding to harm, conflict, neglect and exploitation.",true],
+["Governance and safeguarding","🔐","SIL Practice Governance Policy","Workforce capability, supervision, evidence-informed practice and assurance.",true],
+["Governance and safeguarding","📝","SIL Participant Agreement Explanation Record","Records accessible explanation and participant understanding of the SIL agreement.",false],
+["Governance and safeguarding","🧡","SIL Participant Welcome and Rights Guide","Accessible introduction to rights, choices, complaints and safeguards.",true],
+["SIL operations and worker tools","🗣️","SIL Participant Communication and Decision-Making Profile","Participant communication preferences and supported decision-making instructions.",true],
+["SIL operations and worker tools","✅","SIL Worker Competency Checklist","Evidence-based competency assessment before unsupervised work and during refreshers.",true],
+["SIL operations and worker tools","📌","SIL Participant-Specific Worker Instruction Form","Current authorised instructions required for safe, consistent participant support.",true],
+["SIL operations and worker tools","🏡","SIL Worker House Induction Checklist","Property and participant-specific checks before an unsupervised shift.",true],
+["SIL operations and worker tools","🎓","SIL Worker Training and Competency Register","Training currency, competency outcomes and refresher tracking.",false],
+["SIL operations and worker tools","👀","SIL Practice Observation Checklist","Structured observation and development actions for frontline practice.",false],
+["SIL operations and worker tools","🔄","SIL Shift Handover Form","Required factual handover information for outgoing and incoming workers.",true],
+["SIL operations and worker tools","🌱","SIL Participant Choice and Daily Life Record","Records options, communication support and the participant’s own choice.",true],
+["Participant records and service delivery","🚨","Participant Emergency Plan — SIL","Participant-specific emergency, evacuation and continuity arrangements.",true],
+["Participant records and service delivery","⚠️","Participant Risk Assessment Form — SIL","Identifies participant risks, safeguards, controls and review actions.",true],
+["Participant records and service delivery","📥","Participant Intake Form — SIL","Captures intake, consent, support needs and commencement information.",false],
+["Participant records and service delivery","⚖️","Participant Rights and Responsibilities Policy","Rights, responsibilities, choice, dignity, privacy and complaint pathways.",true],
+["Participant records and service delivery","📣","Incident Report Form","Factual reporting and escalation of incidents and reportable incidents.",true],
+["Participant records and service delivery","💭","Feedback and Complaints Form","Accessible record for feedback, concerns and complaints.",true],
+["Participant records and service delivery","🤲","Advocate or Support Person Request Form","Records a participant request for an advocate or support person.",true],
+["Participant records and service delivery","🚪","Participant Exit and Transition Form","Plans safe, coordinated service exit or transition.",false],
+["Participant records and service delivery","🧩","Participant Support Plan — SIL","Participant goals, preferences, routines and agreed supports.",true],
+["Participant records and service delivery","🔏","Privacy Consent Form — Easy Read","Accessible consent choices for collecting, using and sharing information.",true],
+["Participant records and service delivery","🔏","Privacy Consent Form","Consent choices for collecting, using and sharing participant information.",true],
+["Participant records and service delivery","🗒️","Participant File Notes — SIL","Controlled participant file-note template.",true],
+["Organisational compliance","🛑","Violence, Abuse, Neglect, Exploitation and Discrimination Policy","Prevention, identification, response and escalation obligations.",true],
+["Organisational compliance","✍️","Worker Declarations","Worker acknowledgements, conflicts, conduct and compliance declarations.",true],
+["Organisational compliance","⚖️","Conflict of Interest Policy","Identification, disclosure and management of actual or perceived conflicts.",true],
+["Organisational compliance","🧭","Assessment and Provision of Supports Policy — SIL","Safe, suitable and participant-centred assessment and delivery of SIL supports.",true],
+["Organisational compliance","📋","Worker Induction Checklist — SIL","Organisation-wide induction and compliance onboarding checklist.",true],
+["Organisational compliance","🧼","Infection Prevention and Control Policy","Standard precautions, infection risks, outbreaks and worker responsibilities.",true],
+["Organisational compliance","⛑️","Work Health and Safety Policy","Safe work practices, consultation, hazards and incident response.",true],
+["Organisational compliance","🏢","Governance and Operational Management Policy","Governance, delegations, accountability and operational oversight.",false],
+["Organisational compliance","👥","Human Resources Management Policy","Recruitment, screening, induction, supervision and workforce management.",false],
+["Organisational compliance","📈","Continuous Improvement Policy","Improvement identification, action tracking and effectiveness review.",true],
+["Organisational compliance","🔒","Privacy and Information Management Policy","Collection, access, storage, disclosure and breach response obligations.",true],
+["Organisational compliance","💬","Feedback and Complaints Policy","Accessible, fair and non-retaliatory feedback and complaint management.",true],
+["Organisational compliance","🌧️","Emergency and Disaster Management Policy","Preparedness, continuity, communication, response and recovery.",true],
+["Organisational compliance","📊","Risk Management Policy","Organisation-wide identification, treatment and review of risk.",false],
+["Organisational compliance","🚩","Incident Management Policy","Incident identification, response, investigation, notification and learning.",true]
 ];
+let privateDocuments=new Map();
 const schemas={
 house:{title:"Add SIL support location",category:"SIL home",help:"Create the location where I-Care Connect delivers SIL supports. Housing, rent, tenancy and SDA management remain outside this workspace.",fields:[["name","Support location name / identifier"],["address","Support location address"],["emergency_contact","Property emergency contact","text",false],["bedrooms","Number of participant bedrooms","number",false],["support_model","Support model","select",["24-hour support","Sleepover","Active night","Drop-in / scheduled","Other"]],["emergency_plan","Emergency and continuity arrangements","textarea",false],["status","Status","select",["Active","Planned","Inactive"]]]},
 safeguarding:{title:"SIL safeguarding assessment",category:"House safeguarding",help:"Assess participant-specific, environmental, visitor and worker-practice risks. High risks require immediate action.",fields:[["house","SIL support location"],["assessment_date","Assessment date","date"],["risk_level","Overall risk","select",["Low","Medium","High"]],["participant_risks","Participant-specific safeguarding risks","textarea"],["environmental_risks","Location and environmental risks","textarea"],["visitor_risks","Visitor or third-party risks","textarea",false],["worker_practice_risks","Worker-practice risks","textarea",false],["controls","Controls and safeguarding actions","textarea"],["responsible_person","Responsible person"],["next_review","Next review date","date"]]},
@@ -100,21 +97,107 @@ $("#sil-worker-list").innerHTML=recs.filter(r=>["Worker induction","Worker compe
 renderProvider();renderTemplates();renderResources();renderEvidence();
 }
 function renderProvider(){const p=state.provider||PROVIDER;$("#sil-provider-profile").innerHTML=`<div class="sil-provider-grid">${Object.entries(p).map(([k,v])=>`<div class="sil-provider-item"><small>${esc(k.replace(/([A-Z])/g," $1"))}</small><strong>${esc(v)}</strong></div>`).join("")}</div>`}
-function documentUrl(id){return`https://docs.google.com/document/d/${encodeURIComponent(id)}/view`}
-function resourceCard([,icon,title,description,id]){return`<article class="sil-resource-card"><span aria-hidden="true">${icon}</span><div><strong>${esc(title)}</strong><p>${esc(description)}</p></div><a class="secondary" href="${documentUrl(id)}" target="_blank" rel="noopener noreferrer">Open document</a></article>`}
-function documentGroups(documents){return[...new Set(documents.map(d=>d[0]))].map(category=>`<section class="sil-document-group"><h4>${esc(category)}</h4><div class="stack">${documents.filter(d=>d[0]===category).map(resourceCard).join("")}</div></section>`).join("")}
-function renderTemplates(){$("#sil-template-register").innerHTML=documentGroups(controlledDocuments)}
+async function loadPrivateDocuments(){
+ const {data,error}=await db.from("compliance_documents")
+  .select("id,title,storage_path,original_filename,uploaded_at")
+  .eq("organisation_id",currentProfile.organisation_id)
+  .eq("category","Controlled library")
+  .order("title");
+ if(error)throw error;
+ privateDocuments=new Map((data||[]).map(document=>[document.title,document]));
+}
+function resourceCard([,icon,title,description]){
+ const document=privateDocuments.get(title);
+ const control=document
+  ?`<button type="button" class="secondary" data-open-private-document="${document.id}">Open private PDF</button>`
+  :`<button type="button" class="secondary" disabled>Private PDF pending</button>`;
+ return`<article class="sil-resource-card"><span aria-hidden="true">${icon}</span><div><strong>${esc(title)}</strong><p>${esc(description)}</p></div>${control}</article>`;
+}
+function documentGroups(documents){return[...new Set(documents.map(document=>document[0]))].map(category=>`<section class="sil-document-group"><h4>${esc(category)}</h4><div class="stack">${documents.filter(document=>document[0]===category).map(resourceCard).join("")}</div></section>`).join("")}
+function renderLibraryStatus(){
+ const count=privateDocuments.size,total=controlledDocuments.length,complete=count===total;
+ const status=$("#sil-library-status");
+ if(status)status.innerHTML=`<strong>${complete?"Private Florence library ready":`${count} of ${total} private PDFs available`}</strong><br>${complete?"These documents open from I-Care Connect’s private Supabase Storage. Florence does not use the Google Drive links.":"A supervisor must import the approved private-library ZIP before workers use these documents."}`;
+ const migration=$("#sil-library-import-status");
+ if(migration&&!migration.dataset.progress)migration.textContent=complete?"All 44 private PDF copies are installed.":`${count} of ${total} documents are installed.`;
+}
+function renderTemplates(){
+ $("#sil-template-register").innerHTML=currentProfile?.role==="supervisor"?documentGroups(controlledDocuments):"";
+ renderLibraryStatus();
+}
 function renderResources(){
- const workerDocuments=controlledDocuments.filter(d=>d[5]);
+ const workerDocuments=controlledDocuments.filter(document=>document[4]);
  $("#sil-worker-resources").innerHTML=documentGroups(workerDocuments);
  const supervisor=currentProfile?.role==="supervisor";
  $("#sil-supervisor-resource-panel").classList.toggle("hidden",!supervisor);
  $("#sil-supervisor-resources").innerHTML=supervisor?documentGroups(controlledDocuments):"";
+ renderLibraryStatus();
+}
+async function openPrivateDocument(recordId){
+ try{
+  const document=[...privateDocuments.values()].find(item=>item.id===recordId);
+  if(!document)throw new Error("The private document record is not available");
+  await db.rpc("record_access_event",{p_action:"DOWNLOAD",p_table_name:"controlled_library",p_record_id:document.id,p_metadata:{title:document.title}}).catch(()=>{});
+  const bucket=window.FLORENCE_CONFIG.storageBucket;
+  const {data,error}=await db.storage.from(bucket).createSignedUrl(document.storage_path,120);
+  if(error||!data?.signedUrl)throw error||new Error("Florence could not create the private document link");
+  window.open(data.signedUrl,"_blank","noopener,noreferrer");
+ }catch(error){toast(error.message||"Florence could not open that private document")}
+}
+async function sha256Hex(buffer){
+ const digest=await crypto.subtle.digest("SHA-256",buffer);
+ return [...new Uint8Array(digest)].map(value=>value.toString(16).padStart(2,"0")).join("");
+}
+async function importPrivateLibrary(file){
+ if(currentProfile?.role!=="supervisor")throw new Error("Only a supervisor can install the controlled library");
+ if(!file)throw new Error("Choose the Florence private-library ZIP");
+ if(!window.JSZip)throw new Error("The secure ZIP importer did not load. Refresh Florence and try again.");
+ const button=$("#sil-import-library"),status=$("#sil-library-import-status");
+ button.disabled=true;
+ status.dataset.progress="true";
+ try{
+  status.textContent="Opening the controlled-library ZIP…";
+  const archive=await JSZip.loadAsync(file);
+  const manifestFile=archive.file("manifest.json");
+  if(!manifestFile)throw new Error("This ZIP does not contain Florence’s manifest.json");
+  const manifest=JSON.parse(await manifestFile.async("text"));
+  if(manifest.format!=="florence-controlled-library"||manifest.version!==1||manifest.document_count!==44||!Array.isArray(manifest.documents)||manifest.documents.length!==44)throw new Error("This is not the approved 44-document Florence private-library ZIP");
+  const approvedTitles=new Set(controlledDocuments.map(document=>document[2]));
+  const bucket=window.FLORENCE_CONFIG.storageBucket;
+  for(let index=0;index<manifest.documents.length;index++){
+   const document=manifest.documents[index];
+   if(!approvedTitles.has(document.title))throw new Error(`Unexpected document in ZIP: ${document.title}`);
+   const entry=archive.file(document.filename);
+   if(!entry)throw new Error(`Missing PDF in ZIP: ${document.filename}`);
+   status.textContent=`Installing private PDF ${index+1} of ${manifest.documents.length}: ${document.title}`;
+   const bytes=await entry.async("arraybuffer");
+   if(document.sha256&&await sha256Hex(bytes)!==document.sha256)throw new Error(`Integrity check failed for ${document.title}`);
+   const storagePath=`${currentProfile.organisation_id}/controlled-library/${document.filename}`;
+   const blob=new Blob([bytes],{type:"application/pdf"});
+   const {error:uploadError}=await db.storage.from(bucket).upload(storagePath,blob,{contentType:"application/pdf",upsert:true});
+   if(uploadError)throw uploadError;
+   const payload={organisation_id:currentProfile.organisation_id,scope:"Organisation",subject_type:"organisation",subject_name:"I-Care Connect",category:"Controlled library",title:document.title,storage_path:storagePath,original_filename:document.filename,mime_type:"application/pdf",version:1,uploaded_by:currentProfile.id,uploaded_at:new Date().toISOString()};
+   const {data:existing,error:lookupError}=await db.from("compliance_documents").select("id").eq("organisation_id",currentProfile.organisation_id).eq("category","Controlled library").eq("title",document.title).maybeSingle();
+   if(lookupError)throw lookupError;
+   const result=existing
+    ?await db.from("compliance_documents").update(payload).eq("id",existing.id)
+    :await db.from("compliance_documents").insert(payload);
+   if(result.error)throw result.error;
+  }
+  await loadPrivateDocuments();
+  renderTemplates();renderResources();
+  status.textContent="Success — all 44 documents are private Florence PDF copies. Google Drive is no longer used by the app.";
+  toast("Private controlled library installed")
+ }finally{
+  button.disabled=false;
+  delete status.dataset.progress;
+  $("#sil-library-zip").value="";
+ }
 }
 function renderEvidence(){const cat=$("#sil-filter-category"),current=cat.value,cats=[...new Set(state.records.map(r=>r.category))].sort();cat.innerHTML='<option value="all">All categories</option>'+cats.map(c=>`<option>${esc(c)}</option>`).join("");cat.value=cats.includes(current)?current:"all";const q=$("#sil-filter-search").value.toLowerCase(),st=$("#sil-filter-status").value,ca=cat.value;const rows=state.records.filter(r=>(ca==="all"||r.category===ca)&&(st==="all"||statusOf(r)===st)&&(!q||JSON.stringify(r).toLowerCase().includes(q)));$("#sil-evidence-list").innerHTML=rows.map(recordCard).join("")||'<div class="sil-empty">No matching evidence records.</div>'}
 function exportFile(kind){const rows=state.records.map(r=>({id:r.id,category:r.category,title:r.title,status:statusOf(r),created_at:r.createdAt,...r.fields}));let blob,name;if(kind==="json"){blob=new Blob([JSON.stringify({provider:state.provider,records:rows,exportedAt:new Date().toISOString()},null,2)],{type:"application/json"});name="Florence-SIL-audit-evidence.json"}else{const keys=[...new Set(rows.flatMap(Object.keys))],csv=[keys.join(","),...rows.map(r=>keys.map(k=>'"'+String(r[k]??"").replaceAll('"','""')+'"').join(","))].join("\n");blob=new Blob([csv],{type:"text/csv"});name="Florence-SIL-audit-evidence.csv"}const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href)}
 $$('[data-sil-tab]').forEach(b=>b.onclick=()=>{activeTab=b.dataset.silTab;$$('[data-sil-tab]').forEach(x=>x.classList.toggle("active",x===b));$$('.sil-panel').forEach(x=>x.classList.toggle("active",x.id===`sil-${activeTab}-panel`));if(activeTab==="evidence")renderEvidence()});
-$$('[data-open-form]').forEach(b=>b.onclick=()=>openForm(b.dataset.openForm));$("#edit-provider").onclick=()=>{openForm("provider");setTimeout(()=>Object.entries(state.provider||PROVIDER).forEach(([k,v])=>{const e=$(`[name="${k}"]`);if(e)e.value=v}),0)};$("#sil-form").onsubmit=submit;$("#sil-dialog-close").onclick=closeForm;$("#sil-dialog-cancel").onclick=closeForm;$("#sil-refresh").onclick=()=>{state=load();render();toast("SIL workspace refreshed")};$("#sil-export-json").onclick=()=>exportFile("json");$("#sil-export-csv").onclick=()=>exportFile("csv");["#sil-filter-category","#sil-filter-status","#sil-filter-search"].forEach(s=>$(s).addEventListener(s.includes("search")?"input":"change",renderEvidence));document.addEventListener("click",e=>{const b=e.target.closest("[data-delete]");if(!b)return;if(confirm("Delete this SIL record?")){state.records=state.records.filter(r=>r.id!==b.dataset.delete);save()}});
+$$('[data-open-form]').forEach(b=>b.onclick=()=>openForm(b.dataset.openForm));$("#edit-provider").onclick=()=>{openForm("provider");setTimeout(()=>Object.entries(state.provider||PROVIDER).forEach(([k,v])=>{const e=$(`[name="${k}"]`);if(e)e.value=v}),0)};$("#sil-form").onsubmit=submit;$("#sil-dialog-close").onclick=closeForm;$("#sil-dialog-cancel").onclick=closeForm;$("#sil-refresh").onclick=async()=>{state=load();await loadPrivateDocuments();render();toast("SIL workspace refreshed")};$("#sil-import-library")?.addEventListener("click",()=>$("#sil-library-zip")?.click());$("#sil-library-zip")?.addEventListener("change",event=>{const file=event.target.files?.[0];if(file)void importPrivateLibrary(file).catch(error=>{const status=$("#sil-library-import-status");if(status)status.textContent=error.message||"The private library could not be installed";toast(error.message||"The private library could not be installed")})});$("#sil-export-json").onclick=()=>exportFile("json");$("#sil-export-csv").onclick=()=>exportFile("csv");["#sil-filter-category","#sil-filter-status","#sil-filter-search"].forEach(s=>$(s).addEventListener(s.includes("search")?"input":"change",renderEvidence));document.addEventListener("click",e=>{const privateButton=e.target.closest("[data-open-private-document]");if(privateButton){void openPrivateDocument(privateButton.dataset.openPrivateDocument);return}const b=e.target.closest("[data-delete]");if(!b)return;if(confirm("Delete this SIL record?")){state.records=state.records.filter(r=>r.id!==b.dataset.delete);save()}});
 async function authorise(){
  try{
   if(!window.supabase||!window.FLORENCE_CONFIG?.supabaseUrl||!window.FLORENCE_CONFIG?.supabaseAnonKey)throw new Error("Florence configuration is unavailable.");
@@ -124,6 +207,11 @@ async function authorise(){
   const {data,error}=await db.from("profiles").select("id,role,active,organisation_id").eq("id",session.user.id).single();
   if(error||!data?.active||!["staff","supervisor"].includes(data.role)){location.replace("index.html");return}
   currentProfile=data;
+  const supervisor=data.role==="supervisor";
+  $('[data-sil-tab="provider"]')?.classList.toggle("hidden",!supervisor);
+  $("#sil-provider-panel")?.classList.toggle("hidden",!supervisor);
+  $("#sil-library-import-panel")?.classList.toggle("hidden",!supervisor);
+  await loadPrivateDocuments();
   render();
   document.documentElement.classList.remove("sil-auth-pending");
  }catch(error){
