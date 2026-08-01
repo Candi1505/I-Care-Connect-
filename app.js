@@ -34,6 +34,7 @@ async function auditAccess(action,tableName,recordId=null,metadata={}){
  if(error&&!/record_access_event/i.test(error.message||""))console.warn("Florence audit event failed",error.message);
 }
 function showView(v){
+ if(isPortalUser()&&v!=="portal")v="portal";
  $$(".view").forEach(e=>e.classList.toggle("active",e.id===v+"-view"));$$("[data-view]").forEach(e=>e.classList.toggle("active",e.dataset.view===v));
  const audited={participants:"participants",roster:"shifts",medications:"medications",notes:"progress_notes",timeline:"client_timeline",portal:"portal_threads",safety:"incidents",workforce:"timesheets",outcomes:"participant_goals",compliance:"compliance_documents",finance:"invoices","staff-management":"profiles",governance:"governance_registers"};
  if(audited[v])void auditAccess("VIEW",audited[v],null,{view:v});
@@ -194,15 +195,18 @@ async function enterApp(s){
  $("#role-label").textContent=roleLabels[profile.role]||"Florence workspace";
  $("#login").classList.add("hidden");$("#app").classList.remove("hidden");
  $$(".admin-only").forEach(e=>e.classList.toggle("hidden",!isSupervisor()));
+ $$(".staff-only").forEach(e=>e.classList.toggle("hidden",!isStaffUser()));
  ["#add-note","#add-timeline-event","#add-goal","#add-incident","#add-medication-error","#add-controlled-drug","#clock-in","#clock-out","#add-availability","#add-leave","#add-travel"].forEach(s=>{const e=$(s);if(e)e.classList.toggle("hidden",!isStaffUser())});
  $$(`[data-view="finance"]`).forEach(e=>e.classList.toggle("hidden",!isSupervisor()));
  if(isPortalUser()){
-   $$(`[data-view="notes"]`).forEach(e=>e.classList.add("hidden"));
-   $$('[data-view="compliance"],[data-view="safety"],[data-view="workforce"],[data-view="governance"],[data-view="finance"]').forEach(e=>e.classList.add("hidden"));
-   $("#backup")?.classList.add("hidden");$("#import-backup")?.classList.add("hidden");
+   $$('[data-view]').forEach(element=>element.classList.toggle("hidden",element.dataset.view!=="portal"));
+   $("#backup")?.classList.add("hidden");
+   $("#import-backup")?.classList.add("hidden");
+   $("#dashboard-timeclock-panel")?.classList.add("hidden");
  }
  const h=new Date().getHours();$("#greeting").textContent=h<12?"Good morning":h<17?"Good afternoon":"Good evening";
  await refreshAll();
+ if(isPortalUser())showView("portal");
  if(isSupervisor()){
   await loadXeroStatus();
   if(new URL(location.href).searchParams.get("xero")==="connected"){toast("Xero organisation connected");history.replaceState({},"",location.pathname)}

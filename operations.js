@@ -54,8 +54,14 @@ const WORK_TYPES=[
  "Other"
 ];
 function hours(t){if(!t.clock_out)return"Clocked in";const value=(new Date(t.clock_out)-new Date(t.clock_in))/3600000-(t.break_minutes||0)/60;return Math.max(0,value).toFixed(2)+" hours"}
-function timesheetWorkType(t){const match=String(t.notes||"").match(/^Work type:\s*(.+)$/m);return match?.[1]?.trim()||(t.shift_id?"Rostered support":"Work shift")}
-function timesheetDisplayNotes(t){return String(t.notes||"").split("\n").filter(line=>line&&!/^Work type:/i.test(line)).join(" · ")}
+function timesheetWorkType(t){
+ return t.work_type||String(t.notes||"").match(/^Work type:\s*(.+)$/m)?.[1]?.trim()||(t.shift_id?"Rostered support":"Work shift")
+}
+function timesheetDisplayNotes(t){
+ const structured=[t.clock_in_notes,t.clock_out_notes].map(value=>String(value||"").trim()).filter(Boolean);
+ if(structured.length)return structured.join(" · ");
+ return String(t.notes||"").split("\n").filter(line=>line&&!/^Work type:/i.test(line)).join(" · ")
+}
 function openTimesheet(){return ops.timesheets.find(t=>t.staff_id===B().profile.id&&!t.clock_out)||null}
 function rosterShiftOptions(){
  const now=Date.now();
@@ -74,14 +80,10 @@ async function openClockInForm(){
   field("notes","Clock-in notes (optional)","textarea",[],false)
  ],async values=>{
   const notes=[`Work type: ${values.work_type}`,String(values.notes||"").trim()].filter(Boolean).join("\n");
-  const {error}=await B().db.from("timesheets").insert({
-   organisation_id:B().profile.organisation_id,
-   staff_id:B().profile.id,
-   shift_id:values.shift_id||null,
-   clock_in:new Date().toISOString(),
-   break_minutes:0,
-   notes,
-   status:"Open"
+  const {error}=await B().db.rpc("clock_in_timesheet",{
+   p_shift_id:values.shift_id||null,
+   p_work_type:values.work_type,
+   p_notes:String(values.notes||"").trim()||null
   });
   if(error)throw error;
   await loadOperations();
@@ -98,15 +100,11 @@ async function openClockOutForm(){
   field("notes","Clock-out notes (optional)","textarea",[],false)
  ],async values=>{
   const breakMinutes=Math.max(0,Number(values.break_minutes||0));
-  const prior=String(open.notes||"").split("\n").filter(line=>!/^Clock-out note:/i.test(line)).join("\n");
   const finishNote=String(values.notes||"").trim();
-  const notes=[prior,finishNote?`Clock-out note: ${finishNote}`:""].filter(Boolean).join("\n");
-  const {error}=await B().db.from("timesheets").update({
-   clock_out:new Date().toISOString(),
-   break_minutes:breakMinutes,
-   notes,
-   status:"Submitted"
-  }).eq("id",open.id).eq("staff_id",B().profile.id);
+  const {error}=await B().db.rpc("clock_out_timesheet",{
+   p_break_minutes:breakMinutes,
+   p_notes:finishNote||null
+  });
   if(error)throw error;
   await loadOperations();
   return "Clocked out and timesheet submitted";
