@@ -1,0 +1,22 @@
+# Deny everything by default so SQL, audit packs, tests and repository files
+# can never be published as browser-accessible assets.
+*
+
+# Florence production application
+!index.html
+!styles.css
+!config.js
+!app.js
+!operations.js
+!staff-management.js
+!sil.html
+!sil.css
+!sil-rpc-audit-fix.js
+!sil.js
+!service-worker.js
+!manifest.webmanifest
+!florence-icon.svg
+
+# Cloudflare security and crawler controls
+!_headers
+!robots.txt
