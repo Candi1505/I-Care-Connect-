@@ -12,6 +12,8 @@ EXPECTED_ASSETS = {
     "app.js",
     "operations.js",
     "staff-management.js",
+    "set-password.html",
+    "set-password.js",
     "sil.html",
     "sil.css",
     "sil.js",
