@@ -17,6 +17,7 @@ EXPECTED_ASSETS = {
     "push-notifications.js",
     "portal-care-plan.js",
     "medication-prn-fix.js",
+    "regular-medication-tab.js",
     "set-password.html",
     "set-password.js",
     "sil.html",
@@ -54,5 +55,6 @@ assert "pushVapidPublicKey" in (ROOT / "config.js").read_text(encoding="utf-8")
 assert 'self.addEventListener("push"' in (ROOT / "service-worker.js").read_text(encoding="utf-8")
 assert 'self.addEventListener("notificationclick"' in (ROOT / "service-worker.js").read_text(encoding="utf-8")
 assert "medication-prn-fix.js" in (ROOT / "service-worker.js").read_text(encoding="utf-8")
+assert "regular-medication-tab.js" in (ROOT / "service-worker.js").read_text(encoding="utf-8")
 
 print(f"Cloudflare static-assets audit: PASS ({len(EXPECTED_ASSETS)} public runtime files)")
