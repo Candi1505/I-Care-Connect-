@@ -48,9 +48,12 @@ class IdParser(HTMLParser):
 required_files = [
     "index.html",
     "styles.css",
+    "config.js",
     "app.js",
     "operations.js",
     "staff-management.js",
+    "set-password.html",
+    "set-password.js",
     "sil.html",
     "sil.css",
     "sil.js",
@@ -67,7 +70,7 @@ for path in required_files:
     require((ROOT / path).exists(), f"required file exists: {path}")
 
 # HTML structure and dependency pinning.
-for path in ["index.html", "sil.html"]:
+for path in ["index.html", "set-password.html", "sil.html"]:
     parser = IdParser()
     parser.feed(text(path))
     duplicates = {key: value for key, value in Counter(parser.ids).items() if value > 1}
@@ -75,17 +78,23 @@ for path in ["index.html", "sil.html"]:
     require("@supabase/supabase-js@2.106.2" in text(path), f"{path} pins Supabase JS 2.106.2")
 
 index = text("index.html")
+set_password_html = text("set-password.html")
+set_password = text("set-password.js")
 sil_html = text("sil.html")
 service_worker = text("service-worker.js")
+headers = text("_headers")
 require('app.js?v=20260802-1' in index, "index loads final app asset")
 require('operations.js?v=20260802-1' in index, "index loads final operations asset")
 require('sil.js?v=20260801-4' in sil_html, "SIL page loads final SIL asset")
-require('florence-shell-20260802-1' in service_worker, "service worker uses final cache namespace")
+require('set-password.js?v=20260802-1' in set_password_html, "password page loads its controlled asset")
+require('florence-shell-20260802-2' in service_worker, "service worker uses final cache namespace")
 for marker in ['app.js?v=20260802-1', 'operations.js?v=20260802-1', 'sil.js?v=20260801-4']:
     require(marker in service_worker, f"service worker caches {marker}")
+require('url.pathname.endsWith("/set-password.html")' in service_worker, "service worker never stores password-link HTML")
+require('/set-password.html\n  Cache-Control: no-store, max-age=0' in headers, "password setup page is marked no-store")
 
 # No browser-side secrets or old public Drive links.
-browser_paths = ["index.html", "app.js", "operations.js", "staff-management.js", "sil.html", "sil.js", "config.js"]
+browser_paths = ["index.html", "app.js", "operations.js", "staff-management.js", "set-password.html", "set-password.js", "sil.html", "sil.js", "config.js"]
 for path in browser_paths:
     source = text(path)
     require("SUPABASE_SERVICE_ROLE_KEY" not in source, f"{path} has no service-role key reference")
@@ -102,6 +111,26 @@ contains(
     '$$(".staff-only").forEach',
 )
 require('roleLabels={supervisor:"Supervisor workspace",staff:"Support worker workspace",family:"Family portal",client:"Client portal"}' in app, "all four account roles remain supported")
+
+# Invitations and password recovery must finish with an actual password.
+staff_management = text("staff-management.js")
+contains(
+    "staff-management.js",
+    'new URL("set-password.html",location.href)',
+    'resetPasswordForEmail(email,{redirectTo:passwordSetupUrl()})',
+    'resetPasswordForEmail(person.email,{redirectTo:passwordSetupUrl()})',
+    "Fresh password setup email sent",
+)
+contains(
+    "set-password.js",
+    "waitForSession",
+    "db.auth.updateUser({password})",
+    'db.auth.signOut({scope:"local"})',
+    "clearSensitiveUrl",
+)
+require('minlength="10"' in set_password_html, "password setup requires at least ten characters in the browser")
+require("location.hash" in set_password, "password setup reads invite and recovery URL fragments before clearing them")
+require("verifiedSession" in set_password, "password setup requires a verified one-time authentication session")
 
 # Server-controlled time clock.
 operations = text("operations.js")
