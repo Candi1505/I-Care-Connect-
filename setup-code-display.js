@@ -87,5 +87,5 @@ function loadRuntime(src,datasetName){
 }
 
 loadRuntime("live-refresh-controls.js?v=20260802-2","florence-live-refresh");
-loadRuntime("notification-navigation.js?v=20260802-1","florence-notification-navigation");
+loadRuntime("notification-navigation.js?v=20260802-2","florence-notification-navigation");
 })();
