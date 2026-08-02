@@ -30,20 +30,32 @@ window.FLORENCE_CONFIG = {
 };
 
 // Keep privileged Florence Edge Function processing in the same Sydney region as
-// the PostgreSQL database and private Storage origin.
+// the PostgreSQL database and keep sessions persistent across ordinary reloads.
 (() => {
   const api = window.supabase;
   if (!api?.createClient || api.__florenceRegionPinned) return;
 
   const createClient = api.createClient.bind(api);
-  api.createClient = (...args) => {
-    const client = createClient(...args);
+  api.createClient = (url, key, options = {}) => {
+    const supplied = options && typeof options === "object" ? options : {};
+    const suppliedAuth = supplied.auth && typeof supplied.auth === "object" ? supplied.auth : {};
+    const client = createClient(url, key, {
+      ...supplied,
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        storage: window.localStorage,
+        storageKey: "florence-auth-session",
+        ...suppliedAuth
+      }
+    });
     const functions = client?.functions;
     if (!functions?.invoke || functions.__florenceRegionPinned) return client;
 
     const invoke = functions.invoke.bind(functions);
-    functions.invoke = (functionName, options = {}) => {
-      const safeOptions = options && typeof options === "object" ? options : {};
+    functions.invoke = (functionName, invokeOptions = {}) => {
+      const safeOptions = invokeOptions && typeof invokeOptions === "object" ? invokeOptions : {};
       return invoke(functionName, {
         ...safeOptions,
         region: safeOptions.region || window.FLORENCE_CONFIG.functionRegion
@@ -61,10 +73,9 @@ window.FLORENCE_CONFIG = {
 // installs and ordinary browser sessions on the same feature set.
 (() => {
   const modules = [
+    "mobile-session-push-fix.js?v=20260802-1",
     "setup-code-display.js?v=20260802-1",
     "portal-participant-label.js?v=20260802-2",
-    "push-notifications.js?v=20260802-2",
-    "push-registration-verifier.js?v=20260802-1",
     "portal-care-plan.js?v=20260802-1",
     "medication-prn-fix.js?v=20260802-1",
     "regular-medication-tab.js?v=20260802-1",
