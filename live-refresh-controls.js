@@ -35,8 +35,10 @@ function signature(staff=[]){
 }
 
 async function refreshFlorence({announce=true}={}){
- const button=q("#refresh-florence");
- if(button){button.disabled=true;button.setAttribute("aria-busy","true");}
+ document.querySelectorAll("[data-refresh-florence],#refresh-florence").forEach(button=>{
+  button.disabled=true;
+  button.setAttribute("aria-busy","true");
+ });
  if(announce)toast("Refreshing Florence…");
  try{
   if("serviceWorker" in navigator){
@@ -55,20 +57,40 @@ async function refreshFlorence({announce=true}={}){
  }
 }
 
-function ensureRefreshButton(){
+function ensureRefreshControls(){
  const topbar=q(".topbar");
- if(!topbar||q("#refresh-florence"))return;
- const button=document.createElement("button");
- button.id="refresh-florence";
- button.type="button";
- button.className="icon-btn";
- button.title="Refresh Florence";
- button.setAttribute("aria-label","Refresh Florence");
- button.textContent="↻";
- const bell=q("#bell");
- if(bell)topbar.insertBefore(button,bell);
- else topbar.appendChild(button);
- button.addEventListener("click",()=>void refreshFlorence());
+ if(topbar){
+  topbar.style.gridTemplateColumns="48px minmax(0,1fr) 48px 48px";
+  if(!q("#refresh-florence")){
+   const button=document.createElement("button");
+   button.id="refresh-florence";
+   button.type="button";
+   button.className="icon-btn";
+   button.title="Refresh Florence";
+   button.setAttribute("aria-label","Refresh Florence");
+   button.textContent="↻";
+   button.dataset.refreshFlorence="true";
+   const bell=q("#bell");
+   if(bell)topbar.insertBefore(button,bell);
+   else topbar.appendChild(button);
+  }
+ }
+ const drawer=q("#drawer");
+ if(drawer&&!q("#drawer-refresh-florence")){
+  const button=document.createElement("button");
+  button.id="drawer-refresh-florence";
+  button.type="button";
+  button.dataset.refreshFlorence="true";
+  button.textContent="↻ Refresh Florence";
+  const logout=q("#logout");
+  if(logout)drawer.insertBefore(button,logout);
+  else drawer.appendChild(button);
+ }
+ document.querySelectorAll("[data-refresh-florence]").forEach(button=>{
+  if(button.dataset.refreshBound==="true")return;
+  button.dataset.refreshBound="true";
+  button.addEventListener("click",()=>void refreshFlorence());
+ });
 }
 
 async function checkDirectory(){
@@ -98,13 +120,16 @@ async function checkDirectory(){
 }
 
 function startWatcher(){
- ensureRefreshButton();
+ ensureRefreshControls();
  if(intervalId)return;
- intervalId=setInterval(()=>void checkDirectory(),5000);
+ intervalId=setInterval(()=>{
+  ensureRefreshControls();
+  void checkDirectory();
+ },5000);
  document.addEventListener("visibilitychange",()=>{
-  if(!document.hidden)void checkDirectory();
+  if(!document.hidden){ensureRefreshControls();void checkDirectory();}
  });
- window.addEventListener("focus",()=>void checkDirectory());
+ window.addEventListener("focus",()=>{ensureRefreshControls();void checkDirectory();});
  document.addEventListener("click",event=>{
   const target=event.target instanceof Element?event.target:null;
   if(target?.closest('[data-view="staff-management"]'))setTimeout(()=>void checkDirectory(),300);
@@ -113,6 +138,7 @@ function startWatcher(){
 
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",startWatcher,{once:true});
 else startWatcher();
+window.addEventListener("pageshow",ensureRefreshControls);
 window.addEventListener("florence:ready",startWatcher);
 window.FlorenceRefresh=refreshFlorence;
 })();
