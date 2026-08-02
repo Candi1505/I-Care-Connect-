@@ -29,10 +29,7 @@ window.FLORENCE_CONFIG = {
 };
 
 // Keep privileged Florence Edge Function processing in the same Sydney region as
-// the PostgreSQL database and private Storage origin. The browser Supabase bundle
-// accepts the AWS region string used by the functions client. This wrapper applies
-// it consistently to staff-management, Xero and future Florence functions unless a
-// call deliberately supplies a different region for an outage response.
+// the PostgreSQL database and private Storage origin.
 (() => {
   const api = window.supabase;
   if (!api?.createClient || api.__florenceRegionPinned) return;
@@ -56,4 +53,32 @@ window.FLORENCE_CONFIG = {
   };
 
   api.__florenceRegionPinned = true;
+})();
+
+// Load optional Florence runtime modules directly from the page lifecycle rather
+// than depending on service-worker HTML injection. This keeps mobile Home Screen
+// installs and ordinary browser sessions on the same feature set.
+(() => {
+  const modules = [
+    "setup-code-display.js?v=20260802-1",
+    "portal-participant-label.js?v=20260802-1",
+    "push-notifications.js?v=20260802-2",
+    "portal-care-plan.js?v=20260802-1",
+    "medication-prn-fix.js?v=20260802-1",
+    "regular-medication-tab.js?v=20260802-1",
+    "florence-readiness-controls.js?v=20260802-1"
+  ];
+  const load = () => {
+    for (const src of modules) {
+      const path = src.split("?")[0];
+      if ([...document.scripts].some(script => (script.getAttribute("src") || "").includes(path))) continue;
+      const script = document.createElement("script");
+      script.src = src;
+      script.defer = true;
+      script.dataset.florenceRuntime = path;
+      document.head.appendChild(script);
+    }
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", load, { once: true });
+  else load();
 })();

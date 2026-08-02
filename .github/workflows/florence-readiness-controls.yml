@@ -1,0 +1,33 @@
+name: Florence readiness controls
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  readiness-controls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: JavaScript syntax
+        run: |
+          node --check config.js
+          node --check service-worker.js
+          node --check florence-readiness-controls.js
+      - name: Runtime and clinical control checks
+        run: |
+          python tests/cloudflare_static_assets_audit.py
+          grep -q 'florence-readiness-controls.js' config.js
+          grep -q 'data-edit-medication' florence-readiness-controls.js
+          grep -q 'progress_note_amendments' florence-readiness-controls.js
+          grep -q 'weekly_family_updates' florence-readiness-controls.js
+          grep -q 'revoke all on table public.staff' florence-full-readiness-security-hardening.sql
+          grep -q 'create table if not exists public.weekly_family_updates' florence-clinical-record-completion.sql
+      - name: Patch validation
+        run: git diff --check
