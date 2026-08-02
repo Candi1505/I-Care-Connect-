@@ -22,6 +22,7 @@ async function submitSetup(email,code,password){
 }
 q("#password-setup-form").addEventListener("submit",async event=>{
  event.preventDefault();
+ const form=event.currentTarget;
  const email=q("#setup-email").value.trim().toLowerCase();
  const code=q("#setup-code").value.replace(/\D/g,"");
  const password=q("#new-password").value;
@@ -34,7 +35,7 @@ q("#password-setup-form").addEventListener("submit",async event=>{
   if(password!==confirmation)throw new Error("The two passwords do not match");
   button.disabled=true;button.textContent="Creating password…";setStatus("Checking the one-time code and saving your password securely…");
   await submitSetup(email,code,password);
-  event.currentTarget.reset();event.currentTarget.classList.add("hidden");
+  form.reset();form.classList.add("hidden");
   q("#password-setup-intro").textContent="Your Florence password has been created.";
   setStatus("Account setup completed. Continue to Florence and sign in with your email address and the password you just made.");
   q("#continue-to-florence").classList.remove("hidden");
