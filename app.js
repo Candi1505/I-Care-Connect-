@@ -18,6 +18,19 @@ function initials(n){return String(n||"?").split(/\s+/).map(x=>x[0]).slice(0,2).
 function isSupervisor(){return profile?.role==="supervisor"}
 function isStaffUser(){return profile?.role==="supervisor"||profile?.role==="staff"}
 function isPortalUser(){return profile?.role==="family"||profile?.role==="client"}
+function isSchedule8Medication(medication){return regexpMedicationType(medication?.medication_type)==="schedule8"}
+function regexpMedicationType(value){return String(value||"").toLowerCase().replace(/[^a-z0-9]+/g,"")}
+function setS8DualSignoffVisibility(){
+ const box=$("#s8-dual-signoff");if(!box)return;
+ const required=Boolean(pendingMed&&isSchedule8Medication(pendingMed)&&$("#mar-outcome")?.value==="Administered");
+ box.classList.toggle("hidden",!required);
+ const witness=$("#s8-witness-id"),witnessPin=$("#s8-witness-pin"),quantity=$("#s8-quantity"),balance=$("#s8-balance");
+ if(required&&witness){
+  const options=state.staff.filter(person=>person.id!==profile.id&&person.active&&["staff","supervisor"].includes(person.role));
+  witness.innerHTML=options.length?`<option value="">Select second worker</option>${options.map(person=>`<option value="${person.id}">${esc(person.full_name)}</option>`).join("")}`:'<option value="">No other active worker available</option>';
+ }
+ for(const element of [witness,witnessPin,quantity,balance])if(element){element.required=required;if(!required)element.value=""}
+}
 function requireConfig(){
  if(!C.supabaseUrl||!C.supabaseAnonKey){
    $("#connection-message").textContent="Supabase setup is required before staff can sign in.";
@@ -226,7 +239,7 @@ async function refreshAll(){
   db.from("participants").select("*").eq("organisation_id",org).order("full_name"),
   db.from("shifts").select("*, participant:participants(full_name), worker:profiles!shifts_assigned_staff_id_fkey(full_name)").eq("organisation_id",org).order("starts_at"),
   db.from("medications").select("*, participant:participants(full_name)").eq("organisation_id",org).order("administration_time"),
-  db.from("mar_entries").select("*, medication:medications(medication_name), participant:participants(full_name), worker:profiles!mar_entries_staff_id_fkey(full_name)").eq("organisation_id",org).order("recorded_at",{ascending:false}),
+  db.from("mar_entries").select("*, medication:medications(medication_name), participant:participants(full_name), worker:profiles!mar_entries_staff_id_fkey(full_name), witness:profiles!mar_entries_witnessed_by_fkey(full_name)").eq("organisation_id",org).order("recorded_at",{ascending:false}),
   db.from("progress_notes").select("*, participant:participants(full_name), worker:profiles!progress_notes_staff_id_fkey(full_name)").eq("organisation_id",org).order("recorded_at",{ascending:false}),
   db.from("compliance_documents").select("*").eq("organisation_id",org).order("uploaded_at",{ascending:false}),
   db.from("client_timeline").select("*, participant:participants(full_name), created_by_profile:profiles!client_timeline_created_by_fkey(full_name)").eq("organisation_id",org).order("occurred_at",{ascending:false}),
@@ -435,7 +448,7 @@ function renderMeds(){
  if(medTab==="profiles"){
    $("#med-content").innerHTML=state.medications.map(m=>medicationCard(m)).join("")||empty("No medication profiles.");
  }else if(medTab==="history"){
-   $("#med-content").innerHTML=state.mar.map(m=>`<article class="record"><div class="record-top"><div><h3>${esc(m.medication?.medication_name)}</h3><p>${esc(m.participant?.full_name)} · Digitally signed by ${esc(m.worker?.full_name)}</p></div>${badge(roundOutcomeLabel(m))}</div><p>${fmt(m.recorded_at)}</p>${m.notes?`<p><strong>Reason/notes:</strong> ${esc(m.notes)}</p>`:""}<div class="record-meta">${m.pin_verified?badge("PIN verified"):badge("Recorded by staff")}</div></article>`).join("")||empty("No MAR history.");
+   $("#med-content").innerHTML=state.mar.map(m=>`<article class="record"><div class="record-top"><div><h3>${esc(m.medication?.medication_name)}</h3><p>${esc(m.participant?.full_name)} · Digitally signed by ${esc(m.worker?.full_name)}${m.dual_signoff_required&&m.witness?.full_name?` · Witnessed by ${esc(m.witness.full_name)}`:""}</p></div>${badge(roundOutcomeLabel(m))}</div><p>${fmt(m.recorded_at)}</p>${m.notes?`<p><strong>Reason/notes:</strong> ${esc(m.notes)}</p>`:""}<div class="record-meta">${m.dual_signoff_required?badge(m.witness_pin_verified?"Dual PIN verified":"Witness verification missing"):m.pin_verified?badge("PIN verified"):badge("Recorded by staff")}</div></article>`).join("")||empty("No MAR history.");
  }else{
    const meds=state.medications.filter(m=>m.active&&m.medication_type===medTab);
    $("#med-content").innerHTML=meds.map(m=>medicationCard(m)).join("")||empty(`No ${medTab} medications.`);
@@ -655,12 +668,27 @@ document.addEventListener("click",async e=>{
   b=e.target.closest("[data-xero-invoice]");if(b){if(!confirm("Send this invoice to Xero as a draft?"))return;const {data,error}=await db.functions.invoke("xero-connect",{body:{action:"sync-invoice",invoice_id:b.dataset.xeroInvoice}});if(error||data?.error)throw new Error(data?.error||"Xero invoice sync failed");await refreshAll();return toast("Invoice sent to Xero as a draft")}
   b=e.target.closest("[data-thread]");if(b){activePortalThread=b.dataset.thread;renderPortal();return}
   b=e.target.closest("[data-archive-thread]");if(b){if(!isStaffUser())throw new Error("This action is available to staff only");const archive=b.dataset.archive==="true";const {error}=await db.from("portal_threads").update({status:archive?"Closed":"Open",updated_at:new Date().toISOString()}).eq("id",b.dataset.archiveThread);if(error)throw error;activePortalThread=null;await refreshAll();return toast(archive?"Conversation archived":"Conversation restored")}
-  b=e.target.closest("[data-mar-sign]");if(b){if(!isStaffUser())throw new Error("This action is available to staff only");pendingMed=state.medications.find(x=>x.id===b.dataset.marSign);if(!pendingMed)throw new Error("Medication profile not found");$("#mar-outcome").value=b.dataset.outcome||"Administered";$("#mar-reason").value="";$("#mar-notes").value="";$("#mar-reason-label").classList.toggle("required-reason",$("#mar-outcome").value!=="Administered");$("#pin-summary").textContent=`${pendingMed.medication_name} · ${pendingMed.dose} for ${pendingMed.participant?.full_name}`;openDialog($("#pin-dialog"));return}
+  b=e.target.closest("[data-mar-sign]");if(b){
+   if(!isStaffUser())throw new Error("This action is available to staff only");
+   pendingMed=state.medications.find(x=>x.id===b.dataset.marSign);
+   if(!pendingMed)throw new Error("Medication profile not found");
+   $("#pin-form").reset();
+   $("#mar-outcome").value=b.dataset.outcome||"Administered";
+   $("#mar-reason-label").classList.toggle("required-reason",$("#mar-outcome").value!=="Administered");
+   $("#pin-summary").textContent=`${pendingMed.medication_name} · ${pendingMed.dose} for ${pendingMed.participant?.full_name}`;
+   setS8DualSignoffVisibility();openDialog($("#pin-dialog"));return
+  }
   b=e.target.closest("[data-claim-shift]");if(b){const {error}=await db.rpc("claim_open_shift",{p_shift_id:b.dataset.claimShift});if(error)throw error;await refreshAll();return toast("Open shift claimed")}
   b=e.target.closest("[data-cancel-shift]");if(b){const reason=prompt("Why is this shift being cancelled?");if(!reason)return;const {error}=await db.from("shifts").update({status:"Cancelled",cancellation_reason:reason,cancelled_at:new Date().toISOString()}).eq("id",b.dataset.cancelShift);if(error)throw error;await refreshAll();return toast("Shift cancelled")}
   b=e.target.closest("[data-publish]");if(b){const {error}=await db.from("shifts").update({status:"Published",response:"Pending",published_at:new Date().toISOString()}).eq("id",b.dataset.publish);if(error)throw error;await refreshAll();return toast("Shift published")}
   b=e.target.closest("[data-shift-response]");if(b){const {error}=await db.rpc("respond_to_shift",{p_shift_id:b.dataset.shiftResponse,p_response:b.dataset.response});if(error)throw error;await refreshAll();return toast("Shift "+b.dataset.response.toLowerCase())}
-  b=e.target.closest("[data-administer]");if(b){pendingMed=state.medications.find(x=>x.id===b.dataset.administer);$("#pin-summary").textContent=`${pendingMed.medication_name} · ${pendingMed.dose} for ${pendingMed.participant?.full_name}`;openDialog($("#pin-dialog"));return}
+  b=e.target.closest("[data-administer]");if(b){
+   pendingMed=state.medications.find(x=>x.id===b.dataset.administer);
+   if(!pendingMed)throw new Error("Medication profile not found");
+   $("#pin-form").reset();$("#mar-outcome").value="Administered";
+   $("#pin-summary").textContent=`${pendingMed.medication_name} · ${pendingMed.dose} for ${pendingMed.participant?.full_name}`;
+   setS8DualSignoffVisibility();openDialog($("#pin-dialog"));return
+  }
   b=e.target.closest("[data-open-doc]");if(b){const d=state.compliance.find(x=>x.id===b.dataset.openDoc);if(!d)throw new Error("Document record not found");await auditAccess("DOWNLOAD","compliance_documents",d.id,{title:d.title,scope:d.scope});const {data,error}=await db.storage.from(C.storageBucket).createSignedUrl(d.storage_path,60);if(error)throw error;window.open(data.signedUrl,"_blank");return}
   b=e.target.closest("[data-careplan]");if(b){const p=state.participants.find(x=>x.id===b.dataset.careplan);form("Upload PDF care plan",[field("title","Document title"),field("review_date","Review date","date"),field("file","PDF care plan","file")],async(v,fd)=>uploadDocument(fd.get("file"),{scope:"Participant",subject_name:p.full_name,subject_id:p.id,category:"Care plan",title:v.title,review_date:v.review_date}));return}
  }catch(err){toast(err.message)}
@@ -693,16 +721,31 @@ $("#pin-form").onsubmit=async e=>{e.preventDefault();try{
  const extra=$("#mar-notes").value.trim();
  if(outcome!=="Administered"&&!reason)throw new Error("Select why the medication was not administered");
  const notes=[reason,extra].filter(Boolean).join(" — ")||null;
- const {error}=await db.rpc("record_medication_administration",{p_medication_id:pendingMed.id,p_pin:pin,p_status:outcome,p_notes:notes});
+ const dualRequired=isSchedule8Medication(pendingMed)&&outcome==="Administered";
+ const witnessId=dualRequired?$("#s8-witness-id").value:null;
+ const witnessPin=dualRequired?$("#s8-witness-pin").value:null;
+ const s8Quantity=dualRequired?Number($("#s8-quantity").value):null;
+ const s8Balance=dualRequired?Number($("#s8-balance").value):null;
+ if(dualRequired){
+  if(!witnessId)throw new Error("Select the second worker witnessing this Schedule 8 administration");
+  if(!/^\d{6}$/.test(witnessPin||""))throw new Error("The second worker must enter their own six-digit PIN");
+  if(!Number.isFinite(s8Quantity)||s8Quantity<=0)throw new Error("Enter the Schedule 8 quantity removed from stock");
+  if(!Number.isFinite(s8Balance)||s8Balance<0)throw new Error("Enter the Schedule 8 balance remaining after administration");
+ }
+ const {error}=await db.rpc("record_medication_administration",{
+  p_medication_id:pendingMed.id,p_pin:pin,p_status:outcome,p_notes:notes,
+  p_witness_id:witnessId,p_witness_pin:witnessPin,
+  p_s8_quantity:dualRequired?s8Quantity:null,p_s8_balance:dualRequired?s8Balance:null
+ });
  if(error)throw error;
- closeDialog($("#pin-dialog"));$("#pin-form").reset();pendingMed=null;await refreshAll();toast(`${outcome} MAR entry digitally signed`);
+ closeDialog($("#pin-dialog"));$("#pin-form").reset();pendingMed=null;await refreshAll();toast(dualRequired?"Schedule 8 MAR dual-signed and saved":`${outcome} MAR entry digitally signed`);
 }catch(err){toast(err.message)}};
 $("#close-pin").onclick=$("#cancel-pin").onclick=()=>{closeDialog($("#pin-dialog"));pendingMed=null};
 $("#backup").onclick=async()=>{try{await exportBackup()}catch(err){if(err?.name!=="AbortError")toast(err.message)}};
 $("#import-backup").onclick=()=>{try{importBackup()}catch(err){toast(err.message)}};
 $("#connect-xero").onclick=async()=>{try{const {data,error}=await db.functions.invoke("xero-connect",{body:{action:"start"}});if(error||!data?.authorization_url)throw new Error("Xero setup is not deployed yet");location.href=data.authorization_url}catch(err){toast(err.message)}};
 $("#disconnect-xero").onclick=async()=>{try{if(!confirm("Disconnect Florence from Xero?"))return;const {data,error}=await db.functions.invoke("xero-connect",{body:{action:"disconnect"}});if(error||data?.error)throw new Error(data?.error||"Could not disconnect Xero");await loadXeroStatus();toast("Xero disconnected")}catch(err){toast(err.message)}};
-$("#mar-outcome").onchange=()=>{$("#mar-reason-label").classList.toggle("required-reason",$("#mar-outcome").value!=="Administered")};
+$("#mar-outcome").onchange=()=>{$("#mar-reason-label").classList.toggle("required-reason",$("#mar-outcome").value!=="Administered");setS8DualSignoffVisibility()};
 window.FlorenceBridge={
  get db(){return db},get profile(){return profile},get organisation(){return organisation},get state(){return state},
  toast,form,field,showView,openDialog,closeDialog,esc,fmt,date,badge,empty,isSupervisor,isStaffUser,refreshAll,auditAccess

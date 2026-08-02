@@ -61,6 +61,7 @@ required_files = [
     "florence-controlled-library-access-upgrade.sql",
     "florence-controlled-library-upload-hotfix.sql",
     "florence-final-readiness-upgrade.sql",
+    "florence-s8-dual-signoff-timeline-upgrade.sql",
 ]
 for path in required_files:
     require((ROOT / path).exists(), f"required file exists: {path}")
@@ -76,11 +77,11 @@ for path in ["index.html", "sil.html"]:
 index = text("index.html")
 sil_html = text("sil.html")
 service_worker = text("service-worker.js")
-require('app.js?v=20260801-5' in index, "index loads final app asset")
-require('operations.js?v=20260801-2' in index, "index loads final operations asset")
+require('app.js?v=20260802-1' in index, "index loads final app asset")
+require('operations.js?v=20260802-1' in index, "index loads final operations asset")
 require('sil.js?v=20260801-4' in sil_html, "SIL page loads final SIL asset")
-require('florence-shell-20260801-6' in service_worker, "service worker uses final cache namespace")
-for marker in ['app.js?v=20260801-5', 'operations.js?v=20260801-2', 'sil.js?v=20260801-4']:
+require('florence-shell-20260802-1' in service_worker, "service worker uses final cache namespace")
+for marker in ['app.js?v=20260802-1', 'operations.js?v=20260802-1', 'sil.js?v=20260801-4']:
     require(marker in service_worker, f"service worker caches {marker}")
 
 # No browser-side secrets or old public Drive links.
@@ -210,3 +211,23 @@ if FAILURES:
     raise SystemExit(1)
 
 print("Florence static audit result: PASS_FOR_LIVE_UAT")
+
+# Schedule 8 dual PIN and automatic timeline controls.
+s8_upgrade = text("florence-s8-dual-signoff-timeline-upgrade.sql")
+for marker in [
+    "S8_DUAL_SIGNOFF_TIMELINE_READY",
+    "p_witness_pin text",
+    "witness_pin_verified",
+    "record_controlled_drug_transaction",
+    "sync_mar_entry_to_timeline",
+    "sync_progress_note_to_timeline",
+    "related_mar_entry_id",
+    "related_progress_note_id",
+    "drop policy if exists controlled_drug_register_staff_insert",
+    "revoke insert,update,delete on public.controlled_drug_register from authenticated",
+]:
+    require(marker in s8_upgrade, f"S8/timeline upgrade contains {marker!r}")
+require('id="s8-witness-id"' in index and 'id="s8-witness-pin"' in index, "S8 MAR dialog collects the second worker and private PIN")
+require('p_witness_id:witnessId' in app and 'p_witness_pin:witnessPin' in app, "S8 MAR sends both witness fields to the controlled RPC")
+require('record_controlled_drug_transaction' in operations, "manual S8 stock workflow uses the dual-PIN RPC")
+require('.from("controlled_drug_register").insert' not in operations, "browser cannot directly insert Schedule 8 register rows")
