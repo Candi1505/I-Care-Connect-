@@ -18,6 +18,7 @@ EXPECTED_ASSETS = {
     "portal-care-plan.js",
     "medication-prn-fix.js",
     "regular-medication-tab.js",
+    "florence-readiness-controls.js",
     "set-password.html",
     "set-password.js",
     "sil.html",
@@ -50,11 +51,20 @@ for relative_path in sorted(EXPECTED_ASSETS):
     assert (ROOT / relative_path).is_file(), f"Allowed Cloudflare asset is missing: {relative_path}"
 
 assert not any(path.endswith((".sql", ".md", ".docx", ".pdf", ".zip")) for path in allowed)
-assert "SUPABASE_SERVICE_ROLE_KEY" not in (ROOT / "config.js").read_text(encoding="utf-8")
-assert "pushVapidPublicKey" in (ROOT / "config.js").read_text(encoding="utf-8")
-assert 'self.addEventListener("push"' in (ROOT / "service-worker.js").read_text(encoding="utf-8")
-assert 'self.addEventListener("notificationclick"' in (ROOT / "service-worker.js").read_text(encoding="utf-8")
-assert "medication-prn-fix.js" in (ROOT / "service-worker.js").read_text(encoding="utf-8")
-assert "regular-medication-tab.js" in (ROOT / "service-worker.js").read_text(encoding="utf-8")
+config_js = (ROOT / "config.js").read_text(encoding="utf-8")
+worker_js = (ROOT / "service-worker.js").read_text(encoding="utf-8")
+controls_js = (ROOT / "florence-readiness-controls.js").read_text(encoding="utf-8")
+assert "SUPABASE_SERVICE_ROLE_KEY" not in config_js
+assert "pushVapidPublicKey" in config_js
+assert "florence-readiness-controls.js" in config_js, "Runtime modules must load without service-worker HTML injection"
+assert 'self.addEventListener("push"' in worker_js
+assert 'self.addEventListener("notificationclick"' in worker_js
+assert "html.replace" not in worker_js, "Service worker must not rewrite Florence HTML"
+assert "medication-prn-fix.js" in worker_js
+assert "regular-medication-tab.js" in worker_js
+assert "florence-readiness-controls.js" in worker_js
+assert "data-edit-medication" in controls_js
+assert "progress_note_amendments" in controls_js
+assert "weekly_family_updates" in controls_js
 
 print(f"Cloudflare static-assets audit: PASS ({len(EXPECTED_ASSETS)} public runtime files)")
