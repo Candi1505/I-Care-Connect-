@@ -10,6 +10,7 @@ const ROLES=[
  {value:"client",label:"Participant portal"}
 ];
 const roleLabel=role=>({supervisor:"Supervisor",staff:"Support worker",family:"Family representative",client:"Participant"}[role]||role);
+const passwordSetupUrl=()=>new URL("set-password.html",location.href).toString();
 const accountStatus=person=>!person.active?"Inactive":person.banned_until?"Suspended":person.last_sign_in_at?"Active":person.created_at?"Invited":"Account";
 async function invoke(body){
  const {data,error}=await B().db.functions.invoke("staff-management",{body});
@@ -65,9 +66,9 @@ function bindInvite(){
   const email=values.email.trim().toLowerCase();
   if(["family","client"].includes(values.role)&&!values.participant_id)throw new Error("Choose the participant this portal account belongs to");
   const result=await invoke({action:"invite",full_name:values.full_name.trim(),email,role:values.role,participant_id:values.participant_id||null});
-  if(result.requires_password_reset){const {error}=await B().db.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});if(error)throw error}
+  if(result.requires_password_reset){const {error}=await B().db.auth.resetPasswordForEmail(email,{redirectTo:passwordSetupUrl()});if(error)throw error}
   await loadDirectory();
-  return result.existing?"Existing account linked and access email sent":"Invitation sent securely";
+  return result.existing?"Existing account linked. A fresh password setup email has been sent.":"Invitation sent securely";
  });
 }
 function bindAccountForms(){
@@ -86,7 +87,7 @@ document.addEventListener("click",async event=>{
   const toggle=event.target.closest("[data-toggle-worker]");
   if(toggle){const active=toggle.dataset.active==="true";if(!confirm(`${active?"Reactivate":"Deactivate"} this person’s Florence access?`))return;await invoke({action:"set-active",user_id:toggle.dataset.toggleWorker,active});await loadDirectory();return B().toast(active?"Account reactivated":"Account deactivated")}
   const resend=event.target.closest("[data-resend-worker]");
-  if(resend){const person=directory.find(item=>item.id===resend.dataset.resendWorker);if(!person?.email)throw new Error("This account has no email address");const {error}=await B().db.auth.resetPasswordForEmail(person.email,{redirectTo:location.origin+location.pathname});if(error)throw error;return B().toast("Access email sent")}
+  if(resend){const person=directory.find(item=>item.id===resend.dataset.resendWorker);if(!person?.email)throw new Error("This account has no email address");const {error}=await B().db.auth.resetPasswordForEmail(person.email,{redirectTo:passwordSetupUrl()});if(error)throw error;return B().toast("Fresh password setup email sent. They must open the newest email and create a password before signing in.")}
  }catch(error){B().toast(error.message)}
 });
 document.addEventListener("change",async event=>{
