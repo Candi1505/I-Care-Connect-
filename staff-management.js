@@ -10,18 +10,26 @@ const ROLES=[
  {value:"client",label:"Participant portal"}
 ];
 const roleLabel=role=>({supervisor:"Supervisor",staff:"Support worker",family:"Family representative",client:"Participant"}[role]||role);
-const passwordSetupUrl=()=>new URL("set-password.html",location.href).toString();
+const setupPageUrl=()=>new URL("set-password.html",location.href).toString();
 const accountStatus=person=>!person.active?"Inactive":person.banned_until?"Suspended":person.last_sign_in_at?"Active":person.created_at?"Invited":"Account";
-async function invoke(body){
- const {data,error}=await B().db.functions.invoke("staff-management",{body});
+async function invokeFunction(name,body){
+ const {data,error}=await B().db.functions.invoke(name,{body});
  if(error){
-  let message=data?.error||error.message||"Staff management is unavailable";
+  let message=data?.error||error.message||"Florence account management is unavailable";
   try{if(error.context instanceof Response){const payload=await error.context.clone().json();message=payload?.error||message}}catch(_ignored){}
-  if(/failed to send|fetch/i.test(message))message="Florence could not reach the staff-management Edge Function. Confirm the Edge Function secrets allow https://i-care-connect.candi1505.workers.dev and redeploy the current function if required.";
   throw new Error(message);
  }
  if(data?.error)throw new Error(data.error);
  return data;
+}
+const invoke=body=>invokeFunction("staff-management",body);
+const invokeSetup=body=>invokeFunction("account-setup-admin",body);
+function showSetupCode(result){
+ const code=String(result.setup_code||"");
+ if(!/^\d{8}$/.test(code))throw new Error("Florence did not return a valid setup code");
+ const instructions=`One-time Florence setup code for ${result.email}:\n\n${code}\n\nExpires in ${result.expires_minutes||30} minutes. Share this code privately. They open ${setupPageUrl()}, enter their email and this code, then create their password.`;
+ window.prompt("Copy this one-time Florence setup code",instructions);
+ navigator.clipboard?.writeText(code).catch(()=>{});
 }
 async function fallbackDirectory(){
  const {data,error}=await B().db.from("profiles").select("id,full_name,email,role,active,participant_id,created_at").eq("organisation_id",B().profile.organisation_id).order("full_name");
@@ -43,18 +51,22 @@ function participantOptions(selected=""){
  return `<option value="">Not linked</option>${B().state.participants.map(participant=>`<option value="${participant.id}" ${participant.id===selected?"selected":""}>${B().esc(participant.preferred_name||participant.full_name)}</option>`).join("")}`;
 }
 function renderDirectory(){
- const target=q("#staff-directory");
- if(!target)return;
- const serviceNotice=edgeError?`<div class="notice"><strong>Account service needs attention.</strong><br>${B().esc(edgeError)} Existing profiles are shown from Florence’s secure database, but invitations and role changes require the Edge Function.<div class="actions"><button id="retry-staff-directory" type="button" class="secondary">Retry connection</button></div></div>`:"";
+ const target=q("#staff-directory");if(!target)return;
+ const serviceNotice=edgeError?`<div class="notice"><strong>Account service needs attention.</strong><br>${B().esc(edgeError)} Existing profiles are shown from Florence’s secure database.<div class="actions"><button id="retry-staff-directory" type="button" class="secondary">Retry connection</button></div></div>`:"";
  const cards=directory.map(person=>{
   const status=accountStatus(person),portal=["family","client"].includes(person.role);
-  const last=person.last_sign_in_at?`Last sign-in ${B().fmt(person.last_sign_in_at)}`:person.active?"Invitation or account pending first sign-in":"Access inactive";
+  const last=person.last_sign_in_at?`Last sign-in ${B().fmt(person.last_sign_in_at)}`:person.active?"Account pending first sign-in":"Access inactive";
   const roleSelect=`<label class="role-control">Role<select data-person-role="${person.id}" data-original-role="${person.role}">${ROLES.map(role=>`<option value="${role.value}" ${person.role===role.value?"selected":""}>${B().esc(role.label)}</option>`).join("")}</select></label>`;
   const participantSelect=`<label class="role-control">Portal participant<select data-person-participant="${person.id}" ${portal?"":"disabled"}>${participantOptions(person.participant_id||"")}</select></label>`;
   const participantAccess=person.role==="staff"?`<fieldset class="participant-access"><legend>Ongoing participant access</legend><p class="record-meta">Tick ongoing access only while this worker supports the participant. A published rostered shift also grants time-limited access.</p>${B().state.participants.map(participant=>{const checked=assignments.some(assignment=>assignment.staff_id===person.id&&assignment.participant_id===participant.id);return `<label><input type="checkbox" data-participant-access="${person.id}" data-participant-id="${participant.id}" ${checked?"checked":""}> ${B().esc(participant.preferred_name||participant.full_name)}</label>`}).join("")||"<small>Add a participant before assigning access.</small>"}</fieldset>`:"";
-  return `<article class="record staff-card ${person.active?"":"inactive"}"><div class="record-top"><div><h3>${B().esc(person.full_name)}</h3><p class="staff-email">${B().esc(person.email||"No email")}</p></div>${B().badge(status)}</div><div class="staff-invite-status">${B().badge(roleLabel(person.role))}<span class="badge">${B().esc(last)}</span></div><div class="role-controls">${roleSelect}${participantSelect}</div><div class="actions"><button class="secondary" data-resend-worker="${person.id}">Resend access email</button><button class="${person.active?"decline":"accept"}" data-toggle-worker="${person.id}" data-active="${person.active?"false":"true"}">${person.active?"Deactivate":"Reactivate"}</button></div>${participantAccess}</article>`;
+  return `<article class="record staff-card ${person.active?"":"inactive"}"><div class="record-top"><div><h3>${B().esc(person.full_name)}</h3><p class="staff-email">${B().esc(person.email||"No email")}</p></div>${B().badge(status)}</div><div class="staff-invite-status">${B().badge(roleLabel(person.role))}<span class="badge">${B().esc(last)}</span></div><div class="role-controls">${roleSelect}${participantSelect}</div><div class="actions"><button class="secondary" data-resend-worker="${person.id}">Create setup code</button><button class="${person.active?"decline":"accept"}" data-toggle-worker="${person.id}" data-active="${person.active?"false":"true"}">${person.active?"Deactivate":"Reactivate"}</button></div>${participantAccess}</article>`;
  }).join("")||B().empty("No Florence accounts yet.");
  target.innerHTML=serviceNotice+cards;
+}
+function ensureSetupLink(){
+ const form=q("#login-form");if(!form||q("#code-account-setup"))return;
+ const link=document.createElement("a");link.id="code-account-setup";link.className="link wide";link.href=setupPageUrl();link.textContent="Set up account with one-time code";
+ const forgot=q("#forgot-password");forgot?.insertAdjacentElement("afterend",link);
 }
 function bindInvite(){
  q("#invite-worker").onclick=()=>B().form("Invite person",[
@@ -65,10 +77,9 @@ function bindInvite(){
  ],async values=>{
   const email=values.email.trim().toLowerCase();
   if(["family","client"].includes(values.role)&&!values.participant_id)throw new Error("Choose the participant this portal account belongs to");
-  const result=await invoke({action:"invite",full_name:values.full_name.trim(),email,role:values.role,participant_id:values.participant_id||null});
-  if(result.requires_password_reset){const {error}=await B().db.auth.resetPasswordForEmail(email,{redirectTo:passwordSetupUrl()});if(error)throw error}
-  await loadDirectory();
-  return result.existing?"Existing account linked. A fresh password setup email has been sent.":"Invitation sent securely";
+  const result=await invokeSetup({action:"invite",full_name:values.full_name.trim(),email,role:values.role,participant_id:values.participant_id||null});
+  showSetupCode(result);await loadDirectory();
+  return result.existing?"Account linked and a fresh one-time setup code created":"Account created and a one-time setup code created";
  });
 }
 function bindAccountForms(){
@@ -77,17 +88,15 @@ function bindAccountForms(){
 }
 async function setPersonRole(personId,role,participantId){
  if(["family","client"].includes(role)&&!participantId)throw new Error("Choose the participant linked to this portal account");
- await invoke({action:"set-role",user_id:personId,role,participant_id:["family","client"].includes(role)?participantId:null});
- await loadDirectory();
- B().toast("Florence role updated");
+ await invoke({action:"set-role",user_id:personId,role,participant_id:["family","client"].includes(role)?participantId:null});await loadDirectory();B().toast("Florence role updated");
 }
 document.addEventListener("click",async event=>{
  try{
   if(event.target.closest("#retry-staff-directory")){await loadDirectory();return}
   const toggle=event.target.closest("[data-toggle-worker]");
-  if(toggle){const active=toggle.dataset.active==="true";if(!confirm(`${active?"Reactivate":"Deactivate"} this person’s Florence access?`))return;await invoke({action:"set-active",user_id:toggle.dataset.toggleWorker,active});await loadDirectory();return B().toast(active?"Account reactivated":"Account deactivated")}
+  if(toggle){const active=toggle.dataset.active==="true";if(!confirm(`${active?"Reactivate":"Deactivate"} this person’s Florence access?`))return;await invoke({action:"set-active",user_id:toggle.dataset.toggleWorker,active});await loadDirectory();return B().toast(active?"Account reactivated":"Account deactivated and participant access revoked")}
   const resend=event.target.closest("[data-resend-worker]");
-  if(resend){const person=directory.find(item=>item.id===resend.dataset.resendWorker);if(!person?.email)throw new Error("This account has no email address");const {error}=await B().db.auth.resetPasswordForEmail(person.email,{redirectTo:passwordSetupUrl()});if(error)throw error;return B().toast("Fresh password setup email sent. They must open the newest email and create a password before signing in.")}
+  if(resend){const result=await invokeSetup({action:"generate-code",user_id:resend.dataset.resendWorker});showSetupCode(result);return B().toast("Fresh one-time setup code created")}
  }catch(error){B().toast(error.message)}
 });
 document.addEventListener("change",async event=>{
@@ -98,5 +107,6 @@ document.addEventListener("change",async event=>{
  const participantSelect=event.target.closest("[data-person-participant]");
  if(participantSelect){try{const personId=participantSelect.dataset.personParticipant,card=participantSelect.closest(".staff-card"),role=card.querySelector(`[data-person-role="${personId}"]`).value;if(!["family","client"].includes(role))return;if(!participantSelect.value)throw new Error("Choose a participant for this portal account");await setPersonRole(personId,role,participantSelect.value)}catch(error){B().toast(error.message);await loadDirectory()}return}
 });
-window.addEventListener("florence:ready",()=>{document.querySelectorAll(".staff-only").forEach(element=>element.classList.toggle("hidden",!B().isStaffUser()));if(B().isSupervisor()){bindInvite();loadDirectory()}if(B().isStaffUser())bindAccountForms()});
+ensureSetupLink();
+window.addEventListener("florence:ready",()=>{ensureSetupLink();document.querySelectorAll(".staff-only").forEach(element=>element.classList.toggle("hidden",!B().isStaffUser()));if(B().isSupervisor()){bindInvite();loadDirectory()}if(B().isStaffUser())bindAccountForms()});
 })();
