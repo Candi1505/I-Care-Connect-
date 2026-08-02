@@ -66,7 +66,8 @@ window.FLORENCE_CONFIG = {
     "portal-care-plan.js?v=20260802-1",
     "medication-prn-fix.js?v=20260802-1",
     "regular-medication-tab.js?v=20260802-1",
-    "florence-readiness-controls.js?v=20260802-1"
+    "florence-readiness-controls.js?v=20260802-1",
+    "remote-s8-verification.js?v=20260802-1"
   ];
   const load = () => {
     for (const src of modules) {
