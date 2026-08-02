@@ -1,5 +1,6 @@
 from pathlib import Path
 
+# Temporary deterministic helper used only while the reviewed PR is validated.
 path = Path(__file__).resolve().parents[1] / "tests" / "florence_static_audit.py"
 source = path.read_text(encoding="utf-8")
 marker = "# Schedule 8 dual PIN and automatic timeline controls."
