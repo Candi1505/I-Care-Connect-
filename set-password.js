@@ -36,15 +36,18 @@ async function waitForSession(timeoutMs=8000){
  if(current.data.session)return current.data.session;
  return await new Promise(resolve=>{
   let finished=false;
+  let subscription=null;
+  let timer=null;
   const finish=session=>{
    if(finished)return;
    finished=true;
-   clearTimeout(timer);
+   if(timer)clearTimeout(timer);
    subscription?.unsubscribe();
    resolve(session||null);
   };
-  const {data:{subscription}}=db.auth.onAuthStateChange((_event,session)=>{if(session)finish(session)});
-  const timer=setTimeout(()=>finish(null),timeoutMs);
+  const authListener=db.auth.onAuthStateChange((_event,session)=>{if(session)finish(session)});
+  subscription=authListener.data.subscription;
+  timer=setTimeout(()=>finish(null),timeoutMs);
  });
 }
 async function boot(){
@@ -55,7 +58,7 @@ async function boot(){
   return;
  }
  if(initialLinkError){
-  showExpired(decodeURIComponent(initialLinkError.replace(/\+/g," ")));
+  showExpired(initialLinkError.replace(/\+/g," "));
   clearSensitiveUrl();
   return;
  }
