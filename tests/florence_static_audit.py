@@ -203,15 +203,6 @@ if private_document_match:
 require('sil-rpc-audit-fix.js' not in sil_html, "SIL no longer depends on the RPC monkey-patch")
 require(not (ROOT / "sil-rpc-audit-fix.js").exists(), "obsolete SIL RPC monkey-patch file is removed")
 
-print(f"Florence static audit: {len(PASSES)} checks passed")
-if FAILURES:
-    print(f"Florence static audit: {len(FAILURES)} checks FAILED", file=sys.stderr)
-    for failure in FAILURES:
-        print(f" - {failure}", file=sys.stderr)
-    raise SystemExit(1)
-
-print("Florence static audit result: PASS_FOR_LIVE_UAT")
-
 # Schedule 8 dual PIN and automatic timeline controls.
 s8_upgrade = text("florence-s8-dual-signoff-timeline-upgrade.sql")
 for marker in [
@@ -231,3 +222,12 @@ require('id="s8-witness-id"' in index and 'id="s8-witness-pin"' in index, "S8 MA
 require('p_witness_id:witnessId' in app and 'p_witness_pin:witnessPin' in app, "S8 MAR sends both witness fields to the controlled RPC")
 require('record_controlled_drug_transaction' in operations, "manual S8 stock workflow uses the dual-PIN RPC")
 require('.from("controlled_drug_register").insert' not in operations, "browser cannot directly insert Schedule 8 register rows")
+
+print(f"Florence static audit: {len(PASSES)} checks passed")
+if FAILURES:
+    print(f"Florence static audit: {len(FAILURES)} checks FAILED", file=sys.stderr)
+    for failure in FAILURES:
+        print(f" - {failure}", file=sys.stderr)
+    raise SystemExit(1)
+
+print("Florence static audit result: PASS_FOR_LIVE_UAT")
