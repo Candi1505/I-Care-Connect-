@@ -12,6 +12,7 @@ body.setup-code-open{overflow:hidden}
 #florence-setup-code-card .setup-code-value{display:block;width:100%;margin:20px 0 12px;padding:18px 12px;border:2px solid #5f8f72;border-radius:16px;background:#f4faf6;font:800 2.15rem/1.1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.18em;text-align:center;color:#173f2c;user-select:all;-webkit-user-select:all}
 #florence-setup-code-card .actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
 #florence-setup-code-card .notice{margin-top:14px}
+.notification-open-hint{color:var(--primary);font-weight:800}
 @media(max-width:420px){#florence-setup-code-card{padding:12px}#florence-setup-code-card .setup-code-card{padding:20px;border-radius:20px}#florence-setup-code-card .setup-code-value{font-size:1.85rem;letter-spacing:.14em}}
 `;
 document.head.appendChild(style);
@@ -76,11 +77,15 @@ window.prompt=(title,message="",defaultValue="")=>{
  return originalPrompt(title,message,defaultValue);
 };
 
-if(!document.querySelector('script[data-florence-live-refresh]')){
- const refreshScript=document.createElement("script");
- refreshScript.src="live-refresh-controls.js?v=20260802-2";
- refreshScript.defer=true;
- refreshScript.dataset.florenceLiveRefresh="true";
- document.head.appendChild(refreshScript);
+function loadRuntime(src,datasetName){
+ if(document.querySelector(`script[data-${datasetName}]`))return;
+ const script=document.createElement("script");
+ script.src=src;
+ script.defer=true;
+ script.setAttribute(`data-${datasetName}`,"true");
+ document.head.appendChild(script);
 }
+
+loadRuntime("live-refresh-controls.js?v=20260802-2","florence-live-refresh");
+loadRuntime("notification-navigation.js?v=20260802-1","florence-notification-navigation");
 })();
