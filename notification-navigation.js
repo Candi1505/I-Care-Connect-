@@ -3,6 +3,7 @@
 const q=s=>document.querySelector(s);
 const B=()=>window.FlorenceBridge;
 let binding=false;
+let deepLinkHandled=false;
 
 function toast(message){
  const b=B();
@@ -26,18 +27,31 @@ async function loadNotifications(){
  return data||[];
 }
 
-function openRoster(notification){
+function openRoster(notification={}){
  const rosterButton=document.querySelector('[data-view="roster"]');
  rosterButton?.click();
  setTimeout(()=>{
   const mine=document.querySelector('[data-roster-tab="mine"]');
   mine?.click();
-  if(notification.related_record_id){
-   const target=document.querySelector(`[data-shift-id="${notification.related_record_id}"]`)
-    ||document.querySelector(`[data-shift="${notification.related_record_id}"]`);
+  const shiftId=notification.related_record_id||new URL(location.href).searchParams.get("shift");
+  if(shiftId){
+   const target=document.querySelector(`[data-shift-id="${shiftId}"]`)
+    ||document.querySelector(`[data-shift="${shiftId}"]`);
    target?.scrollIntoView({behavior:"smooth",block:"center"});
   }
- },120);
+ },160);
+}
+
+function handleDeepLink(){
+ if(deepLinkHandled||!B()?.profile)return;
+ const url=new URL(location.href);
+ const view=url.searchParams.get("view");
+ if(view!=="roster")return;
+ deepLinkHandled=true;
+ openRoster({related_record_id:url.searchParams.get("shift")});
+ url.searchParams.delete("view");
+ url.searchParams.delete("shift");
+ history.replaceState(null,"",url.pathname+(url.search?url.search:"")+url.hash);
 }
 
 async function openNotification(notification,card){
@@ -107,6 +121,7 @@ async function bindCards(){
 }
 
 function start(){
+ handleDeepLink();
  void bindCards();
  const list=q("#notification-list");
  if(list&&!list.__florenceNotificationObserver){
