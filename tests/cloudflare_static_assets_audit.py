@@ -14,6 +14,7 @@ EXPECTED_ASSETS = {
     "staff-management.js",
     "setup-code-display.js",
     "portal-participant-label.js",
+    "push-notifications.js",
     "set-password.html",
     "set-password.js",
     "sil.html",
@@ -47,5 +48,8 @@ for relative_path in sorted(EXPECTED_ASSETS):
 
 assert not any(path.endswith((".sql", ".md", ".docx", ".pdf", ".zip")) for path in allowed)
 assert "SUPABASE_SERVICE_ROLE_KEY" not in (ROOT / "config.js").read_text(encoding="utf-8")
+assert "pushVapidPublicKey" in (ROOT / "config.js").read_text(encoding="utf-8")
+assert 'self.addEventListener("push"' in (ROOT / "service-worker.js").read_text(encoding="utf-8")
+assert 'self.addEventListener("notificationclick"' in (ROOT / "service-worker.js").read_text(encoding="utf-8")
 
 print(f"Cloudflare static-assets audit: PASS ({len(EXPECTED_ASSETS)} public runtime files)")
