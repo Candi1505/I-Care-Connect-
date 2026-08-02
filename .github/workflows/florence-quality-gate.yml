@@ -25,6 +25,7 @@ jobs:
           node --check app.js
           node --check operations.js
           node --check staff-management.js
+          node --check set-password.js
           node --check sil.js
           node --check service-worker.js
 
