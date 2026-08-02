@@ -1,9 +1,9 @@
 {
-  "id": "/florence-pwa-20260802",
+  "id": "/",
   "name": "Florence · I-Care Connect",
   "short_name": "Florence",
   "description": "Secure disability support operations for I-Care Connect.",
-  "start_url": "./pwa-launch-20260802.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
