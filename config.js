@@ -4,7 +4,8 @@ window.FLORENCE_CONFIG = {
   supabaseUrl: "https://pbbsaquwumxyrhqhnobv.supabase.co",
   supabaseAnonKey: "sb_publishable_4D2Oc8FJjOXDXgGG7GbzfA_oYRpXSU5",
   functionRegion: "ap-southeast-2",
-  pushVapidPublicKey: "BLCcyvo7Z3btgf6mGhl33Hfo8AO3w0z_5CV4R3wGGTESjzzJq93GldinKtexynx2XOKvh3Y1zar6wWTgPmfW4Go",
+  pushVapidPublicKey: "BCDGKAl9z7iB38nlV19HFEaj8k-v-4B-" +
+    "nFMLTqGWYS6sKG39imwkxBcsbcA663HETK2F2OSDDfY87Ay3JnOQSmg",
 
   storageBucket: "florence-private",
   maxDocumentBytes: 8 * 1024 * 1024,
