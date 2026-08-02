@@ -27,6 +27,9 @@ jobs:
           else
             python tools/apply_s8_timeline_ui_fix.py
           fi
+          if test -f tools/fix_s8_static_audit_order.py; then
+            python tools/fix_s8_static_audit_order.py
+          fi
 
       - name: Validate corrected application files
         run: |
@@ -52,5 +55,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add app.js operations.js index.html service-worker.js tests/florence_static_audit.py
           git diff --cached --check
-          git commit -m "Add S8 dual PIN interface and timeline evidence"
+          git commit -m "Complete S8 dual PIN interface regression controls"
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
