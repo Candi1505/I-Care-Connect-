@@ -73,7 +73,7 @@ window.FLORENCE_CONFIG = {
 // installs and ordinary browser sessions on the same feature set.
 (() => {
   const modules = [
-    "mobile-session-push-fix.js?v=20260802-1",
+    "mobile-session-push-fix.js?v=20260802-2",
     "setup-code-display.js?v=20260802-1",
     "portal-participant-label.js?v=20260802-2",
     "portal-care-plan.js?v=20260802-1",
