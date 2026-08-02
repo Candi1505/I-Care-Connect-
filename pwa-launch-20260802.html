@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#5f8f72">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Opening Florence…</title>
+  <style>
+    html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,sans-serif;background:#f6f8f3;color:#315b47}
+    body{display:grid;place-items:center;padding:24px;text-align:center}
+    .card{max-width:360px;background:#fff;border:1px solid #d9e2da;border-radius:24px;padding:28px;box-shadow:0 16px 40px rgba(49,91,71,.12)}
+    h1{margin:0 0 8px}p{margin:0;line-height:1.5}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Florence</h1>
+    <p>Refreshing the secure app…</p>
+  </main>
+  <script>
+    (async()=>{
+      try{
+        if('serviceWorker' in navigator){
+          const registrations=await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registrations.map(reg=>reg.unregister()));
+        }
+        if('caches' in window){
+          const keys=await caches.keys();
+          await Promise.all(keys.filter(key=>key.startsWith('florence-')).map(key=>caches.delete(key)));
+        }
+      }catch(_error){}
+      const target=new URL('./',location.href);
+      target.searchParams.set('pwa_build','20260802-1731');
+      location.replace(target.href);
+    })();
+  </script>
+</body>
+</html>
