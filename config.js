@@ -63,6 +63,7 @@ window.FLORENCE_CONFIG = {
     "setup-code-display.js?v=20260802-1",
     "portal-participant-label.js?v=20260802-2",
     "push-notifications.js?v=20260802-2",
+    "push-registration-verifier.js?v=20260802-1",
     "portal-care-plan.js?v=20260802-1",
     "medication-prn-fix.js?v=20260802-1",
     "regular-medication-tab.js?v=20260802-1",
