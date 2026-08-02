@@ -1,14 +1,15 @@
-const CACHE="florence-shell-20260802-2";
-const SHELL=["./","./index.html","./styles.css?v=20260801-1","./config.js","./app.js?v=20260802-1","./operations.js?v=20260802-1","./staff-management.js?v=20260801-1","./setup-code-display.js?v=20260802-1","./sil.html","./sil.css?v=20260731-1","./sil.js?v=20260801-4","./manifest.webmanifest","./florence-icon.svg"];
+const CACHE="florence-shell-20260802-3";
+const SHELL=["./","./index.html","./styles.css?v=20260801-1","./config.js","./app.js?v=20260802-1","./operations.js?v=20260802-1","./staff-management.js?v=20260801-1","./setup-code-display.js?v=20260802-1","./portal-participant-label.js?v=20260802-1","./sil.html","./sil.css?v=20260731-1","./sil.js?v=20260801-4","./manifest.webmanifest","./florence-icon.svg"];
 self.addEventListener("install",event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener("activate",event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 async function prepareResponse(request,response){
  const url=new URL(request.url);
  const type=response.headers.get("content-type")||"";
  if(request.mode==="navigate"&&url.pathname.endsWith("/")&&type.includes("text/html")){
-  const html=await response.text();
-  const injected=html.includes("setup-code-display.js")?html:html.replace("</body>",'<script src="setup-code-display.js?v=20260802-1"></script></body>');
-  return new Response(injected,{status:response.status,statusText:response.statusText,headers:response.headers});
+  let html=await response.text();
+  if(!html.includes("setup-code-display.js"))html=html.replace("</body>",'<script src="setup-code-display.js?v=20260802-1"></script></body>');
+  if(!html.includes("portal-participant-label.js"))html=html.replace("</body>",'<script src="portal-participant-label.js?v=20260802-1"></script></body>');
+  return new Response(html,{status:response.status,statusText:response.statusText,headers:response.headers});
  }
  return response;
 }
