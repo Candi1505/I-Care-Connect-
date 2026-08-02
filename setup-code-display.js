@@ -78,7 +78,7 @@ window.prompt=(title,message="",defaultValue="")=>{
 
 if(!document.querySelector('script[data-florence-live-refresh]')){
  const refreshScript=document.createElement("script");
- refreshScript.src="live-refresh-controls.js?v=20260802-1";
+ refreshScript.src="live-refresh-controls.js?v=20260802-2";
  refreshScript.defer=true;
  refreshScript.dataset.florenceLiveRefresh="true";
  document.head.appendChild(refreshScript);
