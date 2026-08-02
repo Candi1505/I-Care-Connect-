@@ -1,105 +1,51 @@
 (()=>{
 "use strict";
-
 const C=window.FLORENCE_CONFIG||{};
 const q=selector=>document.querySelector(selector);
-const initialHash=new URLSearchParams(location.hash.replace(/^#/,""));
-const initialQuery=new URLSearchParams(location.search);
-const initialLinkError=initialHash.get("error_description")||initialQuery.get("error_description")||"";
-let db=null;
-let verifiedSession=null;
-
 function signInUrl(){return new URL("./",location.href).toString()}
 function setStatus(message,isError=false){
- const status=q("#password-setup-status");
- status.textContent=message;
- status.classList.toggle("error",isError);
- status.setAttribute("role",isError?"alert":"status");
+ const status=q("#password-setup-status");status.textContent=message;status.classList.toggle("error",isError);status.setAttribute("role",isError?"alert":"status");
 }
-function showForm(){
- q("#password-setup-intro").textContent="Create a private password to finish activating your Florence account.";
- q("#password-setup-form").classList.remove("hidden");
- setStatus("Use at least ten characters. Do not share this password with anyone.");
- requestAnimationFrame(()=>q("#new-password").focus());
-}
-function showExpired(message){
- q("#password-setup-intro").textContent="This access link could not be used.";
- q("#password-setup-form").classList.add("hidden");
- setStatus(message||"The link may have expired or already been used. Ask a Florence supervisor to tap Resend access email and open the newest email only.",true);
-}
-function clearSensitiveUrl(){
- try{history.replaceState({},document.title,location.pathname)}catch(_error){}
-}
-async function waitForSession(timeoutMs=8000){
- const current=await db.auth.getSession();
- if(current.error)throw current.error;
- if(current.data.session)return current.data.session;
- return await new Promise(resolve=>{
-  let finished=false;
-  let subscription=null;
-  let timer=null;
-  const finish=session=>{
-   if(finished)return;
-   finished=true;
-   if(timer)clearTimeout(timer);
-   subscription?.unsubscribe();
-   resolve(session||null);
-  };
-  const authListener=db.auth.onAuthStateChange((_event,session)=>{if(session)finish(session)});
-  subscription=authListener.data.subscription;
-  timer=setTimeout(()=>finish(null),timeoutMs);
+async function submitSetup(email,code,password){
+ if(!C.supabaseUrl||!C.supabaseAnonKey)throw new Error("Florence is missing its secure connection settings");
+ const response=await fetch(`${C.supabaseUrl}/functions/v1/account-setup`,{
+  method:"POST",
+  headers:{"Content-Type":"application/json","apikey":C.supabaseAnonKey},
+  body:JSON.stringify({email,code,password}),
+  cache:"no-store",
+  credentials:"omit",
+  referrerPolicy:"no-referrer"
  });
+ const payload=await response.json().catch(()=>({}));
+ if(!response.ok||payload.error)throw new Error(payload.error||"Florence could not create the password");
+ return payload;
 }
-async function boot(){
- q("#continue-to-florence").href=signInUrl();
- document.querySelectorAll('a[href="./"]').forEach(link=>link.href=signInUrl());
- if(!C.supabaseUrl||!C.supabaseAnonKey){
-  showExpired("Florence is missing its Supabase connection settings. Contact I-Care Connect before trying again.");
-  return;
- }
- if(initialLinkError){
-  showExpired(initialLinkError.replace(/\+/g," "));
-  clearSensitiveUrl();
-  return;
- }
- try{
-  db=window.supabase.createClient(C.supabaseUrl,C.supabaseAnonKey);
-  verifiedSession=await waitForSession();
-  if(!verifiedSession){showExpired();return}
-  clearSensitiveUrl();
-  showForm();
- }catch(error){
-  showExpired(error?.message||"Florence could not verify this access link.");
- }
-}
-
 q("#password-setup-form").addEventListener("submit",async event=>{
  event.preventDefault();
+ const email=q("#setup-email").value.trim().toLowerCase();
+ const code=q("#setup-code").value.replace(/\D/g,"");
  const password=q("#new-password").value;
  const confirmation=q("#confirm-password").value;
  const button=q("#save-password");
  try{
-  if(!verifiedSession)throw new Error("The secure access session has expired. Ask a supervisor to resend the access email.");
-  if(password.length<10)throw new Error("Use a password with at least ten characters.");
-  if(password!==confirmation)throw new Error("The two passwords do not match.");
-  button.disabled=true;
-  button.textContent="Saving password…";
-  setStatus("Saving your password securely…");
-  const {error}=await db.auth.updateUser({password});
-  if(error)throw error;
-  await db.auth.signOut({scope:"local"}).catch(()=>{});
-  verifiedSession=null;
-  event.currentTarget.reset();
-  event.currentTarget.classList.add("hidden");
-  q("#password-setup-intro").textContent="Your Florence password has been saved.";
-  setStatus("Password created successfully. Continue to Florence and sign in with your email address and the password you just made.");
+  if(!/^\S+@\S+\.\S+$/.test(email))throw new Error("Enter the email address used for your Florence account");
+  if(!/^\d{8}$/.test(code))throw new Error("Enter all eight numbers from the setup code");
+  if(password.length<10)throw new Error("Use a password with at least ten characters");
+  if(password!==confirmation)throw new Error("The two passwords do not match");
+  button.disabled=true;button.textContent="Creating password…";setStatus("Checking the one-time code and saving your password securely…");
+  await submitSetup(email,code,password);
+  event.currentTarget.reset();event.currentTarget.classList.add("hidden");
+  q("#password-setup-intro").textContent="Your Florence password has been created.";
+  setStatus("Account setup completed. Continue to Florence and sign in with your email address and the password you just made.");
   q("#continue-to-florence").classList.remove("hidden");
  }catch(error){
-  setStatus(error?.message||"Florence could not save that password.",true);
-  button.disabled=false;
-  button.textContent="Save password securely";
+  setStatus(error?.message||"Florence could not complete account setup.",true);
+  button.disabled=false;button.textContent="Create password securely";
  }
 });
-
-addEventListener("DOMContentLoaded",()=>void boot(),{once:true});
+addEventListener("DOMContentLoaded",()=>{
+ q("#continue-to-florence").href=signInUrl();
+ document.querySelectorAll('a[href="./"]').forEach(link=>link.href=signInUrl());
+ q("#setup-email").focus();
+},{once:true});
 })();
