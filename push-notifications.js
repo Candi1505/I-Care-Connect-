@@ -55,8 +55,8 @@ async function disable(){
  }
 }
 async function render(){
- if(!B()?.profile||!["staff","supervisor"].includes(B().profile.role))return;
- const host=q("#my-account-view")||q("#dashboard-view");if(!host)return;
+ if(!B()?.profile||!["staff","supervisor"].includes(B().profile.role))return false;
+ const host=q("#my-account-view")||q("#dashboard-view");if(!host)return false;
  let panel=q("#push-notification-panel");
  if(!panel){
   panel=document.createElement("article");panel.id="push-notification-panel";panel.className="panel staff-only";
@@ -71,6 +71,19 @@ async function render(){
  q("#disable-push-notifications").disabled=!subscription;
  q("#enable-push-notifications").onclick=async()=>{try{await enable();B().toast("Florence notifications enabled");await render()}catch(error){B().toast(error.message)}};
  q("#disable-push-notifications").onclick=async()=>{try{await disable();B().toast("Notifications disabled on this device");await render()}catch(error){B().toast(error.message)}};
+ return true;
 }
-window.addEventListener("florence:ready",()=>void render());
+function start(){
+ void render().then(found=>{
+  if(found)return;
+  let attempts=0;
+  const timer=setInterval(()=>{
+   attempts++;
+   void render().then(done=>{if(done||attempts>=30)clearInterval(timer)});
+  },500);
+ });
+}
+window.addEventListener("florence:ready",start);
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});
+else start();
 })();
