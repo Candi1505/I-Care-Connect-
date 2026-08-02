@@ -1,0 +1,56 @@
+name: Temporary Florence S8 and timeline fixer
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.ref == 'agent/s8-dual-pin-timeline'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Apply reviewed S8 dual PIN and timeline UI correction
+        run: |
+          set -euo pipefail
+          if grep -q 'id="s8-witness-id"' index.html \
+             && grep -q 'record_controlled_drug_transaction' operations.js; then
+            echo 'Correction is already applied.'
+          else
+            python tools/apply_s8_timeline_ui_fix.py
+          fi
+
+      - name: Validate corrected application files
+        run: |
+          set -euo pipefail
+          node --check config.js
+          node --check app.js
+          node --check operations.js
+          node --check staff-management.js
+          node --check sil.js
+          node --check service-worker.js
+          python tests/florence_static_audit.py
+          python tests/cloudflare_static_assets_audit.py
+          git diff --check
+
+      - name: Commit reviewed non-workflow changes to the fix branch
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo 'No patch commit required.'
+            exit 0
+          fi
+          git config user.name "OpenAI"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.js operations.js index.html service-worker.js tests/florence_static_audit.py
+          git diff --cached --check
+          git commit -m "Add S8 dual PIN interface and timeline evidence"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
