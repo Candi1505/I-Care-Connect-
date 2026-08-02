@@ -36,7 +36,7 @@ function renderSafety(){
  q("#incident-list").innerHTML=ops.incidents.map(x=>card(`${x.category} incident`,`${person(x.participant_id)} · ${B().fmt(x.occurred_at)} · ${x.severity}`,x.description,B().isSupervisor()&&x.status!=="Closed"?`<button class="link" data-close-incident="${x.id}">Review and close</button>`:"")).join("")||B().empty("No incidents recorded.");
  q("#complaint-list").innerHTML=ops.complaints.map(x=>card(x.subject,`${x.complainant_name} · ${x.status} · ${B().fmt(x.received_at)}`,x.details,B().isSupervisor()&&x.status!=="Resolved"?`<button class="link" data-resolve-complaint="${x.id}">Record outcome</button>`:"")).join("")||B().empty("No complaints recorded.");
  q("#medication-error-list").innerHTML=ops.medicationIncidents.map(x=>card(x.incident_type,`${person(x.participant_id)} · ${B().fmt(x.occurred_at)} · ${x.status}`,x.description)).join("")||B().empty("No medication errors recorded.");
- q("#controlled-drug-list").innerHTML=ops.controlledDrugs.map(x=>{const med=B().state.medications.find(m=>m.id===x.medication_id);return card(med?.medication_name||"Schedule 8 medication",`${person(x.participant_id)} · ${x.transaction_type} · Balance ${x.balance} · ${B().fmt(x.transaction_at)}`,x.reason||"",`Witness: ${B().esc(worker(x.witnessed_by))}`)}).join("")||B().empty("No Schedule 8 stock transactions.");
+ q("#controlled-drug-list").innerHTML=ops.controlledDrugs.map(x=>{const med=B().state.medications.find(m=>m.id===x.medication_id);return card(med?.medication_name||"Schedule 8 medication",`${person(x.participant_id)} · ${x.transaction_type} · Balance ${x.balance} · ${B().fmt(x.transaction_at)}`,x.reason||"",`Witness: ${B().esc(worker(x.witnessed_by))} · ${x.recorded_pin_verified&&x.witness_pin_verified?"Dual PIN verified":"Legacy witness record"}`)}).join("")||B().empty("No Schedule 8 stock transactions.");
 }
 const WORK_TYPES=[
  "Participant support",
@@ -195,11 +195,28 @@ function bindForms(){
  ],async v=>{const {error}=await B().db.from("medication_incidents").insert({...v,medication_id:v.medication_id||null,organisation_id:B().profile.organisation_id,reported_by:B().profile.id,status:"Open"});if(error)throw error;await loadOperations();B().toast("Medication error recorded")});
  q("#add-controlled-drug").onclick=()=>form("Schedule 8 stock transaction",[
   field("participant_id","Participant","select",participantOptions()),
-  field("medication_id","Schedule 8 medication","select",B().state.medications.filter(m=>m.medication_type==="Schedule 8").map(m=>({value:m.id,label:m.medication_name+" · "+(m.participant?.full_name||"")}))),
-  field("transaction_type","Transaction","select",["Received","Administered","Destroyed","Adjustment","Count check"]),
+  field("medication_id","Schedule 8 medication","select",B().state.medications.filter(m=>String(m.medication_type||"").toLowerCase().replace(/[^a-z0-9]+/g,"")==="schedule8").map(m=>({value:m.id,label:m.medication_name+" · "+(m.participant?.full_name||"")}))),
+  field("transaction_type","Transaction","select",["Received","Destroyed","Adjustment","Count check"]),
   field("quantity","Quantity","number"),field("balance","Balance after transaction","number"),
-  field("witnessed_by","Witness","select",staffOptions().filter(x=>x.value!==B().profile.id)),field("reason","Reason or notes (optional)","textarea",[],false)
- ],async v=>{if(!v.witnessed_by)throw new Error("A second staff member must witness this Schedule 8 entry");const {error}=await B().db.from("controlled_drug_register").insert({...v,quantity:Number(v.quantity||0),balance:Number(v.balance),organisation_id:B().profile.organisation_id,recorded_by:B().profile.id,transaction_at:new Date().toISOString()});if(error)throw error;await loadOperations();B().toast("Witnessed Schedule 8 transaction saved")});
+  field("recorded_pin","Your personal 6-digit PIN","password"),
+  field("witnessed_by","Second authorised worker","select",staffOptions().filter(x=>x.value!==B().profile.id)),
+  field("witness_pin","Second worker’s personal 6-digit PIN","password"),
+  field("reason","Reason or notes (optional)","textarea",[],false)
+ ],async v=>{
+  if(!/^\d{6}$/.test(v.recorded_pin||""))throw new Error("Enter your own six-digit PIN");
+  if(!v.witnessed_by)throw new Error("Select the second worker witnessing this Schedule 8 transaction");
+  if(!/^\d{6}$/.test(v.witness_pin||""))throw new Error("The second worker must enter their own six-digit PIN");
+  const quantity=Number(v.quantity),balance=Number(v.balance);
+  if(!Number.isFinite(quantity)||quantity<0||(v.transaction_type!=="Count check"&&quantity===0))throw new Error("Enter a valid Schedule 8 quantity");
+  if(!Number.isFinite(balance)||balance<0)throw new Error("Enter the Schedule 8 balance after the transaction");
+  const {error}=await B().db.rpc("record_controlled_drug_transaction",{
+   p_participant_id:v.participant_id,p_medication_id:v.medication_id,
+   p_transaction_type:v.transaction_type,p_quantity:quantity,p_balance:balance,
+   p_reason:v.reason||null,p_pin:v.recorded_pin,
+   p_witness_id:v.witnessed_by,p_witness_pin:v.witness_pin
+  });
+  if(error)throw error;await loadOperations();B().toast("Dual-signed Schedule 8 transaction saved")
+ });
  document.querySelectorAll("#clock-in,#dashboard-clock-in").forEach(button=>button.onclick=openClockInForm);
  document.querySelectorAll("#clock-out,#dashboard-clock-out").forEach(button=>button.onclick=openClockOutForm);
  q("#add-leave").onclick=()=>form("Request leave",[field("starts_on","First day","date"),field("ends_on","Last day","date"),field("leave_type","Leave type","select",["Annual leave","Personal or carers leave","Unpaid leave","Other"]),field("reason","Notes (optional)","textarea",[],false)],async v=>{const {error}=await B().db.from("leave_requests").insert({...v,organisation_id:B().profile.organisation_id,staff_id:B().profile.id,status:"Pending"});if(error)throw error;await loadOperations();B().toast("Leave request submitted")});
