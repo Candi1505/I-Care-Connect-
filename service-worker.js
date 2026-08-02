@@ -1,5 +1,5 @@
-const CACHE="florence-shell-20260802-20";
-const CORE_FIX="./core-ui-fixes.js?v=20260802-1";
+const CACHE="florence-shell-20260802-21";
+const CORE_FIX="./core-ui-fixes-v2.js?v=20260802-2";
 const SHELL=["./","./index.html","./styles.css?v=20260801-1","./config.js","./app.js?v=20260802-1","./operations.js?v=20260802-1","./staff-management.js?v=20260801-1","./setup-code-display.js?v=20260802-4","./live-refresh-controls.js?v=20260802-2","./notification-navigation.js?v=20260802-2",CORE_FIX,"./portal-participant-label.js?v=20260802-2","./portal-care-plan.js?v=20260802-1","./medication-prn-fix.js?v=20260802-1","./regular-medication-tab.js?v=20260802-1","./florence-readiness-controls.js?v=20260802-1","./remote-s8-verification.js?v=20260802-1","./sil.html","./sil.css?v=20260731-1","./sil.js?v=20260801-4","./manifest.webmanifest","./florence-icon.svg"];
 self.addEventListener("install",event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener("activate",event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
@@ -8,11 +8,13 @@ async function withCoreFix(response){
  const type=response.headers.get("content-type")||"";
  if(!response.ok||!type.includes("text/html"))return response;
  const html=await response.text();
- if(html.includes("core-ui-fixes.js"))return new Response(html,{status:response.status,statusText:response.statusText,headers:response.headers});
+ if(html.includes("core-ui-fixes-v2.js"))return new Response(html,{status:response.status,statusText:response.statusText,headers:response.headers});
  const script=`<script src="${CORE_FIX}"></script>`;
  const injected=html.includes("</body>")?html.replace("</body>",`${script}</body>`):html+script;
  const headers=new Headers(response.headers);
- headers.set("content-length",String(new TextEncoder().encode(injected).length));
+ headers.delete("content-length");
+ headers.delete("content-encoding");
+ headers.set("cache-control","no-store");
  return new Response(injected,{status:response.status,statusText:response.statusText,headers});
 }
 
