@@ -1,69 +1,36 @@
 (()=>{
 "use strict";
-const B=()=>window.FlorenceBridge;
-const esc=value=>String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[char]));
+const q=s=>document.querySelector(s),qa=s=>[...document.querySelectorAll(s)],B=()=>window.FlorenceBridge;
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+const fmtDate=v=>v?new Intl.DateTimeFormat("en-AU",{day:"numeric",month:"short",year:"numeric"}).format(new Date(`${String(v).slice(0,10)}T12:00:00`)):"Not recorded";
 const isPortal=()=>["family","client"].includes(B()?.profile?.role);
-const fields=[["Communication needs","communication_needs"],["Diagnoses","diagnoses"],["Allergies","allergies"],["Goals","goals"],["Preferences","preferences"],["Risks and safeguards","risks_and_safeguards"],["Emergency contact","emergency_contact"],["Guardian or nominee","guardian_nominee"],["GP","gp"],["Pharmacy","pharmacy"]];
-const date=value=>value?new Intl.DateTimeFormat("en-AU",{day:"numeric",month:"short",year:"numeric"}).format(new Date(`${String(value).slice(0,10)}T12:00:00`)):"Not recorded";
-function render(participant){
- const portal=document.querySelector("#portal-view");
- if(!portal||!isPortal())return;
- let panel=document.querySelector("#portal-care-plan-panel");
- if(!panel){panel=document.createElement("article");panel.id="portal-care-plan-panel";panel.className="panel portal-care-plan";const layout=portal.querySelector(".portal-layout");(layout||portal).insertAdjacentElement("beforebegin",panel)}
- const name=participant?.preferred_name||participant?.full_name||"Participant";
- const available=fields.filter(([,key])=>String(participant?.[key]||"").trim());
- const approved=Boolean(participant?.care_plan_approved_at);
- panel.innerHTML=`<div class="panel-head"><div><p class="eyebrow">${approved?"Approved participant information":"Care plan summary"}</p><h3>${esc(name)}’s care plan</h3><p>This summary is taken from the current Florence participant profile. Contact I-Care Connect if anything needs updating.</p></div><span class="badge ${approved?"good":"amber"}">${approved?"Approved":"Approval pending"}</span></div><div class="record-meta care-plan-version"><span>Version ${Number(participant?.care_plan_version||1)}</span><span>Effective ${date(participant?.care_plan_effective_from)}</span><span>Review ${date(participant?.care_plan_review_date)}</span></div>${available.length?`<div class="care-plan-grid">${available.map(([label,key])=>`<section class="care-plan-item"><h4>${esc(label)}</h4><p>${esc(participant[key]).replace(/\n/g,"<br>")}</p></section>`).join("")}</div>`:'<div class="empty">The care plan summary has not been completed yet.</div>'}`;
-}
-async function load(){
+const careFields=[["Communication needs","communication_needs"],["Diagnoses","diagnoses"],["Allergies","allergies"],["Goals","goals"],["Preferences","preferences"],["Risks and safeguards","risks_and_safeguards"],["Emergency contact","emergency_contact"],["Guardian or nominee","guardian_nominee"],["GP","gp"],["Pharmacy","pharmacy"]];
+function toast(message){const b=B();if(b?.toast)return b.toast(message);const el=q("#toast");if(!el)return;el.textContent=message;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),2600)}
+async function loadCarePlan(){
  if(!isPortal())return;
- const bridge=B(),participantId=bridge?.profile?.participant_id;
- if(!participantId)return;
- const {data,error}=await bridge.db.from("participants").select("id,full_name,preferred_name,communication_needs,diagnoses,allergies,goals,preferences,risks_and_safeguards,emergency_contact,guardian_nominee,gp,pharmacy,care_plan_version,care_plan_effective_from,care_plan_review_date,care_plan_approved_at,care_plan_acknowledged_at").eq("id",participantId).single();
- if(error){console.warn("Florence care plan unavailable",error.message);return}
- render(data);
+ const b=B(),participantId=b?.profile?.participant_id;if(!b?.db||!participantId)return;
+ const {data,error}=await b.db.from("participants").select("id,full_name,preferred_name,communication_needs,diagnoses,allergies,goals,preferences,risks_and_safeguards,emergency_contact,guardian_nominee,gp,pharmacy,care_plan_version,care_plan_effective_from,care_plan_review_date,care_plan_approved_at").eq("id",participantId).single();
+ if(error||!data)return;
+ const portal=q("#portal-view");if(!portal)return;
+ let panel=q("#portal-care-plan-panel");
+ if(!panel){panel=document.createElement("article");panel.id="portal-care-plan-panel";panel.className="panel portal-care-plan";const layout=portal.querySelector(".portal-layout");(layout||portal).insertAdjacentElement("beforebegin",panel)}
+ const available=careFields.filter(([,key])=>String(data[key]||"").trim()),approved=Boolean(data.care_plan_approved_at),name=data.preferred_name||data.full_name||"Participant";
+ panel.innerHTML=`<div class="panel-head"><div><p class="eyebrow">${approved?"Approved participant information":"Care plan summary"}</p><h3>${esc(name)}’s care plan</h3><p>This summary is taken from the current Florence participant profile. Contact I-Care Connect if anything needs updating.</p></div><span class="badge ${approved?"good":"amber"}">${approved?"Approved":"Approval pending"}</span></div><div class="record-meta care-plan-version"><span>Version ${Number(data.care_plan_version||1)}</span><span>Effective ${fmtDate(data.care_plan_effective_from)}</span><span>Review ${fmtDate(data.care_plan_review_date)}</span></div>${available.length?`<div class="care-plan-grid">${available.map(([label,key])=>`<section class="care-plan-item"><h4>${esc(label)}</h4><p>${esc(data[key]).replace(/\n/g,"<br>")}</p></section>`).join("")}</div>`:'<div class="empty">The care plan summary has not been completed yet.</div>'}`;
 }
-function wait(){let tries=0;const timer=setInterval(()=>{if(B()?.profile||tries++>80){clearInterval(timer);if(B()?.profile)void load()}},250)}
-window.addEventListener("florence:ready",()=>void load(),{once:true});
-document.addEventListener("click",event=>{if(event.target.closest('[data-view="portal"]'))setTimeout(()=>void load(),50)});
-wait();
-const style=document.createElement("style");style.textContent=`.portal-care-plan{margin-bottom:20px}.care-plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.care-plan-item{padding:16px;border:1px solid rgba(95,143,114,.22);border-radius:16px;background:#f8fbf8}.care-plan-item h4{margin:0 0 8px;color:#29543c}.care-plan-item p{margin:0;white-space:normal;line-height:1.55}.care-plan-version{display:flex;gap:12px;flex-wrap:wrap;margin:0 0 16px}`;document.head.appendChild(style);
-})();
-
-(()=>{
-"use strict";
-const q=s=>document.querySelector(s);
-const qa=s=>[...document.querySelectorAll(s)];
-const bridge=()=>window.FlorenceBridge;
-function toast(message){const b=bridge();if(b?.toast)return b.toast(message);const el=q("#toast");if(!el)return;el.textContent=message;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),2600)}
 async function refreshFlorence(){toast("Refreshing Florence…");try{if("serviceWorker" in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(r=>r.update().catch(()=>null)))}if("caches" in window){const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith("florence-")).map(k=>caches.delete(k)))}}finally{const url=new URL(location.href);url.searchParams.set("florence_refresh",Date.now().toString());location.replace(url.toString())}}
 function addRefresh(){
  const topbar=q(".topbar");
- if(topbar&&!q("#refresh-florence")){
-  topbar.style.gridTemplateColumns="48px minmax(0,1fr) 48px 48px";
-  const button=document.createElement("button");button.id="refresh-florence";button.type="button";button.className="icon-btn";button.textContent="↻";button.title="Refresh Florence";button.setAttribute("aria-label","Refresh Florence");button.onclick=()=>void refreshFlorence();
-  const bell=q("#bell");bell?topbar.insertBefore(button,bell):topbar.appendChild(button);
- }
+ if(topbar&&!q("#refresh-florence")){topbar.style.gridTemplateColumns="48px minmax(0,1fr) 48px 48px";const button=document.createElement("button");button.id="refresh-florence";button.type="button";button.className="icon-btn";button.textContent="↻";button.title="Refresh Florence";button.setAttribute("aria-label","Refresh Florence");button.onclick=()=>void refreshFlorence();const bell=q("#bell");bell?topbar.insertBefore(button,bell):topbar.appendChild(button)}
  const drawer=q("#drawer");
- if(drawer&&!q("#refresh-florence-menu")){
-  const button=document.createElement("button");button.id="refresh-florence-menu";button.type="button";button.textContent="↻ Refresh Florence";button.onclick=()=>void refreshFlorence();
-  const logout=q("#logout");logout?drawer.insertBefore(button,logout):drawer.appendChild(button);
- }
+ if(drawer&&!q("#refresh-florence-menu")){const button=document.createElement("button");button.id="refresh-florence-menu";button.type="button";button.textContent="↻ Refresh Florence";button.onclick=()=>void refreshFlorence();const logout=q("#logout");logout?drawer.insertBefore(button,logout):drawer.appendChild(button)}
 }
 function forceView(view){
- const visibleTrigger=qa(`[data-view="${view}"]`).find(el=>!el.classList.contains("hidden"));
- visibleTrigger?.click();
- setTimeout(()=>{
-  const target=q(`#${view}-view`);
-  if(!target)return;
-  qa(".view").forEach(el=>el.classList.toggle("active",el===target));
-  qa("[data-view]").forEach(el=>el.classList.toggle("active",el.dataset.view===view));
-  window.scrollTo({top:0,behavior:"smooth"});
- },30);
+ const trigger=qa(`[data-view="${view}"]`).find(el=>!el.classList.contains("hidden"));trigger?.click();
+ setTimeout(()=>{const target=q(`#${view}-view`);if(!target)return;qa(".view").forEach(el=>el.classList.toggle("active",el===target));qa("[data-view]").forEach(el=>el.classList.toggle("active",el.dataset.view===view));window.scrollTo({top:0,behavior:"smooth"})},30);
 }
-function destination(category){
- const value=String(category||"").toLowerCase();
- if(/roster|shift/.test(value))return {view:"roster",hint:"Tap to open My shifts",after:()=>setTimeout(()=>q('[data-roster-tab="mine"]')?.click(),100)};
+function destination(item){
+ const value=`${item?.category||""} ${item?.title||""} ${item?.body||""}`.toLowerCase();
+ if(/roster|shift/.test(value))return {view:"roster",hint:"Tap to open My shifts",after:()=>setTimeout(()=>q('[data-roster-tab="mine"]')?.click(),120)};
  if(/incident|safety|complaint/.test(value))return {view:"safety",hint:"Tap to open Incidents & complaints"};
  if(/medication|mar|prn|schedule.?8/.test(value))return {view:"medications",hint:"Tap to open MAR"};
  if(/progress|note|documentation/.test(value))return {view:"notes",hint:"Tap to open Progress notes"};
@@ -74,39 +41,27 @@ function destination(category){
  return {view:"governance",hint:"Tap to open"};
 }
 async function bindNotifications(){
- const b=bridge(),list=q("#notification-list");if(!b?.db||!b?.profile||!list)return;
+ const b=B(),list=q("#notification-list");if(!b?.db||!b?.profile||!list)return;
  const {data,error}=await b.db.from("notifications").select("id,title,body,category,related_record_id,read_at,created_at").eq("recipient_id",b.profile.id).order("created_at",{ascending:false}).limit(100);if(error)return;
- [...list.children].forEach((card,index)=>{
-  const item=(data||[])[index];if(!item)return;
-  const dest=destination(item.category||item.title||item.body);
-  card.dataset.notificationId=item.id;
-  card.dataset.notificationBound="true";
-  card.style.cursor="pointer";card.tabIndex=0;card.setAttribute("role","button");
-  let hint=card.querySelector("[data-notification-open-label]")||card.querySelector(".record-meta:last-child");
-  if(!hint){hint=document.createElement("div");hint.className="record-meta";card.appendChild(hint)}
-  hint.dataset.notificationOpenLabel="true";hint.textContent=dest.hint;
-  card.__florenceNotification={item,dest};
- });
+ [...list.children].forEach((card,index)=>{const item=(data||[])[index];if(!item)return;const dest=destination(item);card.dataset.notificationId=item.id;card.style.cursor="pointer";card.tabIndex=0;card.setAttribute("role","button");let hint=card.querySelector("[data-notification-open-label]")||card.querySelector(".record-meta:last-child");if(!hint){hint=document.createElement("div");hint.className="record-meta";card.appendChild(hint)}hint.dataset.notificationOpenLabel="true";hint.textContent=dest.hint;card.__florenceNotification={item,dest}});
 }
 async function activateCard(card){
- const payload=card?.__florenceNotification;if(!payload)return;
- const {item,dest}=payload,b=bridge();
- try{
-  if(!item.read_at){const readAt=new Date().toISOString();const {error}=await b.db.from("notifications").update({read_at:readAt}).eq("id",item.id);if(error)throw error;item.read_at=readAt}
-  forceView(dest.view);dest.after?.();
- }catch(error){toast(error?.message||"Florence could not open this notification")}
+ const payload=card?.__florenceNotification,b=B();if(!payload||!b?.db)return;
+ try{const {item,dest}=payload;if(!item.read_at){const readAt=new Date().toISOString(),{error}=await b.db.from("notifications").update({read_at:readAt}).eq("id",item.id);if(error)throw error;item.read_at=readAt}forceView(dest.view);dest.after?.()}catch(error){toast(error?.message||"Florence could not open this notification")}
 }
+function cardFromEvent(list,target){if(!(target instanceof Node))return null;return [...list.children].find(card=>card===target||card.contains(target))||null}
 function start(){
- addRefresh();void bindNotifications();
- const list=q("#notification-list");
- if(list&&!list.__florenceBound){
-  const observer=new MutationObserver(()=>void bindNotifications());observer.observe(list,{childList:true});list.__florenceBound=true;
-  list.addEventListener("click",event=>{const card=event.target instanceof Element?event.target.closest(":scope > *"):null;if(!card)return;event.preventDefault();event.stopImmediatePropagation();void activateCard(card)},true);
-  list.addEventListener("keydown",event=>{if(!["Enter"," "].includes(event.key))return;const card=event.target instanceof Element?event.target.closest(":scope > *"):null;if(!card)return;event.preventDefault();event.stopImmediatePropagation();void activateCard(card)},true);
+ addRefresh();void loadCarePlan();void bindNotifications();const list=q("#notification-list");
+ if(list&&!list.__florenceTapBound){
+  list.__florenceTapBound=true;
+  new MutationObserver(()=>void bindNotifications()).observe(list,{childList:true});
+  list.addEventListener("click",event=>{const card=cardFromEvent(list,event.target);if(!card)return;event.preventDefault();event.stopImmediatePropagation();void activateCard(card)},true);
+  list.addEventListener("keydown",event=>{if(!["Enter"," "].includes(event.key))return;const card=cardFromEvent(list,event.target);if(!card)return;event.preventDefault();event.stopImmediatePropagation();void activateCard(card)},true);
  }
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});else start();
 window.addEventListener("florence:ready",start);window.addEventListener("pageshow",start);
-document.addEventListener("click",event=>{const target=event.target instanceof Element?event.target:null;if(target?.closest('[data-view="governance"]'))setTimeout(()=>void bindNotifications(),120)});
+document.addEventListener("click",event=>{const target=event.target instanceof Element?event.target:null;if(target?.closest('[data-view="portal"]'))setTimeout(()=>void loadCarePlan(),60);if(target?.closest('[data-view="governance"]'))setTimeout(()=>void bindNotifications(),120)});
 window.FlorenceRefresh=refreshFlorence;
+const style=document.createElement("style");style.textContent=`.portal-care-plan{margin-bottom:20px}.care-plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.care-plan-item{padding:16px;border:1px solid rgba(95,143,114,.22);border-radius:16px;background:#f8fbf8}.care-plan-item h4{margin:0 0 8px;color:#29543c}.care-plan-item p{margin:0;line-height:1.55}.care-plan-version{display:flex;gap:12px;flex-wrap:wrap;margin:0 0 16px}`;document.head.appendChild(style);
 })();
