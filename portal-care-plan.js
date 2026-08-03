@@ -33,6 +33,7 @@ const style=document.createElement("style");style.textContent=`.portal-care-plan
 (()=>{
 "use strict";
 const q=s=>document.querySelector(s);
+const qa=s=>[...document.querySelectorAll(s)];
 const bridge=()=>window.FlorenceBridge;
 function toast(message){const b=bridge();if(b?.toast)return b.toast(message);const el=q("#toast");if(!el)return;el.textContent=message;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),2600)}
 async function refreshFlorence(){toast("Refreshing Florence…");try{if("serviceWorker" in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(r=>r.update().catch(()=>null)))}if("caches" in window){const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith("florence-")).map(k=>caches.delete(k)))}}finally{const url=new URL(location.href);url.searchParams.set("florence_refresh",Date.now().toString());location.replace(url.toString())}}
@@ -49,18 +50,61 @@ function addRefresh(){
   const logout=q("#logout");logout?drawer.insertBefore(button,logout):drawer.appendChild(button);
  }
 }
+function forceView(view){
+ const visibleTrigger=qa(`[data-view="${view}"]`).find(el=>!el.classList.contains("hidden"));
+ visibleTrigger?.click();
+ setTimeout(()=>{
+  const target=q(`#${view}-view`);
+  if(!target)return;
+  qa(".view").forEach(el=>el.classList.toggle("active",el===target));
+  qa("[data-view]").forEach(el=>el.classList.toggle("active",el.dataset.view===view));
+  window.scrollTo({top:0,behavior:"smooth"});
+ },30);
+}
+function destination(category){
+ const value=String(category||"").toLowerCase();
+ if(/roster|shift/.test(value))return {view:"roster",hint:"Tap to open My shifts",after:()=>setTimeout(()=>q('[data-roster-tab="mine"]')?.click(),100)};
+ if(/incident|safety|complaint/.test(value))return {view:"safety",hint:"Tap to open Incidents & complaints"};
+ if(/medication|mar|prn|schedule.?8/.test(value))return {view:"medications",hint:"Tap to open MAR"};
+ if(/progress|note|documentation/.test(value))return {view:"notes",hint:"Tap to open Progress notes"};
+ if(/compliance|credential|document/.test(value))return {view:"compliance",hint:"Tap to open Compliance centre"};
+ if(/portal|family|request|message/.test(value))return {view:"portal",hint:"Tap to open Portal"};
+ if(/timeline|health|behaviour|fall/.test(value))return {view:"timeline",hint:"Tap to open Client timeline"};
+ if(/timesheet|clock|workforce/.test(value))return {view:"workforce",hint:"Tap to open Timesheets"};
+ return {view:"governance",hint:"Tap to open"};
+}
 async function bindNotifications(){
  const b=bridge(),list=q("#notification-list");if(!b?.db||!b?.profile||!list)return;
- const {data,error}=await b.db.from("notifications").select("id,category,related_record_id,read_at,created_at").eq("recipient_id",b.profile.id).order("created_at",{ascending:false}).limit(100);if(error)return;
+ const {data,error}=await b.db.from("notifications").select("id,title,body,category,related_record_id,read_at,created_at").eq("recipient_id",b.profile.id).order("created_at",{ascending:false}).limit(100);if(error)return;
  [...list.children].forEach((card,index)=>{
-  const item=(data||[])[index];if(!item||card.dataset.notificationBound==="true")return;
-  card.dataset.notificationBound="true";card.style.cursor="pointer";card.tabIndex=0;card.setAttribute("role","button");
-  const hint=document.createElement("div");hint.className="record-meta";hint.textContent=String(item.category||"").toLowerCase()==="roster"?"Tap to open My shifts":"Tap to open";card.appendChild(hint);
-  const open=async()=>{if(!item.read_at){await b.db.from("notifications").update({read_at:new Date().toISOString()}).eq("id",item.id)}if(String(item.category||"").toLowerCase()==="roster"){q('[data-view="roster"]')?.click();setTimeout(()=>q('[data-roster-tab="mine"]')?.click(),120)}};
-  card.addEventListener("click",()=>void open());card.addEventListener("keydown",event=>{if(!["Enter"," "].includes(event.key))return;event.preventDefault();void open()});
+  const item=(data||[])[index];if(!item)return;
+  const dest=destination(item.category||item.title||item.body);
+  card.dataset.notificationId=item.id;
+  card.dataset.notificationBound="true";
+  card.style.cursor="pointer";card.tabIndex=0;card.setAttribute("role","button");
+  let hint=card.querySelector("[data-notification-open-label]")||card.querySelector(".record-meta:last-child");
+  if(!hint){hint=document.createElement("div");hint.className="record-meta";card.appendChild(hint)}
+  hint.dataset.notificationOpenLabel="true";hint.textContent=dest.hint;
+  card.__florenceNotification={item,dest};
  });
 }
-function start(){addRefresh();void bindNotifications();const list=q("#notification-list");if(list&&!list.__florenceBound){const observer=new MutationObserver(()=>void bindNotifications());observer.observe(list,{childList:true});list.__florenceBound=true}}
+async function activateCard(card){
+ const payload=card?.__florenceNotification;if(!payload)return;
+ const {item,dest}=payload,b=bridge();
+ try{
+  if(!item.read_at){const readAt=new Date().toISOString();const {error}=await b.db.from("notifications").update({read_at:readAt}).eq("id",item.id);if(error)throw error;item.read_at=readAt}
+  forceView(dest.view);dest.after?.();
+ }catch(error){toast(error?.message||"Florence could not open this notification")}
+}
+function start(){
+ addRefresh();void bindNotifications();
+ const list=q("#notification-list");
+ if(list&&!list.__florenceBound){
+  const observer=new MutationObserver(()=>void bindNotifications());observer.observe(list,{childList:true});list.__florenceBound=true;
+  list.addEventListener("click",event=>{const card=event.target instanceof Element?event.target.closest(":scope > *"):null;if(!card)return;event.preventDefault();event.stopImmediatePropagation();void activateCard(card)},true);
+  list.addEventListener("keydown",event=>{if(!["Enter"," "].includes(event.key))return;const card=event.target instanceof Element?event.target.closest(":scope > *"):null;if(!card)return;event.preventDefault();event.stopImmediatePropagation();void activateCard(card)},true);
+ }
+}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});else start();
 window.addEventListener("florence:ready",start);window.addEventListener("pageshow",start);
 document.addEventListener("click",event=>{const target=event.target instanceof Element?event.target:null;if(target?.closest('[data-view="governance"]'))setTimeout(()=>void bindNotifications(),120)});
