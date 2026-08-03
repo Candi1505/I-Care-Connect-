@@ -10,6 +10,15 @@ function addRegularTab(){
  const prn=group.querySelector('[data-med-tab="PRN"]');
  group.insertBefore(button,prn||group.children[1]||null);
 }
+function loadRoster30Day(){
+ if([...document.scripts].some(script=>(script.getAttribute("src")||"").includes("roster-30-day.js")))return;
+ const script=document.createElement("script");
+ script.src="./roster-30-day.js?v=20260804-1";
+ script.defer=true;
+ script.dataset.florenceRuntime="roster-30-day.js";
+ document.head.appendChild(script);
+}
 addRegularTab();
-if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",addRegularTab,{once:true});
+loadRoster30Day();
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>{addRegularTab();loadRoster30Day()},{once:true});
 })();
