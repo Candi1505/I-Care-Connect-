@@ -19,6 +19,7 @@ EXPECTED_ASSETS = {
     "participant-edit-controls.js",
     "medication-prn-fix.js",
     "regular-medication-tab.js",
+    "roster-30-day.js",
     "florence-readiness-controls.js",
     "remote-s8-verification.js",
     "set-password.html",
@@ -52,6 +53,8 @@ config_js = (ROOT / "config.js").read_text(encoding="utf-8")
 worker_js = (ROOT / "service-worker.js").read_text(encoding="utf-8")
 remote_js = (ROOT / "remote-s8-verification.js").read_text(encoding="utf-8")
 participant_controls_js = (ROOT / "participant-edit-controls.js").read_text(encoding="utf-8")
+regular_tab_js = (ROOT / "regular-medication-tab.js").read_text(encoding="utf-8")
+roster_js = (ROOT / "roster-30-day.js").read_text(encoding="utf-8")
 
 assert "SUPABASE_SERVICE_ROLE_KEY" not in config_js
 assert "pushVapidPublicKey" in config_js
@@ -63,6 +66,10 @@ assert "remote-s8-verification.js" in worker_js
 assert "submit_remote_s8_verification" in remote_js
 assert "verify_remote_s8_entry" in remote_js
 assert "not physically witnessed" in remote_js
+assert "roster-30-day.js?v=20260804-1" in regular_tab_js
+assert "VIEW_DAYS=30" in roster_js
+assert "MAX_SHIFTS=45" in roster_js
+assert "Number of weekly shifts to create (1–45)" in roster_js
 assert 'self.addEventListener("push"' in worker_js
 assert 'self.addEventListener("notificationclick"' in worker_js
 
