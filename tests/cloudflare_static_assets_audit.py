@@ -16,6 +16,7 @@ EXPECTED_ASSETS = {
     "portal-participant-label.js",
     "push-notifications.js",
     "portal-care-plan.js",
+    "participant-edit-controls.js",
     "medication-prn-fix.js",
     "regular-medication-tab.js",
     "florence-readiness-controls.js",
@@ -49,8 +50,12 @@ assert not any(path.endswith((".sql", ".md", ".docx", ".pdf", ".zip")) for path 
 config_js=(ROOT/"config.js").read_text(encoding="utf-8")
 worker_js=(ROOT/"service-worker.js").read_text(encoding="utf-8")
 remote_js=(ROOT/"remote-s8-verification.js").read_text(encoding="utf-8")
+participant_controls_js=(ROOT/"participant-edit-controls.js").read_text(encoding="utf-8")
 assert "SUPABASE_SERVICE_ROLE_KEY" not in config_js
 assert "pushVapidPublicKey" in config_js
+assert "participant-edit-controls.js" in config_js
+assert "Edit participant" in participant_controls_js
+assert "Approve care plan" in participant_controls_js
 assert "remote-s8-verification.js" in config_js
 assert "remote-s8-verification.js" in worker_js
 assert "submit_remote_s8_verification" in remote_js
