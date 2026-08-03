@@ -171,3 +171,35 @@ document.addEventListener("click",event=>{
 });
 window.FlorenceRefresh=refreshFlorence;
 })();
+
+(()=>{
+"use strict";
+const q=(selector,root=document)=>root.querySelector(selector);
+const B=()=>window.FlorenceBridge;
+const keys=["full_name","preferred_name","date_of_birth","ndis_number","address","phone","emergency_contact","guardian_nominee","gp","pharmacy","communication_needs","diagnoses","allergies","goals","preferences","risks_and_safeguards"];
+function toast(message){const b=B();if(b?.toast)return b.toast(message);const el=q("#toast");if(!el)return;el.textContent=message;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),2800)}
+async function openEditor(){
+ const b=B();if(!b?.db||!b?.profile)throw new Error("Florence is still loading your secure account.");
+ if(b.profile.role!=="supervisor")throw new Error("Only supervisors can edit participant details.");
+ const participantId=q("#pf-select")?.value||q("#participant-file-select")?.value||"";if(!participantId)throw new Error("Choose a participant first.");
+ const {data:p,error}=await b.db.from("participants").select("*").eq("id",participantId).single();if(error||!p)throw error||new Error("Participant record not found.");
+ const f=b.field;
+ const fields=[f("full_name","Full legal name","text",[],true),f("preferred_name","Preferred name","text",[],false),f("date_of_birth","Date of birth","date",[],false),f("ndis_number","NDIS number","text",[],false),f("address","Residential address","textarea",[],false),f("phone","Participant phone","text",[],false),f("emergency_contact","Emergency contact details","textarea",[],false),f("guardian_nominee","Guardian or nominee","textarea",[],false),f("gp","GP / doctor details","textarea",[],false),f("pharmacy","Pharmacy details","textarea",[],false),f("communication_needs","Communication needs","textarea",[],false),f("diagnoses","Diagnoses","textarea",[],false),f("allergies","Allergies","textarea",[],false),f("goals","Goals","textarea",[],false),f("preferences","Preferences and routines","textarea",[],false),f("risks_and_safeguards","Risks and safeguards","textarea",[],false)];
+ const values=Object.fromEntries(keys.map(key=>[key,p[key]??""]));
+ b.form(`Edit ${p.preferred_name||p.full_name}`,fields,async values=>{
+  const payload={};for(const key of keys){const value=String(values[key]??"").trim();payload[key]=key==="date_of_birth"?(value||null):(value||null)}
+  if(!payload.full_name)throw new Error("Full legal name is required.");payload.updated_at=new Date().toISOString();
+  const {error:updateError}=await b.db.from("participants").update(payload).eq("id",participantId);if(updateError)throw updateError;
+  await b.refreshAll?.();setTimeout(()=>window.FlorenceRefresh?.(),500);return "Participant details updated";
+ },values);
+}
+function ensureEditButton(){
+ const b=B(),hero=q("#pf-content .pf-hero")||q("#participant-file-content .pf-hero")||q("#participant-file-content .participant-file-hero");if(!hero||!b?.profile)return;
+ const existing=q("#edit-participant-details",hero);if(b.profile.role!=="supervisor"){existing?.remove();return}if(existing)return;
+ const action=hero.lastElementChild||hero;const button=document.createElement("button");button.id="edit-participant-details";button.type="button";button.className="secondary pf-core-edit";button.textContent="Edit participant";
+ button.onclick=event=>{event.preventDefault();event.stopPropagation();button.disabled=true;void openEditor().catch(error=>toast(error?.message||"Florence could not open participant editing.")).finally(()=>button.disabled=false)};action.appendChild(button);
+}
+function startEdit(){ensureEditButton();const host=q("#pf-content")||q("#participant-file-content");if(host&&!host.__coreEditObserver){new MutationObserver(ensureEditButton).observe(host,{childList:true,subtree:true});host.__coreEditObserver=true}}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",startEdit,{once:true});else startEdit();window.addEventListener("florence:ready",startEdit);window.addEventListener("pageshow",startEdit);setInterval(startEdit,1000);
+const style=document.createElement("style");style.textContent='.pf-hero>div:last-child,.participant-file-hero>div:last-child{display:flex;flex-direction:column;align-items:flex-end;gap:10px}.pf-core-edit{background:#fff!important;color:#315d46!important;border-color:#fff!important;white-space:nowrap}';document.head.appendChild(style);
+})();
