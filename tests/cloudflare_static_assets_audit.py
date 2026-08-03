@@ -44,13 +44,15 @@ ignore_lines = [line.strip() for line in (ROOT / ".assetsignore").read_text(enco
 assert ignore_lines and ignore_lines[0] == "*"
 allowed = {line[1:] for line in ignore_lines if line.startswith("!")}
 assert allowed == EXPECTED_ASSETS, f"Cloudflare asset allowlist mismatch: {sorted(allowed ^ EXPECTED_ASSETS)}"
-for relative_path in sorted(EXPECTED_ASSETS): assert (ROOT / relative_path).is_file(), f"Allowed Cloudflare asset is missing: {relative_path}"
+for relative_path in sorted(EXPECTED_ASSETS):
+    assert (ROOT / relative_path).is_file(), f"Allowed Cloudflare asset is missing: {relative_path}"
 assert not any(path.endswith((".sql", ".md", ".docx", ".pdf", ".zip")) for path in allowed)
 
-config_js=(ROOT/"config.js").read_text(encoding="utf-8")
-worker_js=(ROOT/"service-worker.js").read_text(encoding="utf-8")
-remote_js=(ROOT/"remote-s8-verification.js").read_text(encoding="utf-8")
-participant_controls_js=(ROOT/"participant-edit-controls.js").read_text(encoding="utf-8")
+config_js = (ROOT / "config.js").read_text(encoding="utf-8")
+worker_js = (ROOT / "service-worker.js").read_text(encoding="utf-8")
+remote_js = (ROOT / "remote-s8-verification.js").read_text(encoding="utf-8")
+participant_controls_js = (ROOT / "participant-edit-controls.js").read_text(encoding="utf-8")
+
 assert "SUPABASE_SERVICE_ROLE_KEY" not in config_js
 assert "pushVapidPublicKey" in config_js
 assert "participant-edit-controls.js" in config_js
@@ -63,5 +65,17 @@ assert "verify_remote_s8_entry" in remote_js
 assert "not physically witnessed" in remote_js
 assert 'self.addEventListener("push"' in worker_js
 assert 'self.addEventListener("notificationclick"' in worker_js
-assert "html.replace" not in worker_js
+
+# Florence currently rewrites only same-origin HTML responses so the approved
+# runtime repair bundle is present on stale Home Screen installations. Audit the
+# exact safety boundaries rather than banning all string replacement.
+assert "async function withRuntimeFixes" in worker_js
+assert 'url.origin!==self.location.origin' in worker_js
+assert 'type.includes("text/html")' in worker_js
+assert 'headers.set("cache-control","no-store")' in worker_js
+assert 'url.pathname.endsWith("/set-password.html")' in worker_js
+assert "core-ui-fixes-v3.js" in worker_js
+assert "participant-actions-direct.js" not in worker_js
+assert not any(extension in worker_js for extension in (".sql\"", ".pdf\"", ".docx\"", ".zip\""))
+
 print(f"Cloudflare static-assets audit: PASS ({len(EXPECTED_ASSETS)} public runtime files)")
