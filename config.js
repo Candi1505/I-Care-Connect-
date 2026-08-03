@@ -242,6 +242,7 @@ window.FLORENCE_CONFIG = {
     "portal-participant-label.js?v=20260802-2",
     "portal-care-plan.js?v=20260803-2",
     "participant-file.js?v=20260803-1",
+    "secure-document-careplan-fix.js?v=20260803-1",
     "medication-prn-fix.js?v=20260802-1",
     "regular-medication-tab.js?v=20260802-1",
     "florence-readiness-controls.js?v=20260802-1",
