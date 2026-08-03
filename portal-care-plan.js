@@ -65,3 +65,14 @@ document.addEventListener("click",event=>{const target=event.target instanceof E
 window.FlorenceRefresh=refreshFlorence;
 const style=document.createElement("style");style.textContent=`.portal-care-plan{margin-bottom:20px}.care-plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.care-plan-item{padding:16px;border:1px solid rgba(95,143,114,.22);border-radius:16px;background:#f8fbf8}.care-plan-item h4{margin:0 0 8px;color:#29543c}.care-plan-item p{margin:0;line-height:1.55}.care-plan-version{display:flex;gap:12px;flex-wrap:wrap;margin:0 0 16px}`;document.head.appendChild(style);
 })();
+
+(()=>{
+ const load=()=>{
+  if([...document.scripts].some(script=>(script.getAttribute("src")||"").includes("participant-file.js")))return;
+  const script=document.createElement("script");
+  script.src=`participant-file.js?v=20260803-1`;
+  script.defer=true;
+  document.head.appendChild(script);
+ };
+ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",load,{once:true});else load();
+})();
