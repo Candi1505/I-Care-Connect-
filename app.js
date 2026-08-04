@@ -11,7 +11,7 @@ let xeroConnection={checked:false,connected:false,tenant_name:null};
 let state={staff:[],participants:[],shifts:[],medications:[],mar:[],notes:[],compliance:[],invoices:[],timeline:[],portalThreads:[],portalMessages:[]};
 const accessAuditTimes=new Map();
 
-function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),2500)}
+function toast(t){const e=$("#toast");if(!e)return;const message=String(t||"Florence could not complete that action.").replace(/\s+/g," ").trim();e.textContent=message.length>240?message.slice(0,237)+"…":message;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),3500)}
 function empty(t){return `<div class="empty">${esc(t)}</div>`}
 function badge(s){const c=/expired|declined|overdue|refused/i.test(s)?"red":/due|pending|draft|withheld/i.test(s)?"amber":/schedule 8/i.test(s)?"purple":"good";return `<span class="badge ${c}">${esc(s)}</span>`}
 function initials(n){return String(n||"?").split(/\s+/).map(x=>x[0]).slice(0,2).join("").toUpperCase()}
@@ -194,6 +194,16 @@ function startEnterApp(s){
  if(enterPromise){session=s;return enterPromise}
  enterPromise=enterApp(s).then(()=>{enteredUserId=s.user.id}).catch(async error=>{session=null;profile=null;organisation=null;enteredUserId=null;await db?.auth.signOut({scope:"local"}).catch(()=>{});throw error}).finally(()=>{enterPromise=null});
  return enterPromise;
+}
+async function ensureReady(){
+ if(profile?.organisation_id&&db)return profile;
+ if(!db)requireConfig();
+ const {data:{session:currentSession},error}=await db.auth.getSession();
+ if(error)throw error;
+ if(!currentSession)throw new Error("Your Florence session has expired. Sign in again securely.");
+ await startEnterApp(currentSession);
+ if(!profile?.organisation_id)throw new Error("Florence could not load your organisation. Sign out, then sign in again.");
+ return profile;
 }
 async function enterApp(s){
  session=s;
@@ -555,7 +565,9 @@ function renderFinance(){
  if(status)status.textContent=xeroConnection.connected?`Connected to ${xeroConnection.tenant_name||"Xero"}.`:xeroConnection.setupRequired?"Xero is prepared. VJ’s developer credentials and Supabase function deployment are required.":"Xero is not connected.";
  if(connect){connect.textContent=xeroConnection.connected?"Reconnect Xero":"Connect Xero";connect.disabled=!xeroConnection.checked}
  if(disconnect)disconnect.classList.toggle("hidden",!xeroConnection.connected);
- $("#invoice-list").innerHTML=state.invoices.map(i=>`<article class="record"><div class="record-top"><div><h3>${esc(i.invoice_number)}</h3><p>${esc(i.participant?.full_name)} · ${esc(i.description)}</p></div>${badge(i.status)}</div><p>${i.hours} hours × ${Number(i.rate).toFixed(2)} = <strong>${Number(i.total).toFixed(2)}</strong></p><div class="record-meta">${i.xero_invoice_id?badge("Synced to Xero"):xeroConnection.connected?`<button class="link" data-xero-invoice="${i.id}">Send draft to Xero</button>`:""}</div></article>`).join("")||empty("No invoices.");
+ const legacyInvoiceList=$("#invoice-list");
+ if(!legacyInvoiceList)return;
+ legacyInvoiceList.innerHTML=state.invoices.map(i=>`<article class="record"><div class="record-top"><div><h3>${esc(i.invoice_number)}</h3><p>${esc(i.participant?.full_name)} · ${esc(i.description)}</p></div>${badge(i.status)}</div><p>${i.hours} hours × ${Number(i.rate).toFixed(2)} = <strong>${Number(i.total).toFixed(2)}</strong></p><div class="record-meta">${i.xero_invoice_id?badge("Synced to Xero"):xeroConnection.connected?`<button class="link" data-xero-invoice="${i.id}">Send draft to Xero</button>`:""}</div></article>`).join("")||empty("No invoices.");
 }
 
 $("#login-form").onsubmit=async e=>{e.preventDefault();try{requireConfig();const {data,error}=await db.auth.signInWithPassword({email:$("#email").value.trim(),password:$("#password").value});if(error)throw error;await startEnterApp(data.session)}catch(err){toast(err.message)}};
@@ -755,7 +767,7 @@ if(disconnectXero)disconnectXero.onclick=async()=>{try{if(!confirm("Disconnect F
 $("#mar-outcome").onchange=()=>{$("#mar-reason-label").classList.toggle("required-reason",$("#mar-outcome").value!=="Administered");setS8DualSignoffVisibility()};
 window.FlorenceBridge={
  get db(){return db},get profile(){return profile},get organisation(){return organisation},get state(){return state},
- toast,form,field,showView,openDialog,closeDialog,esc,fmt,date,badge,empty,isSupervisor,isStaffUser,refreshAll,auditAccess
+ toast,form,field,showView,openDialog,closeDialog,esc,fmt,date,badge,empty,isSupervisor,isStaffUser,refreshAll,auditAccess,ensureReady
 };
 addEventListener("DOMContentLoaded",()=>void boot(),{once:true});
 })();
