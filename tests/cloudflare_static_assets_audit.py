@@ -50,14 +50,14 @@ assert "invoice_items" in invoice_js
 assert "Prepare email" in invoice_js
 assert "Print / save PDF" in invoice_js
 assert "invoicing-workspace.js" in regular_tab_js
-assert 'loadRuntime("invoicing-workspace.js","20260804-evelyn-1")' in regular_tab_js
-assert 'loadRuntime("invoice-menu-fix.js","20260804-evelyn-1")' in regular_tab_js
+assert 'loadRuntime("invoicing-workspace.js","20260804-pricing-1")' in regular_tab_js
+assert 'loadRuntime("invoice-menu-fix.js","20260804-pricing-1")' in regular_tab_js
 assert 'regular-medication-tab.js?v=20260804-7' in config_js
 assert 'regular-medication-tab.js?v=20260804-7' in worker_js
 assert "INVOICE_UI" in worker_js
-assert "invoicing-workspace.js?v=20260804-evelyn-1" in worker_js
-assert "invoicing-workspace.js?v=20260804-evelyn-1" in config_js
-assert "invoice-menu-fix.js?v=20260804-evelyn-1" in config_js
+assert "invoicing-workspace.js?v=20260804-pricing-1" in worker_js
+assert "invoicing-workspace.js?v=20260804-pricing-1" in config_js
+assert "invoice-menu-fix.js?v=20260804-pricing-1" in config_js
 assert "participant-edit-controls.js" in config_js
 assert "Edit participant" in participant_controls_js
 assert "Approve care plan" in participant_controls_js
