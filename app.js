@@ -5,6 +5,7 @@ const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const fmt=v=>new Intl.DateTimeFormat("en-AU",{day:"numeric",month:"short",year:"numeric",hour:"numeric",minute:"2-digit"}).format(new Date(v));
 const date=v=>v?new Intl.DateTimeFormat("en-AU",{day:"numeric",month:"short",year:"numeric"}).format(new Date(v)):"";
 const id=()=>crypto.randomUUID?.()||Date.now()+"-"+Math.random().toString(16).slice(2);
+const ACTIVITY_KEY="florence:last-activity";
 let db=null, session=null, profile=null, organisation=null, enterPromise=null, enteredUserId=null;
 let rosterTab="published",rosterWeekOffset=0,medTab="round",complianceTab="all",timelineFilter="all",portalFilter="active",pending=null,pendingMed=null,activePortalThread=null,marRoundParticipant="",marRoundDate="",marRoundName="Bedtime",marRoundSelections={};
 let xeroConnection={checked:false,connected:false,tenant_name:null};
@@ -99,7 +100,7 @@ async function boot(){
   if(s) await startEnterApp(s);
   db.auth.onAuthStateChange((_event,newSession)=>{
     if(newSession)setTimeout(()=>void startEnterApp(newSession).catch(error=>toast(error.message)),0);
-    if(!newSession&&session)location.reload();
+    if(!newSession&&session){localStorage.removeItem(ACTIVITY_KEY);location.reload()}
   });
   $("#connection-message").textContent="Secure sign-in ready.";
  }catch(err){toast(err.message)}
@@ -182,6 +183,7 @@ function verifyMfaFactor({factorId,title,message,qrCode="",uri=""}){
   };
   signOut.onclick=async()=>{
    signOut.disabled=true;
+   localStorage.removeItem(ACTIVITY_KEY);
    await db.auth.signOut({scope:"local"}).catch(()=>{});
    overlay.remove();reject(new Error("Signed out"));location.reload();
   };
@@ -192,18 +194,38 @@ function startEnterApp(s){
  if(!s)return Promise.resolve();
  if(profile&&enteredUserId===s.user.id){session=s;return Promise.resolve()}
  if(enterPromise){session=s;return enterPromise}
- enterPromise=enterApp(s).then(()=>{enteredUserId=s.user.id}).catch(async error=>{session=null;profile=null;organisation=null;enteredUserId=null;await db?.auth.signOut({scope:"local"}).catch(()=>{});throw error}).finally(()=>{enterPromise=null});
+ enterPromise=enterApp(s).then(()=>{enteredUserId=s.user.id}).catch(async error=>{session=null;profile=null;organisation=null;enteredUserId=null;localStorage.removeItem(ACTIVITY_KEY);await db?.auth.signOut({scope:"local"}).catch(()=>{});throw error}).finally(()=>{enterPromise=null});
  return enterPromise;
 }
 async function ensureReady(){
- if(profile?.organisation_id&&db)return profile;
  if(!db)requireConfig();
- const {data:{session:currentSession},error}=await db.auth.getSession();
+ let {data:{session:currentSession},error}=await db.auth.getSession();
  if(error)throw error;
  if(!currentSession)throw new Error("Your Florence session has expired. Sign in again securely.");
+ if(Number(currentSession.expires_at||0)*1000-Date.now()<120000){
+  const {data:refreshed,error:refreshError}=await db.auth.refreshSession();
+  if(refreshError||!refreshed?.session)throw new Error("Your Florence session has expired. Sign in again securely.");
+  currentSession=refreshed.session;
+ }
+ session=currentSession;
+ if(profile?.organisation_id&&enteredUserId===currentSession.user.id)return profile;
  await startEnterApp(currentSession);
  if(!profile?.organisation_id)throw new Error("Florence could not load your organisation. Sign out, then sign in again.");
  return profile;
+}
+async function secureRpc(functionName,parameters){
+ await ensureReady();
+ let result=await db.rpc(functionName,parameters);
+ if(result.error&&/permission denied for function|jwt expired|invalid jwt|not authenticated/i.test(result.error.message||"")){
+  const {data:refreshed,error:refreshError}=await db.auth.refreshSession();
+  if(refreshError||!refreshed?.session)throw new Error("Your Florence session expired while this form was open. Copy your note, then sign in again securely.");
+  session=refreshed.session;
+  const {data:aal}=await db.auth.mfa.getAuthenticatorAssuranceLevel();
+  if(aal?.currentLevel!=="aal2")await ensureMfa();
+  result=await db.rpc(functionName,parameters);
+ }
+ if(result.error&&/permission denied for function/i.test(result.error.message||""))throw new Error("Florence could not confirm your secure sign-in. Copy your note, sign out, then sign in again.");
+ return result;
 }
 async function enterApp(s){
  session=s;
@@ -570,9 +592,9 @@ function renderFinance(){
  legacyInvoiceList.innerHTML=state.invoices.map(i=>`<article class="record"><div class="record-top"><div><h3>${esc(i.invoice_number)}</h3><p>${esc(i.participant?.full_name)} · ${esc(i.description)}</p></div>${badge(i.status)}</div><p>${i.hours} hours × ${Number(i.rate).toFixed(2)} = <strong>${Number(i.total).toFixed(2)}</strong></p><div class="record-meta">${i.xero_invoice_id?badge("Synced to Xero"):xeroConnection.connected?`<button class="link" data-xero-invoice="${i.id}">Send draft to Xero</button>`:""}</div></article>`).join("")||empty("No invoices.");
 }
 
-$("#login-form").onsubmit=async e=>{e.preventDefault();try{requireConfig();const {data,error}=await db.auth.signInWithPassword({email:$("#email").value.trim(),password:$("#password").value});if(error)throw error;await startEnterApp(data.session)}catch(err){toast(err.message)}};
+$("#login-form").onsubmit=async e=>{e.preventDefault();try{requireConfig();const {data,error}=await db.auth.signInWithPassword({email:$("#email").value.trim(),password:$("#password").value});if(error)throw error;localStorage.setItem(ACTIVITY_KEY,String(Date.now()));await startEnterApp(data.session)}catch(err){toast(err.message)}};
 $("#forgot-password").onclick=async()=>{try{requireConfig();const email=$("#email").value.trim();if(!email)throw new Error("Enter your email first");const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:location.href});if(error)throw error;toast("Password reset email sent")}catch(err){toast(err.message)}};
-$("#menu").onclick=openDrawer;$("#scrim").onclick=closeDrawer;$("#logout").onclick=async()=>{await db.auth.signOut();location.reload()};$("#bell").onclick=()=>toast("Notifications are up to date");
+$("#menu").onclick=openDrawer;$("#scrim").onclick=closeDrawer;$("#logout").onclick=async()=>{localStorage.removeItem(ACTIVITY_KEY);await db.auth.signOut();location.reload()};$("#bell").onclick=()=>toast("Notifications are up to date");
 $$("[data-view]").forEach(b=>b.onclick=()=>showView(b.dataset.view));
 $$("[data-roster-tab]").forEach(b=>b.onclick=()=>{$$("[data-roster-tab]").forEach(x=>x.classList.toggle("active",x===b));rosterTab=b.dataset.rosterTab;renderRoster()});
 $$("[data-med-tab]").forEach(b=>b.onclick=()=>{$$("[data-med-tab]").forEach(x=>x.classList.toggle("active",x===b));medTab=b.dataset.medTab;renderMeds()});
@@ -629,7 +651,7 @@ $("#add-shift").onclick=()=>form("Create roster shift",[
  }
  const {error}=await db.from("shifts").insert(rows);if(error)throw error;await refreshAll();toast(count>1?`${count} recurring shifts created`:v.status==="Published"?"Shift published":"Draft saved")
 });
-$("#add-note").onclick=()=>form("Create progress note",[field("participant_id","Participant","select",state.participants.map(p=>({value:p.id,label:p.full_name}))),field("category","Note type","select",["Daily support","Personal care","Community access","Health","Communication","Goals and outcomes","Behaviour observation"]),field("content","What support was provided and what was the outcome?","textarea"),field("status","Save note as","select",["Final","Draft"]),`<label class="truth-declaration"><input name="declaration_confirmed" type="checkbox" value="true" required><span>I declare that the information I have recorded is true and correct.</span></label>`,field("progress_note_pin","Your personal 6-digit PIN","password")],async v=>{if(v.declaration_confirmed!=="true")throw new Error("Tick the declaration confirming your progress note is true and correct");if(!/^\d{6}$/.test(v.progress_note_pin||""))throw new Error("Enter your six-digit PIN");const {error}=await db.rpc("record_progress_note",{p_participant_id:v.participant_id,p_category:v.category,p_content:v.content,p_status:v.status,p_pin:v.progress_note_pin,p_declaration_confirmed:true});if(error)throw error;await refreshAll();toast("Progress note declared, PIN verified and saved")});
+$("#add-note").onclick=()=>form("Create progress note",[field("participant_id","Participant","select",state.participants.map(p=>({value:p.id,label:p.full_name}))),field("category","Note type","select",["Daily support","Personal care","Community access","Health","Communication","Goals and outcomes","Behaviour observation"]),field("content","What support was provided and what was the outcome?","textarea"),field("status","Save note as","select",["Final","Draft"]),`<label class="truth-declaration"><input name="declaration_confirmed" type="checkbox" value="true" required><span>I declare that the information I have recorded is true and correct.</span></label>`,field("progress_note_pin","Your personal 6-digit PIN","password")],async v=>{if(v.declaration_confirmed!=="true")throw new Error("Tick the declaration confirming your progress note is true and correct");if(!/^\d{6}$/.test(v.progress_note_pin||""))throw new Error("Enter your six-digit PIN");const {error}=await secureRpc("record_progress_note",{p_participant_id:v.participant_id,p_category:v.category,p_content:v.content,p_status:v.status,p_pin:v.progress_note_pin,p_declaration_confirmed:true});if(error)throw error;await refreshAll();toast("Progress note declared, PIN verified and saved")});
 $("#add-med").onclick=()=>form("Add medication profile",[
  field("participant_id","Participant","select",state.participants.map(p=>({value:p.id,label:p.full_name}))),
  field("medication_name","Medication name"),field("dose","Dose"),field("route","Route","select",["Oral","Topical","Inhaled","Subcutaneous","Other"]),
@@ -678,7 +700,7 @@ document.addEventListener("click",async e=>{
    for(const med of meds){
     const outcome=marRoundSelections[med.id];
     const notes=outcome==="Given"?null:`Round outcome: ${outcome}`;
-    const {error}=await db.rpc("record_medication_administration",{p_medication_id:med.id,p_pin:pin,p_status:map[outcome],p_notes:notes});
+    const {error}=await secureRpc("record_medication_administration",{p_medication_id:med.id,p_pin:pin,p_status:map[outcome],p_notes:notes});
     if(error)throw error;
    }
    marRoundSelections={};await refreshAll();return toast("Medication round signed and saved");
@@ -696,10 +718,10 @@ document.addEventListener("click",async e=>{
    $("#pin-summary").textContent=`${pendingMed.medication_name} · ${pendingMed.dose} for ${pendingMed.participant?.full_name}`;
    setS8DualSignoffVisibility();openDialog($("#pin-dialog"));return
   }
-  b=e.target.closest("[data-claim-shift]");if(b){const {error}=await db.rpc("claim_open_shift",{p_shift_id:b.dataset.claimShift});if(error)throw error;await refreshAll();return toast("Open shift claimed")}
+  b=e.target.closest("[data-claim-shift]");if(b){const {error}=await secureRpc("claim_open_shift",{p_shift_id:b.dataset.claimShift});if(error)throw error;await refreshAll();return toast("Open shift claimed")}
   b=e.target.closest("[data-cancel-shift]");if(b){const reason=prompt("Why is this shift being cancelled?");if(!reason)return;const {error}=await db.from("shifts").update({status:"Cancelled",cancellation_reason:reason,cancelled_at:new Date().toISOString()}).eq("id",b.dataset.cancelShift);if(error)throw error;await refreshAll();return toast("Shift cancelled")}
   b=e.target.closest("[data-publish]");if(b){const {error}=await db.from("shifts").update({status:"Published",response:"Pending",published_at:new Date().toISOString()}).eq("id",b.dataset.publish);if(error)throw error;await refreshAll();return toast("Shift published")}
-  b=e.target.closest("[data-shift-response]");if(b){const {error}=await db.rpc("respond_to_shift",{p_shift_id:b.dataset.shiftResponse,p_response:b.dataset.response});if(error)throw error;await refreshAll();return toast("Shift "+b.dataset.response.toLowerCase())}
+  b=e.target.closest("[data-shift-response]");if(b){const {error}=await secureRpc("respond_to_shift",{p_shift_id:b.dataset.shiftResponse,p_response:b.dataset.response});if(error)throw error;await refreshAll();return toast("Shift "+b.dataset.response.toLowerCase())}
   b=e.target.closest("[data-administer]");if(b){
    pendingMed=state.medications.find(x=>x.id===b.dataset.administer);
    if(!pendingMed)throw new Error("Medication profile not found");
@@ -750,7 +772,7 @@ $("#pin-form").onsubmit=async e=>{e.preventDefault();try{
   if(!Number.isFinite(s8Quantity)||s8Quantity<=0)throw new Error("Enter the Schedule 8 quantity removed from stock");
   if(!Number.isFinite(s8Balance)||s8Balance<0)throw new Error("Enter the Schedule 8 balance remaining after administration");
  }
- const {error}=await db.rpc("record_medication_administration",{
+ const {error}=await secureRpc("record_medication_administration",{
   p_medication_id:pendingMed.id,p_pin:pin,p_status:outcome,p_notes:notes,
   p_witness_id:witnessId,p_witness_pin:witnessPin,
   p_s8_quantity:dualRequired?s8Quantity:null,p_s8_balance:dualRequired?s8Balance:null
