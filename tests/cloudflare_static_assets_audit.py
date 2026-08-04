@@ -51,7 +51,7 @@ assert "Prepare email" in invoice_js
 assert "Print / save PDF" in invoice_js
 assert "invoicing-workspace.js" in regular_tab_js
 assert "INVOICE_UI" in worker_js
-assert "invoicing-workspace.js?v=20260804-2" in worker_js
+assert "invoicing-workspace.js?v=20260804-8" in worker_js
 assert "participant-edit-controls.js" in config_js
 assert "Edit participant" in participant_controls_js
 assert "Approve care plan" in participant_controls_js

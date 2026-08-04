@@ -78,7 +78,7 @@ require('app.js?v=20260802-1' in index, "index loads final app asset")
 require('operations.js?v=20260802-1' in index, "index loads final operations asset")
 require('sil.js?v=20260801-4' in sil_html, "SIL page loads final SIL asset")
 require('set-password.js?v=20260802-2' in set_password_html, "setup page loads its controlled asset")
-require('florence-shell-20260804-2' in service_worker, "service worker uses current cache namespace")
+require('florence-shell-20260804-9' in service_worker, "service worker uses current cache namespace")
 for marker in ['app.js?v=20260802-1', 'operations.js?v=20260802-1', 'sil.js?v=20260801-4']:
     require(marker in service_worker, f"service worker caches {marker}")
 require('url.pathname.endsWith("/set-password.html")' in service_worker, "service worker never stores setup-link HTML")

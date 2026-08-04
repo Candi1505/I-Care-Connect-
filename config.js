@@ -83,7 +83,7 @@ window.FLORENCE_CONFIG = {
     "participant-edit-controls.js?v=20260803-1",
     "medication-prn-fix.js?v=20260804-2",
     "regular-medication-tab.js?v=20260802-1",
-    "invoicing-workspace.js?v=20260804-1",
+    "invoicing-workspace.js?v=20260804-8",
     "florence-readiness-controls.js?v=20260802-1",
     "remote-s8-verification.js?v=20260802-1"
   ];
