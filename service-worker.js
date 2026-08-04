@@ -1,4 +1,4 @@
-const CACHE="florence-shell-20260804-10";
+const CACHE="florence-shell-20260804-recovery-1";
 const CORE_FIX="./core-ui-fixes-v3.js?v=20260804-1";
 const DEPUTY_UI="./deputy-integration.js?v=20260804-3";
 const INVOICE_UI="./invoicing-workspace.js?v=20260804-8";
