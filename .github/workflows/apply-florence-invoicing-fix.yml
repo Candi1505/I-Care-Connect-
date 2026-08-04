@@ -2,7 +2,7 @@ name: Apply Florence invoicing fix
 
 on:
   push:
-    branches: [fix/florence-ndis-invoicing]
+    branches: [main]
 
 permissions:
   contents: write
@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: fix/florence-ndis-invoicing
+          ref: main
       - name: Apply prepared invoicing changes
         shell: bash
         run: |
@@ -27,7 +27,7 @@ jobs:
               if n==s: print(f'No change: {path}')
               else: p.write_text(n,encoding='utf-8'); print(f'Updated: {path}')
 
-          edit('config.js', lambda s: s.replace('invoicing-workspace.js?v=20260804-1','invoicing-workspace.js?v=20260804-8'))
+          edit('config.js', lambda s: s.replace('invoicing-workspace.js?v=20260804-1','invoicing-workspace.js?v=20260804-8').replace('invoicing-workspace.js?v=20260804-7','invoicing-workspace.js?v=20260804-8'))
           edit('service-worker.js', lambda s: s.replace('florence-shell-20260804-8','florence-shell-20260804-9').replace('invoicing-workspace.js?v=20260804-7','invoicing-workspace.js?v=20260804-8').replace('app.js?v=20260802-1','app.js?v=20260804-2'))
           edit('index.html', lambda s: re.sub(r'<section id="finance-view" class="view">.*?<div id="invoice-list" class="stack"></div>\s*</section>', '<section id="finance-view" class="view">\n      <div class="page-head"><div><p class="eyebrow">Business billing</p><h2>NDIS invoicing</h2><p>Create, review, print and email NDIS invoices from Florence.</p></div></div>\n      <div id="invoice-list" class="stack"></div>\n    </section>', s, flags=re.S).replace('app.js?v=20260802-1','app.js?v=20260804-2'))
 
@@ -68,4 +68,4 @@ jobs:
           git add app.js config.js index.html invoicing-workspace.js service-worker.js tests/
           git diff --cached --quiet && exit 0
           git commit -m "Fix and secure Florence NDIS invoicing [skip invoicing workflow]"
-          git push origin HEAD:fix/florence-ndis-invoicing
+          git push origin HEAD:main
