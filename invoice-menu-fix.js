@@ -4,7 +4,7 @@ let attempts=0;
 function loadWorkspace(){
  if([...document.scripts].some(script=>(script.getAttribute("src")||"").includes("invoicing-workspace.js")))return;
  const script=document.createElement("script");
- script.src="./invoicing-workspace.js?v=20260804-evelyn-1";
+ script.src="./invoicing-workspace.js?v=20260804-pricing-1";
  script.defer=true;
  script.dataset.florenceRuntime="invoicing-workspace.js";
  document.head.appendChild(script);
