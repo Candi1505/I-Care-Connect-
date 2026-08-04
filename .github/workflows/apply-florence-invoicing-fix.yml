@@ -1,0 +1,71 @@
+name: Apply Florence invoicing fix
+
+on:
+  push:
+    branches: [fix/florence-ndis-invoicing]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: ${{ !contains(github.event.head_commit.message, '[skip invoicing workflow]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/florence-ndis-invoicing
+      - name: Apply prepared invoicing changes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          def edit(path, fn):
+              p=Path(path); s=p.read_text(encoding='utf-8'); n=fn(s)
+              if n==s: print(f'No change: {path}')
+              else: p.write_text(n,encoding='utf-8'); print(f'Updated: {path}')
+
+          edit('config.js', lambda s: s.replace('invoicing-workspace.js?v=20260804-1','invoicing-workspace.js?v=20260804-8'))
+          edit('service-worker.js', lambda s: s.replace('florence-shell-20260804-8','florence-shell-20260804-9').replace('invoicing-workspace.js?v=20260804-7','invoicing-workspace.js?v=20260804-8').replace('app.js?v=20260802-1','app.js?v=20260804-2'))
+          edit('index.html', lambda s: re.sub(r'<section id="finance-view" class="view">.*?<div id="invoice-list" class="stack"></div>\s*</section>', '<section id="finance-view" class="view">\n      <div class="page-head"><div><p class="eyebrow">Business billing</p><h2>NDIS invoicing</h2><p>Create, review, print and email NDIS invoices from Florence.</p></div></div>\n      <div id="invoice-list" class="stack"></div>\n    </section>', s, flags=re.S).replace('app.js?v=20260802-1','app.js?v=20260804-2'))
+
+          def app_fix(s):
+              s=s.replace('let xeroConnection={checked:false,connected:false,tenant_name:null};\n','')
+              s=re.sub(r'\n if\(isSupervisor\(\)\)\{\n  await loadXeroStatus\(\);\n  if\(new URL\(location\.href\)\.searchParams\.get\("xero"\)===\"connected\"\)\{toast\("Xero organisation connected"\);history\.replaceState\(\{\},\"\",location\.pathname\)\}\n \}','',s)
+              s=re.sub(r'\nasync function loadXeroStatus\(\)\{.*?\n\}\nfunction renderFinance\(\)\{.*?\n\}\n','\n',s,flags=re.S)
+              s=re.sub(r'\n\s*b=e\.target\.closest\("\[data-xero-invoice\]"\);if\(b\)\{.*?toast\("Invoice sent to Xero as a draft"\)\}','',s)
+              s=re.sub(r'\n\$\("#connect-xero"\)\.onclick=.*?\n\$\("#disconnect-xero"\)\.onclick=.*?;','',s)
+              return s
+          edit('app.js', app_fix)
+
+          def invoice_fix(s):
+              marker='<div class="page-head"><div><p class="eyebrow">Business billing</p><h2>NDIS invoicing</h2><p>Create invoices from Florence shifts, apply saved service templates and prepare professional invoices for email.</p></div><div class="actions"><button id="smart-invoice-new" class="primary">+ Create invoice</button><button id="smart-template-new" class="secondary">Service templates</button></div></div>'
+              notice='<article class="notice"><strong>Pricing safety</strong><br>NDIS support-item prices are maximum guidance, not automatic charges. Use the participant\'s service agreement and confirm price changes before invoicing. SCHADS rates are used only for internal staffing-cost checks.</article>'
+              if notice not in s: s=s.replace(marker, marker+'\n'+notice)
+              s=s.replace('if(btn){await b.db.from("invoices").update({status:"Paid",paid_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",btn.dataset.paidInvoice);toast("Invoice marked paid");return loadInvoices()}', 'if(btn){const {error:updateError}=await b.db.from("invoices").update({status:"Paid",paid_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",btn.dataset.paidInvoice);if(updateError)return toast(updateError.message);toast("Invoice marked paid");return loadInvoices()}')
+              old='function prepareEmail(){const email=q("#smart-recipient-email").value.trim(),subject=`Invoice ${q("#smart-number").value} from I-Care Connect`,body=`Hello ${q("#smart-recipient-name").value.trim()||""},\\n\\nPlease find the invoice details below. A PDF copy can be created using Print / save PDF in Florence.\\n\\n${invoiceText()}\\n\\nKind regards,\\nI-Care Connect`;location.href=`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`}'
+              new='async function prepareEmail(){const email=q("#smart-recipient-email").value.trim();if(!email)return toast("Enter the recipient\'s email address");const subject=`Invoice ${q("#smart-number").value} from I-Care Connect`,body=`Hello ${q("#smart-recipient-name").value.trim()||""},\\n\\nPlease find the invoice details below. A PDF copy can be created using Print / save PDF in Florence.\\n\\n${invoiceText()}\\n\\nKind regards,\\nI-Care Connect`;if(currentInvoice?.id){const b=B();const {error}=await b.db.from("invoice_email_log").insert({organisation_id:b.profile.organisation_id,invoice_id:currentInvoice.id,recipient_email:email,subject,delivery_method:"device_email",delivery_status:"prepared",sent_by:b.profile.id});if(error)return toast(error.message)}location.href=`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`}'
+              s=s.replace(old,new)
+              return s if s.endswith('\n') else s+'\n'
+          edit('invoicing-workspace.js', invoice_fix)
+
+          for path in ['tests/cloudflare_static_assets_audit.py','tests/florence_static_audit.py']:
+              edit(path, lambda s: s.replace('invoicing-workspace.js?v=20260804-2','invoicing-workspace.js?v=20260804-8').replace('app.js?v=20260802-1','app.js?v=20260804-2').replace('florence-shell-20260804-2','florence-shell-20260804-9'))
+          PY
+      - name: Validate Florence
+        run: |
+          node --check app.js
+          node --check config.js
+          node --check invoicing-workspace.js
+          python tests/florence_static_audit.py
+          python tests/cloudflare_static_assets_audit.py
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.js config.js index.html invoicing-workspace.js service-worker.js tests/
+          git diff --cached --quiet && exit 0
+          git commit -m "Fix and secure Florence NDIS invoicing [skip invoicing workflow]"
+          git push origin HEAD:fix/florence-ndis-invoicing
