@@ -20,7 +20,8 @@ function loadRuntime(path,version){
 }
 function loadFlorenceModules(){
  loadRuntime("roster-30-day.js","20260804-1");
- loadRuntime("deputy-integration.js","20260804-2");
+ loadRuntime("deputy-integration.js","20260804-3");
+ loadRuntime("deputy-permanent-token-ui-fix.js","20260804-1");
 }
 addRegularTab();
 loadFlorenceModules();
