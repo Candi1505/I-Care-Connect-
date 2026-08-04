@@ -75,7 +75,7 @@ window.FLORENCE_CONFIG = {
 
 (() => {
   const modules = [
-    "core-ui-fixes-v3.js?v=20260804-1",
+    "core-ui-fixes-v3.js?v=20260804-session-rpc-1",
     "deputy-integration.js?v=20260804-3",
     "setup-code-display.js?v=20260802-1",
     "portal-participant-label.js?v=20260802-2",
