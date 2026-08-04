@@ -1,10 +1,10 @@
-const CACHE="florence-shell-20260804-login-1";
+const CACHE="florence-shell-20260804-medication-1";
 const CORE_FIX="./core-ui-fixes-v3.js?v=20260804-1";
 const DEPUTY_UI="./deputy-integration.js?v=20260804-3";
 const INVOICE_UI="./invoicing-workspace.js?v=20260804-8";
 const INVOICE_LOADER="./invoice-menu-fix.js?v=20260804-6";
 const EVELYN_INVOICE_PRESETS="./evelyn-invoice-presets.js?v=20260804-1";
-const SHELL=["./","./index.html","./styles.css?v=20260801-1","./config.js?v=20260804-5","./app.js?v=20260804-login-1","./operations.js?v=20260802-1","./staff-management.js?v=20260801-1","./setup-code-display.js?v=20260802-4","./live-refresh-controls.js?v=20260802-2","./notification-navigation.js?v=20260802-2",CORE_FIX,DEPUTY_UI,INVOICE_UI,INVOICE_LOADER,EVELYN_INVOICE_PRESETS,"./core-ui-fixes-v2.js?v=20260804-1","./portal-participant-label.js?v=20260802-2","./portal-care-plan.js?v=20260803-2","./medication-prn-fix.js?v=20260804-2","./regular-medication-tab.js?v=20260804-5","./florence-readiness-controls.js?v=20260802-1","./remote-s8-verification.js?v=20260802-1","./sil.html","./sil.css?v=20260731-1","./sil.js?v=20260801-4","./manifest.webmanifest","./florence-icon.svg"];
+const SHELL=["./","./index.html","./styles.css?v=20260801-1","./config.js?v=20260804-5","./app.js?v=20260804-medication-1","./operations.js?v=20260802-1","./staff-management.js?v=20260801-1","./setup-code-display.js?v=20260802-4","./live-refresh-controls.js?v=20260802-2","./notification-navigation.js?v=20260802-2",CORE_FIX,DEPUTY_UI,INVOICE_UI,INVOICE_LOADER,EVELYN_INVOICE_PRESETS,"./core-ui-fixes-v2.js?v=20260804-1","./portal-participant-label.js?v=20260802-2","./portal-care-plan.js?v=20260803-2","./medication-prn-fix.js?v=20260804-2","./regular-medication-tab.js?v=20260804-6","./florence-readiness-controls.js?v=20260802-1","./remote-s8-verification.js?v=20260802-1","./sil.html","./sil.css?v=20260731-1","./sil.js?v=20260801-4","./manifest.webmanifest","./florence-icon.svg"];
 self.addEventListener("install",event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener("activate",event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 async function withRuntimeFixes(response){

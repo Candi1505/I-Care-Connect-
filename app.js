@@ -442,6 +442,11 @@ function renderMarRound(){
   ${cards||empty("No regular medications are scheduled for this participant and round.")}
   ${!allSigned&&meds.length?`<article class="panel mar-confirm"><h3>Confirm medication round</h3><p>You are confirming the correct participant, medication, dose, route, time and documentation.</p><label>Personal six-digit medication PIN<input id="mar-round-pin" type="password" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="off" placeholder="••••••"></label><button type="button" class="primary wide" id="confirm-mar-round">Confirm and sign round</button></article>`:""}
  `;
+ $$("[data-round-status]",$("#med-content")).forEach(button=>button.onclick=event=>{
+  event.preventDefault();event.stopPropagation();
+  marRoundSelections[button.dataset.medicationId]=button.dataset.roundStatus;
+  renderMarRound();
+ });
 }
 function renderMeds(){
  if(medTab==="round"){renderMarRound();return}
