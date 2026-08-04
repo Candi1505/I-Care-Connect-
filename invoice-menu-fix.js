@@ -1,12 +1,17 @@
 (()=>{
 "use strict";
+const WORKSPACE="./invoicing-workspace.js?v=20260804-10";
 let attempts=0;
-function loadWorkspace(){
- if([...document.scripts].some(script=>(script.getAttribute("src")||"").includes("invoicing-workspace.js")))return;
+function workspaceReady(){return Boolean(document.querySelector("#smart-invoice-new")&&document.querySelector("#smart-template-new"));}
+function loadWorkspace(force=false){
+ if(workspaceReady())return;
+ const loaded=[...document.scripts].some(script=>(script.getAttribute("src")||"").includes("invoicing-workspace.js?v=20260804-10"));
+ if(loaded&&!force)return;
  const script=document.createElement("script");
- script.src="./invoicing-workspace.js?v=20260804-6";
- script.defer=true;
+ script.src=force?`${WORKSPACE}&retry=${Date.now()}`:WORKSPACE;
+ script.async=false;
  script.dataset.florenceRuntime="invoicing-workspace.js";
+ script.onload=()=>window.dispatchEvent(new CustomEvent("florence:ready"));
  document.head.appendChild(script);
 }
 function apply(){
@@ -15,27 +20,20 @@ function apply(){
  const view=document.querySelector("#finance-view");
  if(view){
   view.querySelectorAll(".xero-card,#connect-xero,#disconnect-xero").forEach(element=>element.remove());
-  const heading=view.querySelector("h2");
-  if(heading)heading.textContent="NDIS invoicing";
-  const intro=view.querySelector(".page-head p:not(.eyebrow)");
-  if(intro)intro.textContent="Create, review, print and email NDIS invoices from Florence.";
+  const heading=view.querySelector("h2");if(heading)heading.textContent="NDIS invoicing";
+  const intro=view.querySelector(".page-head p:not(.eyebrow)");if(intro)intro.textContent="Create, review, print and email NDIS invoices from Florence.";
  }
- loadWorkspace();
+ if(!workspaceReady())loadWorkspace(attempts===8||attempts===20);
 }
 function start(){
- apply();
- attempts=0;
+ attempts=0;apply();
  const timer=setInterval(()=>{
-  attempts+=1;
-  apply();
-  const ready=document.querySelector("#invoice-summary")||document.querySelector("#invoice-new");
-  if(ready||attempts>=20)clearInterval(timer);
+  attempts+=1;apply();
+  if(workspaceReady()||attempts>=40)clearInterval(timer);
  },250);
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});else start();
 window.addEventListener("pageshow",start);
-document.addEventListener("click",event=>{
- const target=event.target instanceof Element?event.target:null;
- if(target?.closest('[data-view="finance"]'))setTimeout(start,50);
-});
+window.addEventListener("florence:ready",()=>setTimeout(start,0));
+document.addEventListener("click",event=>{const target=event.target instanceof Element?event.target:null;if(target?.closest('[data-view="finance"]'))setTimeout(start,50)});
 })();
