@@ -27,28 +27,38 @@ window.FLORENCE_CONFIG = {
   const api = window.supabase;
   if (!api?.createClient || api.__florenceRegionPinned) return;
   const createClient = api.createClient.bind(api);
+  let sharedFlorenceClient = null;
   api.createClient = (url, key, options = {}) => {
     const supplied = options && typeof options === "object" ? options : {};
     const suppliedAuth = supplied.auth && typeof supplied.auth === "object" ? supplied.auth : {};
+    const authOptions = {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      storage: window.localStorage,
+      storageKey: "florence-auth-session",
+      ...suppliedAuth
+    };
+    const isFlorenceClient = url === window.FLORENCE_CONFIG.supabaseUrl
+      && key === window.FLORENCE_CONFIG.supabaseAnonKey
+      && authOptions.storageKey === "florence-auth-session";
+    if (isFlorenceClient && sharedFlorenceClient) return sharedFlorenceClient;
     const client = createClient(url, key, {
       ...supplied,
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-        storage: window.localStorage,
-        storageKey: "florence-auth-session",
-        ...suppliedAuth
-      }
+      auth: authOptions
     });
     const functions = client?.functions;
-    if (!functions?.invoke || functions.__florenceRegionPinned) return client;
+    if (!functions?.invoke || functions.__florenceRegionPinned) {
+      if (isFlorenceClient) sharedFlorenceClient = client;
+      return client;
+    }
     const invoke = functions.invoke.bind(functions);
     functions.invoke = (functionName, invokeOptions = {}) => {
       const safeOptions = invokeOptions && typeof invokeOptions === "object" ? invokeOptions : {};
       return invoke(functionName, {...safeOptions, region: safeOptions.region || window.FLORENCE_CONFIG.functionRegion});
     };
     functions.__florenceRegionPinned = true;
+    if (isFlorenceClient) sharedFlorenceClient = client;
     return client;
   };
   api.__florenceRegionPinned = true;

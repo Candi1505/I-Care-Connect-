@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-title" content="Florence">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="florence-icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="florence-icon.svg">
+  <link rel="apple-touch-icon" href="florence-icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
@@ -36,9 +36,9 @@
 
 <div id="app" class="hidden">
   <header class="topbar">
-    <button id="menu" class="icon-btn">☰</button>
+    <button id="menu" class="icon-btn" type="button" aria-label="Open navigation menu" title="Open navigation menu">☰</button>
     <div><h1>Florence</h1><p id="role-label">Supervisor workspace</p></div>
-    <button id="bell" class="icon-btn">🔔</button>
+    <button id="bell" class="icon-btn" type="button" aria-label="Open notifications" title="Open notifications">🔔</button>
   </header>
 
   <aside id="drawer" class="drawer">
@@ -277,7 +277,7 @@
 
 <dialog id="dialog">
   <form id="dynamic-form">
-    <div class="dialog-head"><div><p class="eyebrow">Florence</p><h3 id="dialog-title"></h3></div><button type="button" id="close-dialog" class="icon-btn dark">×</button></div>
+    <div class="dialog-head"><div><p class="eyebrow">Florence</p><h3 id="dialog-title"></h3></div><button type="button" id="close-dialog" class="icon-btn dark" aria-label="Close form" title="Close form">×</button></div>
     <div id="dialog-fields" class="fields"></div>
     <div id="dialog-status" class="form-status hidden" role="alert"></div>
     <div class="dialog-actions"><button type="button" id="cancel-dialog" class="secondary">Cancel</button><button type="submit" class="primary">Save</button></div>
@@ -286,7 +286,7 @@
 
 <dialog id="pin-dialog">
   <form id="pin-form">
-    <div class="dialog-head"><div><p class="eyebrow">Digital medication signature</p><h3>Sign MAR entry</h3></div><button type="button" id="close-pin" class="icon-btn dark">×</button></div>
+    <div class="dialog-head"><div><p class="eyebrow">Digital medication signature</p><h3>Sign MAR entry</h3></div><button type="button" id="close-pin" class="icon-btn dark" aria-label="Close medication signature" title="Close medication signature">×</button></div>
     <p id="pin-summary"></p>
     <label>Outcome
       <select id="mar-outcome" required>

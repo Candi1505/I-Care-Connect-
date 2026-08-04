@@ -21,4 +21,11 @@ create table if not exists public.xero_oauth_states (
 alter table public.xero_connections enable row level security;
 alter table public.xero_oauth_states enable row level security;
 -- These tables are intentionally service-role only. The Edge Function is the security boundary.
+revoke all on table public.xero_connections from public, anon, authenticated;
+revoke all on table public.xero_oauth_states from public, anon, authenticated;
+grant all on table public.xero_connections to service_role;
+grant all on table public.xero_oauth_states to service_role;
+create index if not exists xero_connections_connected_by_idx on public.xero_connections(connected_by);
 create index if not exists xero_oauth_states_expires_idx on public.xero_oauth_states(expires_at);
+create index if not exists xero_oauth_states_organisation_idx on public.xero_oauth_states(organisation_id);
+create index if not exists xero_oauth_states_user_idx on public.xero_oauth_states(user_id);

@@ -23,14 +23,26 @@
       "url": "./sil.html",
       "icons": [
         {
-          "src": "florence-icon.svg",
-          "sizes": "any",
-          "type": "image/svg+xml"
+          "src": "florence-icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     }
   ],
   "icons": [
+    {
+      "src": "florence-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "florence-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
     {
       "src": "florence-icon.svg",
       "sizes": "any",
