@@ -1,7 +1,12 @@
 (()=>{
 "use strict";
 const WORKSPACE="./invoicing-workspace.js?v=20260804-10";
+const LOGIN_RECOVERY="./login-recovery.js?v=20260804-1";
 let attempts=0;
+function ensureLoginRecovery(){
+ if([...document.scripts].some(script=>(script.getAttribute("src")||"").includes("login-recovery.js")))return;
+ const script=document.createElement("script");script.src=LOGIN_RECOVERY;script.async=false;document.head.appendChild(script);
+}
 function workspaceReady(){return Boolean(document.querySelector("#smart-invoice-new")&&document.querySelector("#smart-template-new"));}
 function loadWorkspace(force=false){
  if(workspaceReady())return;
@@ -15,6 +20,7 @@ function loadWorkspace(force=false){
  document.head.appendChild(script);
 }
 function apply(){
+ ensureLoginRecovery();
  const button=document.querySelector('[data-view="finance"]');
  if(button)button.textContent="💳 NDIS invoicing";
  const view=document.querySelector("#finance-view");
