@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: Check out Florence
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Run ZAP baseline
         uses: zaproxy/action-baseline@v0.15.0
