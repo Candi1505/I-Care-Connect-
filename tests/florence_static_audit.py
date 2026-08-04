@@ -74,12 +74,12 @@ config = text("config.js")
 require("@supabase/supabase-js@2.106.2" in index, "index pins Supabase JS 2.106.2")
 require("@supabase/supabase-js@2.106.2" in sil_html, "sil.html pins Supabase JS 2.106.2")
 require("@supabase/supabase-js" not in set_password_html, "setup page does not create a browser Supabase session")
-require('app.js?v=20260802-1' in index, "index loads final app asset")
+require('app.js?v=20260804-login-1' in index, "index loads login-safe app asset")
 require('operations.js?v=20260802-1' in index, "index loads final operations asset")
 require('sil.js?v=20260801-4' in sil_html, "SIL page loads final SIL asset")
 require('set-password.js?v=20260802-2' in set_password_html, "setup page loads its controlled asset")
-require('florence-shell-20260804-9' in service_worker, "service worker uses current cache namespace")
-for marker in ['app.js?v=20260802-1', 'operations.js?v=20260802-1', 'sil.js?v=20260801-4']:
+require('florence-shell-20260804-login-1' in service_worker, "service worker uses current cache namespace")
+for marker in ['app.js?v=20260804-login-1', 'operations.js?v=20260802-1', 'sil.js?v=20260801-4']:
     require(marker in service_worker, f"service worker caches {marker}")
 require('url.pathname.endsWith("/set-password.html")' in service_worker, "service worker never stores setup-link HTML")
 require('/set-password.html\n  Cache-Control: no-store, max-age=0' in headers, "setup page is marked no-store")
@@ -98,6 +98,13 @@ for path in browser_paths:
 
 # Portal least privilege.
 app = text("app.js")
+index_parser = IdParser()
+index_parser.feed(index)
+index_ids = set(index_parser.ids)
+direct_handler_ids = set(re.findall(r'\$\("#([A-Za-z0-9_-]+)"\)\.(?:onclick|onsubmit|onchange)\s*=', app))
+missing_handler_ids = sorted(direct_handler_ids - index_ids)
+require(not missing_handler_ids, f"app.js direct event handlers have matching index elements: {missing_handler_ids}")
+require('addEventListener("DOMContentLoaded",()=>void boot(),{once:true})' in app, "app.js reaches the authenticated boot entrypoint")
 contains(
     "app.js",
     'if(isPortalUser()&&v!=="portal")v="portal"',
