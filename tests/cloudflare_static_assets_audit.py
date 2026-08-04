@@ -10,7 +10,7 @@ EXPECTED_ASSETS = {
     "push-notifications.js", "portal-care-plan.js", "participant-edit-controls.js",
     "medication-prn-fix.js", "regular-medication-tab.js", "roster-30-day.js",
     "deputy-integration.js", "deputy-permanent-token-ui-fix.js",
-    "invoicing-workspace.js", "florence-readiness-controls.js",
+    "invoicing-workspace.js", "invoice-menu-fix.js", "florence-readiness-controls.js",
     "remote-s8-verification.js", "set-password.html", "set-password.js",
     "sil.html", "sil.css", "sil.js", "service-worker.js", "manifest.webmanifest",
     "florence-icon.svg", "_headers", "robots.txt",
@@ -40,6 +40,7 @@ roster_js = (ROOT / "roster-30-day.js").read_text(encoding="utf-8")
 deputy_js = (ROOT / "deputy-integration.js").read_text(encoding="utf-8")
 deputy_token_ui_js = (ROOT / "deputy-permanent-token-ui-fix.js").read_text(encoding="utf-8")
 invoice_js = (ROOT / "invoicing-workspace.js").read_text(encoding="utf-8")
+invoice_menu_js = (ROOT / "invoice-menu-fix.js").read_text(encoding="utf-8")
 
 assert "SUPABASE_SERVICE_ROLE_KEY" not in config_js
 assert "pushVapidPublicKey" in config_js
@@ -50,6 +51,8 @@ assert "SCHADS rates are used only for internal staffing-cost checks" in invoice
 assert "invoice_items" in invoice_js
 assert "Prepare email" in invoice_js
 assert "Print / save PDF" in invoice_js
+assert "NDIS invoicing" in invoice_menu_js
+assert "invoice-menu-fix.js" in regular_tab_js
 assert "participant-edit-controls.js" in config_js
 assert "Edit participant" in participant_controls_js
 assert "Approve care plan" in participant_controls_js
