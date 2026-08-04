@@ -50,6 +50,8 @@ assert "invoice_items" in invoice_js
 assert "Prepare email" in invoice_js
 assert "Print / save PDF" in invoice_js
 assert "invoicing-workspace.js" in regular_tab_js
+assert 'regular-medication-tab.js?v=20260804-6' in config_js
+assert 'regular-medication-tab.js?v=20260804-6' in worker_js
 assert "INVOICE_UI" in worker_js
 assert "invoicing-workspace.js?v=20260804-8" in worker_js
 assert "participant-edit-controls.js" in config_js
