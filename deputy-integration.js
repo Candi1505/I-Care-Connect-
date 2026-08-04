@@ -4,32 +4,57 @@ const B=()=>window.FlorenceBridge;
 const q=(selector,root=document)=>root.querySelector(selector);
 let loading=false;
 
-function ensurePanel(){
+function ensurePage(){
  const bridge=B();
  if(!bridge?.profile||bridge.profile.role!=="supervisor")return null;
- const host=q("#my-account-view")||q("#finance-view")||q("#dashboard-view");
- if(!host)return null;
- let panel=q("#deputy-integration-panel");
- if(panel)return panel;
- panel=document.createElement("article");
- panel.id="deputy-integration-panel";
- panel.className="panel admin-only";
- panel.innerHTML=`
-  <div class="panel-head">
-   <div><p class="eyebrow">Workforce integration</p><h3>Deputy</h3><p id="deputy-integration-message">Checking the secure Deputy connection…</p></div>
-   <span id="deputy-integration-status" class="badge amber">Checking…</span>
-  </div>
-  <div id="deputy-integration-details" class="record-meta hidden"></div>
-  <div class="actions">
-   <button id="connect-deputy" type="button" class="primary">Connect Deputy</button>
-   <button id="refresh-deputy-status" type="button" class="secondary">Refresh status</button>
-  </div>
-  <p class="record-meta">Florence will use Deputy for workforce scheduling and timesheet exchange. Participant care records, MAR, progress notes and clinical information remain in Florence.</p>`;
- const heading=host.querySelector(".page-head");
- heading?.insertAdjacentElement("afterend",panel) || host.prepend(panel);
- q("#connect-deputy",panel).onclick=()=>void startConnection();
- q("#refresh-deputy-status",panel).onclick=()=>void loadStatus();
- return panel;
+ const drawer=q("#drawer"),main=q("#app main");
+ if(!drawer||!main)return null;
+
+ let menu=q('[data-view="deputy"]',drawer);
+ if(!menu){
+  menu=document.createElement("button");
+  menu.type="button";
+  menu.className="admin-only";
+  menu.dataset.view="deputy";
+  menu.innerHTML="🧑‍💼 Deputy integration";
+  const finance=q('[data-view="finance"]',drawer);
+  finance?.insertAdjacentElement("afterend",menu) || drawer.appendChild(menu);
+  menu.onclick=()=>{bridge.showView("deputy");setTimeout(()=>void loadStatus(),50)};
+ }
+
+ let view=q("#deputy-view");
+ if(!view){
+  view=document.createElement("section");
+  view.id="deputy-view";
+  view.className="view";
+  view.innerHTML=`
+   <div class="page-head">
+    <div><p class="eyebrow">Workforce integration</p><h2>Deputy</h2><p>Connect I-Care Connect’s Deputy account for secure worker, roster and timesheet syncing.</p></div>
+   </div>
+   <article id="deputy-integration-panel" class="panel admin-only">
+    <div class="panel-head">
+     <div><p class="eyebrow">Secure connection</p><h3>Deputy account</h3><p id="deputy-integration-message">Checking the secure Deputy connection…</p></div>
+     <span id="deputy-integration-status" class="badge amber">Checking…</span>
+    </div>
+    <div id="deputy-integration-details" class="record-meta hidden"></div>
+    <div class="actions">
+     <button id="connect-deputy" type="button" class="primary">Connect Deputy</button>
+     <button id="refresh-deputy-status" type="button" class="secondary">Refresh status</button>
+    </div>
+   </article>
+   <article class="panel">
+    <div class="panel-head"><div><p class="eyebrow">Integration plan</p><h3>What Deputy will manage</h3></div></div>
+    <div class="grid two">
+     <div class="notice"><strong>Deputy workforce records</strong><br>Worker matching, published rosters, shift responses, clock-in and approved timesheets.</div>
+     <div class="notice"><strong>Florence care records</strong><br>Participant files, MAR, progress notes, incidents, care plans and clinical information remain only in Florence.</div>
+    </div>
+    <p class="record-meta">Connecting Deputy does not send participant diagnoses, medications, progress notes or care-plan content to Deputy.</p>
+   </article>`;
+  main.appendChild(view);
+  q("#connect-deputy",view).onclick=()=>void startConnection();
+  q("#refresh-deputy-status",view).onclick=()=>void loadStatus();
+ }
+ return view;
 }
 
 function setBusy(busy){
@@ -54,9 +79,9 @@ async function invoke(action){
 
 async function loadStatus(){
  if(loading)return;
- const panel=ensurePanel();if(!panel)return;
+ const view=ensurePage();if(!view)return;
  setBusy(true);
- const status=q("#deputy-integration-status",panel),message=q("#deputy-integration-message",panel),details=q("#deputy-integration-details",panel),connect=q("#connect-deputy",panel);
+ const status=q("#deputy-integration-status",view),message=q("#deputy-integration-message",view),details=q("#deputy-integration-details",view),connect=q("#connect-deputy",view);
  try{
   const result=await invoke("status");
   if(result.connected&&result.connection){
@@ -68,7 +93,7 @@ async function loadStatus(){
    connect.textContent="Reconnect Deputy";
   }else{
    status.textContent="Not connected";status.className="badge amber";
-   message.textContent="Connect I-Care Connect’s Deputy account to prepare secure worker, roster and timesheet syncing.";
+   message.textContent="Connect I-Care Connect’s Deputy account to prepare secure workforce syncing.";
    details.textContent="";details.classList.add("hidden");connect.textContent="Connect Deputy";
   }
  }catch(error){
@@ -91,18 +116,22 @@ async function startConnection(){
 function handleReturn(){
  const url=new URL(location.href),result=url.searchParams.get("deputy");
  if(!result)return;
- if(result==="connected")B()?.toast("Deputy connected securely");
- else B()?.toast("Deputy connection was not completed");
+ ensurePage();
+ if(result==="connected"){
+  B()?.toast("Deputy connected securely");
+  B()?.showView("deputy");
+  setTimeout(()=>void loadStatus(),80);
+ }else B()?.toast("Deputy connection was not completed");
  url.searchParams.delete("deputy");url.searchParams.delete("reason");
  history.replaceState({},"",url.pathname+(url.search?url.search:"")+url.hash);
 }
 
 function install(){
- if(!ensurePanel())return false;
- handleReturn();void loadStatus();return true;
+ if(!ensurePage())return false;
+ handleReturn();
+ return true;
 }
-window.addEventListener("florence:ready",install);
-window.addEventListener("pageshow",()=>setTimeout(install,50));
-document.addEventListener("click",event=>{if(event.target.closest('[data-view="my-account"],[data-view="finance"]'))setTimeout(install,50)});
-let attempts=0;const timer=setInterval(()=>{attempts++;if(install()||attempts>80)clearInterval(timer)},250);
+window.addEventListener("florence:ready",()=>{if(install())void loadStatus()});
+window.addEventListener("pageshow",()=>setTimeout(()=>{if(install())void loadStatus()},50));
+let attempts=0;const timer=setInterval(()=>{attempts++;if(install()||attempts>120)clearInterval(timer)},250);
 })();
