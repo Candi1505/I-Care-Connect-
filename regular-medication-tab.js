@@ -23,6 +23,7 @@ function loadFlorenceModules(){
  loadRuntime("deputy-integration.js","20260804-3");
  loadRuntime("deputy-permanent-token-ui-fix.js","20260804-1");
  loadRuntime("invoicing-workspace.js","20260804-2");
+ loadRuntime("invoice-menu-fix.js","20260804-2");
 }
 addRegularTab();
 loadFlorenceModules();
