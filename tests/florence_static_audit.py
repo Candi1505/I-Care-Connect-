@@ -75,12 +75,12 @@ require("@supabase/supabase-js@2.106.2" in index, "index pins Supabase JS 2.106.
 require("@supabase/supabase-js@2.106.2" in sil_html, "sil.html pins Supabase JS 2.106.2")
 require("@supabase/supabase-js" not in set_password_html, "setup page does not create a browser Supabase session")
 require('app.js?v=20260804-invoice-session-1' in index, "index loads invoice-session-safe app asset")
-require('config.js?v=20260804-invoice-session-1' in index, "index loads invoice-session-safe runtime configuration")
+require('config.js?v=20260804-evelyn-invoice-1' in index, "index loads Evelyn-invoice runtime configuration")
 require('operations.js?v=20260802-1' in index, "index loads final operations asset")
 require('sil.js?v=20260801-4' in sil_html, "SIL page loads final SIL asset")
 require('set-password.js?v=20260802-2' in set_password_html, "setup page loads its controlled asset")
-require('florence-shell-20260804-invoice-session-1' in service_worker, "service worker uses current cache namespace")
-for marker in ['config.js?v=20260804-invoice-session-1', 'app.js?v=20260804-invoice-session-1', 'operations.js?v=20260802-1', 'sil.js?v=20260801-4']:
+require('florence-shell-20260804-evelyn-invoice-1' in service_worker, "service worker uses current cache namespace")
+for marker in ['config.js?v=20260804-evelyn-invoice-1', 'app.js?v=20260804-invoice-session-1', 'operations.js?v=20260802-1', 'sil.js?v=20260801-4']:
     require(marker in service_worker, f"service worker caches {marker}")
 require('url.pathname.endsWith("/set-password.html")' in service_worker, "service worker never stores setup-link HTML")
 require('/set-password.html\n  Cache-Control: no-store, max-age=0' in headers, "setup page is marked no-store")
@@ -112,9 +112,9 @@ require('if(!legacyInvoiceList)return' in app, "legacy invoice renderer does not
 require('ensureReady' in app, "authenticated bridge can recover a mobile session before invoicing")
 invoice_workspace = text("invoicing-workspace.js")
 require('view.dataset.smartInvoicingInstalled==="true"' in invoice_workspace, "smart invoicing installs only once")
-require('await b.ensureReady?.()||b.profile' in invoice_workspace, "smart invoicing validates the current supervisor organisation")
+require('await bridge.ensureReady?.()||bridge.profile' in invoice_workspace, "smart invoicing validates the current supervisor organisation")
 require('b.profile.organisation_id' not in invoice_workspace, "smart invoicing never dereferences a missing bridge profile")
-for marker in ['invoicing-workspace.js?v=20260804-session-1', 'invoice-menu-fix.js?v=20260804-session-1']:
+for marker in ['invoicing-workspace.js?v=20260804-evelyn-1', 'invoice-menu-fix.js?v=20260804-evelyn-1']:
     require(marker in config, f"config owns one controlled invoice runtime loader for {marker}")
 require("withRuntimeFixes" not in service_worker, "service worker does not rewrite app HTML or duplicate runtime scripts")
 contains(
