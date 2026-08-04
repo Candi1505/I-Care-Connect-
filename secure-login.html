@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#5f8f72">
+<title>Florence secure login</title>
+<style>
+:root{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#294d3d;background:#f7f6f0}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;box-sizing:border-box}.card{width:min(100%,430px);background:#fff;border-radius:28px;padding:28px;box-shadow:0 20px 60px #294d3d20}.brand{font-size:42px;text-align:center}h1{text-align:center;margin:8px 0}p{line-height:1.5;color:#61756b}label{display:block;font-weight:700;margin:16px 0 8px}input{width:100%;box-sizing:border-box;border:1px solid #cbd8d1;border-radius:14px;padding:14px;font:inherit}button{width:100%;border:0;border-radius:14px;padding:14px;font:inherit;font-weight:800;background:#5f8f72;color:#fff;margin-top:18px}.secondary{background:#eef4f0;color:#355b48}.status{margin-top:16px;padding:12px;border-radius:12px;background:#f1f5f2;display:none}.status.show{display:block}.qr{display:block;width:min(240px,100%);margin:18px auto;border-radius:12px}.hidden{display:none!important}
+</style>
+</head>
+<body>
+<main class="card">
+<div class="brand">🌿</div>
+<h1>Florence</h1>
+<p>Secure sign-in recovery. This page uses the same I-Care Connect Supabase account and does not reset your password.</p>
+<form id="credentials">
+<label>Email<input id="email" type="email" autocomplete="email" required></label>
+<label>Password<input id="password" type="password" autocomplete="current-password" required></label>
+<button id="sign-in">Sign in securely</button>
+</form>
+<form id="mfa" class="hidden">
+<h2>Authenticator verification</h2>
+<p id="mfa-help">Enter the current six-digit Florence code from your authenticator app.</p>
+<img id="qr" class="qr hidden" alt="Florence authenticator QR code">
+<label>Six-digit code<input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required></label>
+<button id="verify">Verify and open Florence</button>
+<button id="sign-out" type="button" class="secondary">Cancel and sign out</button>
+</form>
+<div id="status" class="status" role="alert"></div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.2"></script>
+<script src="config.js?v=20260804-6"></script>
+<script>
+(()=>{
+'use strict';
+const $=s=>document.querySelector(s), status=$('#status');let client=null,factorId=null;
+function show(message){status.textContent=message;status.classList.add('show')}
+function busy(button,text,on=true){if(!button)return;button.disabled=on;if(on){button.dataset.original=button.textContent;button.textContent=text}else button.textContent=button.dataset.original||button.textContent}
+function getClient(){if(client)return client;const C=window.FLORENCE_CONFIG||{};if(!window.supabase?.createClient||!C.supabaseUrl||!C.supabaseAnonKey)throw new Error('Florence security services did not load.');client=window.supabase.createClient(C.supabaseUrl,C.supabaseAnonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:window.localStorage,storageKey:'florence-auth-session'}});return client}
+async function beginMfa(){const c=getClient();const {data:aal,error:aalError}=await c.auth.mfa.getAuthenticatorAssuranceLevel();if(aalError)throw aalError;if(aal?.currentLevel==='aal2'){location.replace('./?secureLogin=complete');return}const {data,error}=await c.auth.mfa.listFactors();if(error)throw error;const all=[...(data?.totp||[]),...(data?.all||[])];let factor=all.find(x=>String(x.status).toLowerCase()==='verified');if(!factor){for(const old of all.filter(x=>String(x.status).toLowerCase()!=='verified'))await c.auth.mfa.unenroll({factorId:old.id}).catch(()=>{});const enrolled=await c.auth.mfa.enroll({factorType:'totp',friendlyName:`Florence-${Date.now().toString(36)}`});if(enrolled.error)throw enrolled.error;factor=enrolled.data;const qr=factor.totp?.qr_code;if(qr){$('#qr').src=qr;$('#qr').classList.remove('hidden');$('#mfa-help').textContent='Add Florence to your authenticator app using this QR code, then enter the current six-digit code.'}}factorId=factor.id;$('#credentials').classList.add('hidden');$('#mfa').classList.remove('hidden');$('#code').focus()}
+$('#credentials').addEventListener('submit',async event=>{event.preventDefault();status.classList.remove('show');const button=$('#sign-in');busy(button,'Signing in…');try{const c=getClient();const result=await Promise.race([c.auth.signInWithPassword({email:$('#email').value.trim(),password:$('#password').value}),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Florence could not contact the security service.')),20000))]);if(result.error)throw result.error;if(!result.data?.session)throw new Error('No secure session was returned.');await beginMfa()}catch(error){show(error?.message||'Florence could not sign in.');busy(button,'',false)}});
+$('#mfa').addEventListener('submit',async event=>{event.preventDefault();status.classList.remove('show');const code=$('#code').value.replace(/\s/g,''),button=$('#verify');if(!/^\d{6}$/.test(code))return show('Enter all six numbers.');busy(button,'Checking code…');try{const c=getClient();const challenge=await c.auth.mfa.challenge({factorId});if(challenge.error)throw challenge.error;const verified=await c.auth.mfa.verify({factorId,challengeId:challenge.data.id,code});if(verified.error)throw verified.error;location.replace('./?secureLogin=complete')}catch(error){show(/invalid|expired|code|challenge/i.test(error?.message||'')?'That code was not accepted. Wait for a fresh code and try again.':error?.message||'Florence could not verify the code.');$('#code').value='';$('#code').focus();busy(button,'',false)}});
+$('#sign-out').onclick=async()=>{await getClient().auth.signOut({scope:'local'}).catch(()=>{});location.reload()};
+getClient().auth.getSession().then(({data})=>{if(data?.session)beginMfa().catch(error=>show(error.message))}).catch(()=>{});
+})();
+</script>
+</body>
+</html>
