@@ -3,6 +3,7 @@
 
 const C=window.FLORENCE_CONFIG||{};
 let resolved=null;
+let client=null;
 
 function esc(value){
  return String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[char]));
@@ -18,7 +19,7 @@ async function resolvePortalContext(){
  }
  if(resolved)return resolved;
  if(!window.supabase?.createClient||!C.supabaseUrl||!C.supabaseAnonKey)return null;
- const client=window.supabase.createClient(C.supabaseUrl,C.supabaseAnonKey);
+ client=client||window.supabase.createClient(C.supabaseUrl,C.supabaseAnonKey);
  const {data:{session}}=await client.auth.getSession();
  if(!session?.user?.id)return null;
  const {data:profile,error:profileError}=await client.from("profiles").select("id,role,participant_id,organisation_id").eq("id",session.user.id).single();

@@ -47,6 +47,13 @@ required_files = [
     "sil.html", "sil.css", "sil.js", "service-worker.js",
     "supabase/functions/staff-management/index.ts",
     "supabase/functions/xero-connect/index.ts",
+    "supabase/functions/deputy-connect/index.ts",
+    "supabase/functions/account-setup-admin/index.ts",
+    "supabase/functions/account-setup/index.ts",
+    "supabase/functions/push-dispatch/index.ts",
+    "supabase/functions/bright-worker/index.ts",
+    "supabase/functions/bright-service/index.ts",
+    "florence-production-audit-hardening.sql",
     "florence-production-hardening-upgrade.sql",
     "florence-controlled-library-access-upgrade.sql",
     "florence-controlled-library-upload-hotfix.sql",
@@ -79,11 +86,13 @@ require('config.js?v=20260804-session-rpc-1' in index, "index loads current secu
 require('operations.js?v=20260802-1' in index, "index loads final operations asset")
 require('sil.js?v=20260801-4' in sil_html, "SIL page loads final SIL asset")
 require('set-password.js?v=20260802-2' in set_password_html, "setup page loads its controlled asset")
-require('florence-shell-20260804-session-rpc-1' in service_worker, "service worker uses current cache namespace")
+require('florence-static-20260804-hardening-1' in service_worker, "service worker uses current cache namespace")
 for marker in ['config.js?v=20260804-session-rpc-1', 'app.js?v=20260804-session-rpc-1', 'operations.js?v=20260802-1', 'sil.js?v=20260801-4']:
     require(marker in service_worker, f"service worker caches {marker}")
-require('url.pathname.endsWith("/set-password.html")' in service_worker, "service worker never stores setup-link HTML")
+require('event.request.mode==="navigate"' in service_worker, "service worker never stores navigation HTML")
+require('"/set-password"' in service_worker, "service worker excludes the canonical setup route")
 require('/set-password.html\n  Cache-Control: no-store, max-age=0' in headers, "setup page is marked no-store")
+require('/set-password\n  Cache-Control: no-store, max-age=0' in headers, "canonical setup route is marked no-store")
 
 # No browser-side privileged secrets or public Drive links.
 browser_paths = [
@@ -226,6 +235,14 @@ for path in ["supabase/functions/staff-management/index.ts", "supabase/functions
     require('claims.aal!=="aal2"' in source, f"{path} requires MFA/AAL2")
     require("originAllowed(req)" in source, f"{path} validates request origin")
     require('profile.role!=="supervisor"' in source or 'profile.role!="supervisor"' in source, f"{path} requires supervisor role")
+
+deputy_function = text("supabase/functions/deputy-connect/index.ts")
+require('claims.aal!=="aal2"' in deputy_function, "Deputy requires MFA/AAL2")
+require("originAllowed(req)" in deputy_function, "Deputy validates request origin")
+for path in ["supabase/functions/bright-worker/index.ts", "supabase/functions/bright-service/index.ts"]:
+    source = text(path)
+    require("legacy endpoint has been retired" in source.lower(), f"{path} retires legacy privileged access")
+    require("SUPABASE_SERVICE_ROLE_KEY" not in source, f"{path} has no service-role access")
 
 # Repository does not contain known runtime fake records.
 for path in ["app.js", "operations.js", "sil.js", "index.html", "sil.html"]:

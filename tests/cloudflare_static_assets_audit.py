@@ -2,18 +2,23 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_ASSETS = {
     "index.html", "styles.css", "config.js", "app.js", "operations.js",
     "staff-management.js", "setup-code-display.js", "portal-participant-label.js",
+    "live-refresh-controls.js", "notification-navigation.js",
     "push-notifications.js", "portal-care-plan.js", "participant-edit-controls.js",
+    "participant-file.js", "secure-document-careplan-fix.js",
     "medication-prn-fix.js", "regular-medication-tab.js", "roster-30-day.js",
     "deputy-integration.js", "deputy-permanent-token-ui-fix.js",
     "invoicing-workspace.js", "invoice-menu-fix.js", "florence-readiness-controls.js",
-    "remote-s8-verification.js", "set-password.html", "set-password.js",
+    "remote-s8-verification.js", "core-ui-fixes-v2.js", "core-ui-fixes-v3.js",
+    "set-password.html", "set-password.js",
     "sil.html", "sil.css", "sil.js", "service-worker.js", "manifest.webmanifest",
-    "florence-icon.svg", "_headers", "robots.txt",
+    "florence-icon.svg", "florence-icon-192.png", "florence-icon-512.png",
+    "_headers", "robots.txt",
 }
 
 config = json.loads((ROOT / "wrangler.jsonc").read_text(encoding="utf-8"))
@@ -30,6 +35,28 @@ assert allowed == EXPECTED_ASSETS, f"Cloudflare asset allowlist mismatch: {sorte
 for relative_path in sorted(EXPECTED_ASSETS):
     assert (ROOT / relative_path).is_file(), f"Allowed Cloudflare asset is missing: {relative_path}"
 assert not any(path.endswith((".sql", ".md", ".docx", ".pdf", ".zip")) for path in allowed)
+
+# Follow every local runtime reference starting at the public entrypoints. This
+# prevents a dynamically loaded file from being omitted while the fixed
+# allowlist itself still appears internally consistent.
+runtime_pattern = re.compile(r'["\'](?:\./)?([A-Za-z0-9_-]+\.(?:js|css|html|webmanifest|svg|png))(?:\?[^"\']*)?["\']')
+pending = ["index.html", "set-password.html", "sil.html", "service-worker.js", "manifest.webmanifest"]
+visited: set[str] = set()
+references: set[str] = set()
+while pending:
+    source_name = pending.pop()
+    if source_name in visited:
+        continue
+    visited.add(source_name)
+    source = (ROOT / source_name).read_text(encoding="utf-8")
+    for referenced in runtime_pattern.findall(source):
+        references.add(referenced)
+        if referenced.endswith((".js", ".html", ".webmanifest")) and referenced not in visited:
+            pending.append(referenced)
+missing_public_references = references - allowed
+assert not missing_public_references, f"Runtime files omitted from Cloudflare assets: {sorted(missing_public_references)}"
+for referenced in references:
+    assert (ROOT / referenced).is_file(), f"Referenced runtime file is missing: {referenced}"
 
 config_js = (ROOT / "config.js").read_text(encoding="utf-8")
 worker_js = (ROOT / "service-worker.js").read_text(encoding="utf-8")
@@ -82,9 +109,11 @@ assert 'self.addEventListener("push"' in worker_js
 assert 'self.addEventListener("notificationclick"' in worker_js
 assert 'url.origin!==self.location.origin' in worker_js
 assert "withRuntimeFixes" not in worker_js
-assert 'url.pathname.endsWith("/set-password.html")' in worker_js
+assert 'event.request.mode==="navigate"' in worker_js
+assert '"/set-password"' in worker_js and '"/sil"' in worker_js
+assert "void caches.open" not in worker_js
 assert "core-ui-fixes-v3.js" in worker_js
 assert "participant-actions-direct.js" not in worker_js
 assert not any(extension in worker_js for extension in (".sql\"", ".pdf\"", ".docx\"", ".zip\""))
 
-print(f"Cloudflare static-assets audit: PASS ({len(EXPECTED_ASSETS)} public runtime files)")
+print(f"Cloudflare static-assets audit: PASS ({len(EXPECTED_ASSETS)} public runtime files; {len(references)} references verified)")

@@ -10,10 +10,14 @@
 !operations.js
 !staff-management.js
 !setup-code-display.js
+!live-refresh-controls.js
+!notification-navigation.js
 !portal-participant-label.js
 !push-notifications.js
 !portal-care-plan.js
+!participant-file.js
 !participant-edit-controls.js
+!secure-document-careplan-fix.js
 !medication-prn-fix.js
 !regular-medication-tab.js
 !roster-30-day.js
@@ -23,6 +27,8 @@
 !invoice-menu-fix.js
 !florence-readiness-controls.js
 !remote-s8-verification.js
+!core-ui-fixes-v2.js
+!core-ui-fixes-v3.js
 !set-password.html
 !set-password.js
 !sil.html
@@ -31,6 +37,8 @@
 !service-worker.js
 !manifest.webmanifest
 !florence-icon.svg
+!florence-icon-192.png
+!florence-icon-512.png
 
 # Cloudflare security and crawler controls
 !_headers

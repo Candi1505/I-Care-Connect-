@@ -12,10 +12,19 @@
 /index.html
   Cache-Control: no-store, max-age=0
 
+/
+  Cache-Control: no-store, max-age=0
+
 /set-password.html
   Cache-Control: no-store, max-age=0
 
+/set-password
+  Cache-Control: no-store, max-age=0
+
 /sil.html
+  Cache-Control: no-store, max-age=0
+
+/sil
   Cache-Control: no-store, max-age=0
 
 /config.js

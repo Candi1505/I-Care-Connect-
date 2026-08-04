@@ -52,9 +52,15 @@ assert 'worker_cost_estimate:workerCostForLine(line)' in SOURCE
 assert '12% super and 1% assumed allowance' in SOURCE
 assert 'SCHADS_LEVELS={"1":{name:"DSW level 1",base:38.50}' in SOURCE
 assert 'public_holiday:{name:"Public holiday",loading:1.5}' in SOURCE
+assert 'Math.min(agreementUnitPrice,Number(cataloguePrice))' in SOURCE
+assert 'cannot exceed the selected location maximum' in SOURCE
+assert 'SIL services before 1 July 2026 must use the former 0115' in SOURCE
+assert 'SIL services from 1 July 2026 must use the new 0138' in SOURCE
+assert 'id="smart-pricing-confirm"' in SOURCE
+assert 'https://calculate.fairwork.gov.au/payguides/fairwork/ma000100/pdf' in SOURCE
 assert 'db.from("ndis_support_catalogue").select("*")' in SOURCE
 assert 'db.from("invoice_email_log").insert' in SOURCE
 assert 'auditAccess?.("EXPORT","invoices"' in SOURCE
 assert 'Xero' not in SOURCE
 
-print("Evelyn invoice pricing audit: PASS (agreement rates, catalogue maximums, SCHADS checks and audit trail)")
+print("Evelyn invoice pricing audit: PASS (agreement rates capped, catalogue/date limits, SCHADS checks and audit trail)")

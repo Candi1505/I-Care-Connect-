@@ -13,6 +13,8 @@ const AGREEMENT_SOURCE="Evelyn service agreement 2026–27";
 const AGREEMENT_EFFECTIVE_FROM="2026-07-01";
 const CATALOGUE_SOURCE="NDIS Support Catalogue 2026–27 maximum";
 const CATALOGUE_URL="https://www.ndis.gov.au/providers/pricing-and-payments/pricing/what-support-catalogue";
+const SCHADS_GUIDE_URL="https://calculate.fairwork.gov.au/payguides/fairwork/ma000100/pdf";
+const SIL_0138_EFFECTIVE_FROM="2026-07-01";
 const OFFICIAL_QUICK_CATALOGUE=[
  {support_item_number:"01_801_0138_1_1",support_item_name:"Supported Independent Living - Standard - Weekday Daytime",unit:"Hour",national_price:73.58,remote_price:103.01,very_remote_price:110.37,support_category:"Assistance with Daily Life",claim_types:["Standard"]},
  {support_item_number:"01_802_0138_1_1",support_item_name:"Supported Independent Living - Standard - Weekday Evening",unit:"Hour",national_price:81.07,remote_price:113.50,very_remote_price:121.61,support_category:"Assistance with Daily Life",claim_types:["Standard"]},
@@ -35,7 +37,12 @@ const EVELYN_SERVICES=[
  {id:"agreement:01_806_0138_1_1",template_name:"SIL – Public holiday",shift_type:"24-hour support",day_category:"",support_item_number:"01_806_0138_1_1",support_item_name:"Supported Independent Living - Standard - Public Holiday",unit:"Hour",unit_price:163,claim_type:"Standard"},
  {id:"agreement:01_832_0138_1_1",template_name:"SIL – Night-time sleepover",shift_type:"Sleepover",day_category:"",support_item_number:"01_832_0138_1_1",support_item_name:"Supported Independent Living - Night-Time Sleepover",unit:"Each",unit_price:312,claim_type:"Standard"},
  {id:"agreement:04_104_0125_6_1",template_name:"Community access – Weekday daytime",shift_type:"Community access",day_category:"Weekday",support_item_number:"04_104_0125_6_1",support_item_name:"Access Community Social and Rec Activ - Standard - Weekday Daytime",unit:"Hour",unit_price:73,claim_type:"Standard"}
-].map(service=>({...service,agreement:true,price_source:AGREEMENT_SOURCE,pricing_effective_from:AGREEMENT_EFFECTIVE_FROM,payment_terms_days:7,gst_code:"GST Free",catalogue_price:OFFICIAL_QUICK_CATALOGUE.find(item=>item.support_item_number===service.support_item_number)?.national_price}));
+].map(service=>{
+ const cataloguePrice=OFFICIAL_QUICK_CATALOGUE.find(item=>item.support_item_number===service.support_item_number)?.national_price;
+ const agreementUnitPrice=Number(service.unit_price);
+ const invoiceUnitPrice=Number.isFinite(cataloguePrice)?Math.min(agreementUnitPrice,Number(cataloguePrice)):agreementUnitPrice;
+ return {...service,agreement:true,agreement_unit_price:agreementUnitPrice,unit_price:invoiceUnitPrice,price_source:AGREEMENT_SOURCE,pricing_effective_from:AGREEMENT_EFFECTIVE_FROM,payment_terms_days:7,gst_code:"GST Free",catalogue_price:cataloguePrice};
+});
 const EVELYN_RATES=new Map(EVELYN_SERVICES.map(service=>[service.support_item_number,service.unit_price]));
 
 let busy=false;
@@ -74,7 +81,7 @@ function selectableTemplates(){
 function templateById(id){return selectableTemplates().find(template=>String(template.id)===String(id))}
 
 function agreementButtons(){
- return EVELYN_SERVICES.map(service=>`<button type="button" class="secondary" data-evelyn-service="${esc(service.id)}"><strong>${esc(service.template_name)}</strong><br><small>${esc(service.support_item_number)} · agreed ${service.unit==="Each"?`${money(service.unit_price)} each`:`${money(service.unit_price)}/hr`} · NDIS max ${money(service.catalogue_price)}</small></button>`).join("");
+ return EVELYN_SERVICES.map(service=>{const capped=Number(service.agreement_unit_price)>Number(service.unit_price);return `<button type="button" class="secondary" data-evelyn-service="${esc(service.id)}"><strong>${esc(service.template_name)}</strong><br><small>${esc(service.support_item_number)} · invoice ${service.unit==="Each"?`${money(service.unit_price)} each`:`${money(service.unit_price)}/hr`}${capped?` · agreement ${money(service.agreement_unit_price)} capped to NDIS max`:""}</small></button>`}).join("");
 }
 
 function cataloguePrice(item,region=q("#smart-catalogue-region")?.value||"national_price"){
@@ -107,9 +114,9 @@ function install(){
  if(nav)nav.textContent="💳 NDIS invoicing";
  view.innerHTML=`
 <div class="page-head"><div><p class="eyebrow">Business billing</p><h2>NDIS invoicing</h2><p>Create invoices from Florence shifts, apply agreed services and prepare professional invoices for email.</p></div><div class="actions"><button id="smart-invoice-new" class="primary">+ Create invoice</button><button id="smart-template-new" class="secondary">Other service templates</button></div></div>
-<article class="notice"><strong>Pricing safety</strong><br>Use the participant's signed service agreement and confirm price changes before invoicing. SCHADS rates are used only for internal staffing-cost checks.</article>
+<article class="notice"><strong>Pricing safety</strong><br>Florence will not save a known support item above its applicable 2026–27 maximum. Use the participant's signed service agreement and confirm service dates, location and price changes before invoicing. SCHADS rates are used only for internal staffing-cost checks.</article>
 <div id="smart-invoice-summary" class="stats"></div>
-<article id="evelyn-invoice-presets" class="panel"><div class="panel-head"><div><p class="eyebrow">Evelyn Jane Tait</p><h3>Approved services — ready to use</h3><p>Start an invoice with any service below. Florence uses the exact 2026–27 agreement code and rate.</p></div><span class="badge good">8 services</span></div><div class="actions agreement-service-buttons">${agreementButtons()}</div><p class="record-meta">Fortnightly invoicing · payment due in 7 days · rates effective 1 July 2026. Public holidays and weekday time bands require VJ's review.</p></article>
+<article id="evelyn-invoice-presets" class="panel"><div class="panel-head"><div><p class="eyebrow">Evelyn Jane Tait</p><h3>Approved services — ready to use</h3><p>Start an invoice with any service below. Florence uses the 2026–27 agreement code and automatically caps the charge at the applicable NDIS maximum.</p></div><span class="badge good">8 services</span></div><div class="actions agreement-service-buttons">${agreementButtons()}</div><p class="record-meta">Fortnightly invoicing · payment due in 7 days · rates effective 1 July 2026. Public holidays and weekday time bands require VJ's review.</p></article>
 <article class="panel"><div class="panel-head"><div><p class="eyebrow">Price guidance</p><h3>2026–27 NDIS support catalogue</h3><p>Search Florence's verified quick library. Catalogue prices are maximums—not automatic charges.</p></div><a class="secondary button-link" href="${CATALOGUE_URL}" target="_blank" rel="noopener">Open full official catalogue</a></div><div class="grid two"><label>Search code or service<input id="smart-catalogue-search" type="search" placeholder="Try SIL, community or 01_804"></label><label>Price region<select id="smart-catalogue-region"><option value="national_price">National</option><option value="remote_price">Remote</option><option value="very_remote_price">Very remote</option></select></label></div><div id="smart-catalogue-list" class="stack"></div><p class="record-meta">Effective 1 July 2026. Confirm the participant's service agreement and location before billing.</p></article>
 <article class="panel"><div class="panel-head"><div><h3>Invoices</h3><p>Draft, ready, sent, overdue and paid records.</p></div><button id="smart-invoice-refresh" class="secondary">Refresh</button></div><div id="smart-invoice-list" class="stack"></div></article>
 <article id="smart-invoice-editor" class="panel hidden"><div class="panel-head"><div><p class="eyebrow">Smart invoice</p><h3 id="smart-editor-title">Create invoice</h3><p>Choose agreed services directly or import past roster shifts for review.</p></div><button id="smart-editor-close" class="link">Close</button></div>
@@ -127,8 +134,9 @@ function install(){
 <div id="smart-shift-results" class="stack"></div>
 <div class="panel-head"><div><h3>Invoice lines</h3><p>Every line needs an agreed support-item code, quantity and rate.</p></div><button id="smart-add-line" type="button" class="secondary">+ Add manual line</button></div>
 <div id="smart-lines" class="stack"></div><div class="record-top"><strong>Total</strong><strong id="smart-total">$0.00</strong></div>
-<article class="notice"><strong>Internal SCHADS staffing-cost check</strong><br>This never changes the participant's charge. Choose the worker classification used for the shifts; Florence applies the service time-band loading.<div class="grid two"><label>Worker classification<select id="smart-cost-level"><option value="1">DSW level 1 · $38.50/hr</option><option value="2" selected>DSW level 2 · $40.01/hr</option><option value="3">DSW level 3 · $41.66/hr</option><option value="4">DSW level 4 · $50.25/hr</option></select></label><label>Fallback time band<select id="smart-cost-band"><option value="weekday">Weekday daytime</option><option value="evening">Weekday evening</option><option value="night">Weekday night</option><option value="saturday">Saturday</option><option value="sunday">Sunday</option><option value="public_holiday">Public holiday</option></select></label></div><div id="smart-cost-summary" class="record-meta"></div></article>
+<article class="notice"><strong>Internal SCHADS staffing-cost check</strong><br>This estimate never changes the participant's charge. Confirm the employee classification, casual status, allowances, overtime and broken-shift rules against the current <a href="${SCHADS_GUIDE_URL}" target="_blank" rel="noopener">official SCHADS pay guide</a> before payroll.<div class="grid two"><label>Worker classification estimate<select id="smart-cost-level"><option value="1">DSW level 1 · $38.50/hr</option><option value="2" selected>DSW level 2 · $40.01/hr</option><option value="3">DSW level 3 · $41.66/hr</option><option value="4">DSW level 4 · $50.25/hr</option></select></label><label>Fallback time band<select id="smart-cost-band"><option value="weekday">Weekday daytime</option><option value="evening">Weekday evening</option><option value="night">Weekday night</option><option value="saturday">Saturday</option><option value="sunday">Sunday</option><option value="public_holiday">Public holiday</option></select></label></div><div id="smart-cost-summary" class="record-meta"></div></article>
 <div id="smart-review" class="notice"></div>
+<label class="notice"><input id="smart-pricing-confirm" type="checkbox" required> I checked the service dates, time bands, participant agreement and price location, and the invoice is ready for VJ's review.</label>
 <div class="actions"><button class="primary" type="submit">Save invoice</button><button id="smart-print" type="button" class="secondary">Print / save PDF</button><button id="smart-email" type="button" class="secondary">Prepare email</button></div></form></article>
 <article id="smart-template-panel" class="panel hidden"><div class="panel-head"><div><p class="eyebrow">Reusable billing codes</p><h3>Other service templates</h3><p>Evelyn's agreement is already available above. Save other approved codes here.</p></div><button id="smart-template-close" class="link">Close</button></div>
 <form id="smart-template-form"><div class="grid two"><label>Template name<input id="template-name" required></label><label>Shift type<select id="template-shift-type"><option value="">Any shift type</option><option>24-hour support</option><option>Personal care</option><option>Community access</option><option>Social support</option><option>Sleepover</option><option>Transport</option><option>Domestic assistance</option></select></label><label>Day category<select id="template-day"><option value="">Any day</option><option>Weekday</option><option>Saturday</option><option>Sunday</option></select></label><label>Support item code<input id="template-code"></label><label>Support item name<input id="template-item-name" required></label><label>Unit<select id="template-unit"><option>Hour</option><option>Each</option><option>Kilometre</option><option>Day</option></select></label><label>Unit price<input id="template-price" type="number" min="0" step="0.01" required></label><label>Claim type<input id="template-claim" placeholder="Standard, travel, cancellation..."></label><label>GST treatment<select id="template-gst"><option>GST Free</option><option>GST Applicable</option></select></label><label>Payment terms (days)<input id="template-terms" type="number" min="0" max="90" value="14"></label><label>Recipient name<input id="template-recipient-name"></label><label>Recipient email<input id="template-recipient-email" type="email"></label><label>Price effective from<input id="template-effective" type="date"></label><label>Review date<input id="template-review" type="date"></label></div><label>Default invoice notes<textarea id="template-notes"></textarea></label><button class="primary">Save template</button></form><div id="smart-template-list" class="stack"></div></article>`;
@@ -394,6 +402,7 @@ async function openEditor(invoice=null){
   for(const item of items.length?items:[{}])addLine(item);
   q("#smart-shift-results").innerHTML="";
   q("#smart-import-shifts").disabled=true;
+  q("#smart-pricing-confirm").checked=false;
   q("#smart-editor-title").textContent=invoice?`Invoice ${invoice.invoice_number}`:"Create Evelyn invoice";
   renderAgreementPicker();
   refreshLineTemplateChoices();
@@ -460,6 +469,14 @@ async function saveInvoice(){
  if(!lines.length)return toast("Add at least one invoice line");
  if(lines.some(line=>!line.support_item_number.trim()))return toast("Every invoice line needs an agreed support-item code");
  if(lines.some(line=>Number(line.unit_price)<=0))return toast("Every invoice line needs a confirmed rate above $0");
+ const invoiceRegion=isEvelyn(selectedParticipant())?"national_price":q("#smart-catalogue-region")?.value||"national_price";
+ const aboveMaximum=lines.find(line=>{const item=catalogueItem(line.support_item_number);return item&&Number(line.unit_price)>Number(cataloguePrice(item,invoiceRegion))+0.0001});
+ if(aboveMaximum){const item=catalogueItem(aboveMaximum.support_item_number);return toast(`${aboveMaximum.support_item_number} cannot exceed the selected location maximum of ${money(cataloguePrice(item,invoiceRegion))}`)}
+ const earlySil=lines.find(line=>String(line.support_item_number).includes("_0138_")&&line.service_date<SIL_0138_EFFECTIVE_FROM);
+ if(earlySil)return toast("SIL services before 1 July 2026 must use the former 0115 registration-group code");
+ const lateSil=lines.find(line=>String(line.support_item_number).includes("_0115_")&&line.service_date>=SIL_0138_EFFECTIVE_FROM);
+ if(lateSil)return toast("SIL services from 1 July 2026 must use the new 0138 registration-group code");
+ if(!q("#smart-pricing-confirm").checked)return toast("Confirm the invoice pricing and service dates before saving");
  if(!isEvelyn(selectedParticipant())&&lines.some(line=>EVELYN_RATES.has(line.support_item_number)))return toast("Evelyn's agreement codes can only be saved on Evelyn's invoice");
  if(q("#smart-period-start").value&&q("#smart-period-end").value&&q("#smart-period-start").value>q("#smart-period-end").value)return toast("Service period start must be before the end date");
  busy=true;
@@ -546,6 +563,11 @@ function renderTemplates(){
 
 async function saveTemplate(){
  try{
+  const code=q("#template-code").value.trim();
+  const price=Number(q("#template-price").value);
+  const official=catalogueItem(code);
+  if(official&&price>Number(cataloguePrice(official))+0.0001)throw new Error(`${code} cannot exceed the selected location maximum of ${money(cataloguePrice(official))}`);
+  if(code.includes("_0138_")&&q("#template-effective").value&&q("#template-effective").value<SIL_0138_EFFECTIVE_FROM)throw new Error("0138 SIL templates cannot start before 1 July 2026");
   const {db,profile,organisationId}=await context();
   const {error}=await db.from("invoice_service_templates").insert({organisation_id:organisationId,template_name:q("#template-name").value.trim(),shift_type:q("#template-shift-type").value||null,day_category:q("#template-day").value||null,support_item_number:q("#template-code").value.trim()||null,support_item_name:q("#template-item-name").value.trim(),unit:q("#template-unit").value,unit_price:Number(q("#template-price").value),claim_type:q("#template-claim").value.trim()||null,gst_code:q("#template-gst").value,payment_terms_days:Number(q("#template-terms").value||14),recipient_name:q("#template-recipient-name").value.trim()||null,recipient_email:q("#template-recipient-email").value.trim()||null,price_source:"VJ approved service template",pricing_effective_from:q("#template-effective").value||null,pricing_review_date:q("#template-review").value||null,default_notes:q("#template-notes").value.trim()||null,created_by:profile.id});
   if(error)throw error;

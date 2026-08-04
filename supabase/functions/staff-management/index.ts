@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.106.2";
 
 const DEFAULT_APP_URL="https://candi1505.github.io/I-Care-Connect-/";
 const optionalEnv=(name:string)=>String(Deno.env.get(name)||"").trim();
