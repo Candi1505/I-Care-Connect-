@@ -1,137 +1,44 @@
 (()=>{
 "use strict";
 const B=()=>window.FlorenceBridge;
-const q=(selector,root=document)=>root.querySelector(selector);
-let loading=false;
-
+const q=(s,r=document)=>r.querySelector(s);
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+let loading=false,autoTimer=null,lastSetup=null;
+function toast(m){B()?.toast?.(m)}
 function ensurePage(){
- const bridge=B();
- if(!bridge?.profile||bridge.profile.role!=="supervisor")return null;
- const drawer=q("#drawer"),main=q("#app main");
- if(!drawer||!main)return null;
-
- let menu=q('[data-view="deputy"]',drawer);
- if(!menu){
-  menu=document.createElement("button");
-  menu.type="button";
-  menu.className="admin-only";
-  menu.dataset.view="deputy";
-  menu.innerHTML="🧑‍💼 Deputy integration";
-  const finance=q('[data-view="finance"]',drawer);
-  finance?.insertAdjacentElement("afterend",menu) || drawer.appendChild(menu);
-  menu.onclick=()=>{bridge.showView("deputy");setTimeout(()=>void loadStatus(),50)};
- }
-
+ const b=B();if(!b?.profile||b.profile.role!=="supervisor")return null;
+ const drawer=q("#drawer"),main=q("main");if(!drawer||!main)return null;
+ let nav=q('[data-view="deputy"]');
+ if(!nav){nav=document.createElement("button");nav.className="admin-only";nav.dataset.view="deputy";nav.textContent="📆 Deputy integration";const finance=q('[data-view="finance"]',drawer);finance?.insertAdjacentElement("afterend",nav)||drawer.appendChild(nav)}
  let view=q("#deputy-view");
- if(!view){
-  view=document.createElement("section");
-  view.id="deputy-view";
-  view.className="view";
-  view.innerHTML=`
-   <div class="page-head">
-    <div><p class="eyebrow">Workforce integration</p><h2>Deputy</h2><p>Connect I-Care Connect’s Deputy account for secure worker, roster and timesheet syncing.</p></div>
-   </div>
-   <article id="deputy-integration-panel" class="panel admin-only">
-    <div class="panel-head">
-     <div><p class="eyebrow">Secure connection</p><h3>Deputy account</h3><p id="deputy-integration-message">Checking the secure Deputy connection…</p></div>
-     <span id="deputy-integration-status" class="badge amber">Checking…</span>
-    </div>
-    <div id="deputy-integration-details" class="record-meta hidden"></div>
-    <div class="actions">
-     <button id="connect-deputy" type="button" class="primary">Connect Deputy</button>
-     <button id="refresh-deputy-status" type="button" class="secondary">Refresh status</button>
-    </div>
-   </article>
-   <article class="panel">
-    <div class="panel-head"><div><p class="eyebrow">Integration plan</p><h3>What Deputy will manage</h3></div></div>
-    <div class="grid two">
-     <div class="notice"><strong>Deputy workforce records</strong><br>Worker matching, published rosters, shift responses, clock-in and approved timesheets.</div>
-     <div class="notice"><strong>Florence care records</strong><br>Participant files, MAR, progress notes, incidents, care plans and clinical information remain only in Florence.</div>
-    </div>
-    <p class="record-meta">Connecting Deputy does not send participant diagnoses, medications, progress notes or care-plan content to Deputy.</p>
-   </article>`;
-  main.appendChild(view);
-  q("#connect-deputy",view).onclick=()=>void startConnection();
-  q("#refresh-deputy-status",view).onclick=()=>void loadStatus();
- }
+ if(!view){view=document.createElement("section");view.id="deputy-view";view.className="view";view.innerHTML=`
+  <div class="page-head"><div><p class="eyebrow">Workforce integration</p><h2>Deputy integration</h2><p>Publish shifts in Florence and send workforce-only roster details securely to Deputy.</p></div></div>
+  <article class="panel"><div class="panel-head"><div><h3>Connection</h3><p id="deputy-message">Checking Deputy…</p></div><span id="deputy-status" class="badge amber">Checking…</span></div><div id="deputy-details" class="record-meta"></div><div class="actions"><button id="deputy-connect" class="primary">Connect Deputy</button><button id="deputy-refresh" class="secondary">Refresh</button></div></article>
+  <article id="deputy-setup-panel" class="panel hidden"><div class="panel-head"><div><h3>Florence → Deputy roster sync</h3><p>Choose the Deputy area and match each Florence worker once.</p></div></div><form id="deputy-setup-form">
+   <label>Deputy area<select id="deputy-area" required></select></label>
+   <label>Privacy-safe shift label<input id="deputy-label" maxlength="80" value="SIL support shift"></label>
+   <label>Deputy notification<select id="deputy-notification"><option value="5">Confirmation required</option><option value="3">Email</option><option value="1">SMS and email</option><option value="4">Publish without notification</option></select></label>
+   <div id="deputy-worker-mappings" class="stack"></div>
+   <label class="truth-declaration"><input id="deputy-auto-sync" type="checkbox"><span>Automatically send assigned Florence shifts to Deputy when they are published</span></label>
+   <div class="actions"><button class="primary" type="submit">Save Deputy setup</button><button id="deputy-sync-now" class="secondary" type="button">Sync waiting shifts now</button></div>
+  </form><p class="record-meta">Florence sends only the worker, start and finish times, chosen Deputy area and the privacy-safe label above. Participant names, care plans, instructions, handover notes, MAR and progress notes stay in Florence.</p></article>
+  <article id="deputy-sync-panel" class="panel hidden"><div class="panel-head"><div><h3>Sync activity</h3><p id="deputy-sync-summary">No sync activity yet.</p></div><span id="deputy-sync-badge" class="badge good">Ready</span></div></article>`;main.appendChild(view)}
+ nav.onclick=()=>openView();
+ q("#deputy-connect",view).onclick=()=>void connect();q("#deputy-refresh",view).onclick=()=>void loadAll();q("#deputy-sync-now",view).onclick=()=>void syncNow(true);q("#deputy-setup-form",view).onsubmit=e=>{e.preventDefault();void saveSetup()};
  return view;
 }
-
-function setBusy(busy){
- loading=busy;
- const connect=q("#connect-deputy"),refresh=q("#refresh-deputy-status");
- if(connect)connect.disabled=busy;
- if(refresh)refresh.disabled=busy;
-}
-
-async function invoke(action){
- const bridge=B();
- if(!bridge?.db||!bridge.profile)throw new Error("Florence is still loading your secure account");
- const {data,error}=await bridge.db.functions.invoke("deputy-connect",{body:{action}});
- if(error){
-  let message=data?.error||error.message||"Deputy connection is unavailable";
-  try{if(error.context instanceof Response){const payload=await error.context.clone().json();message=payload?.error||message}}catch(_ignored){}
-  throw new Error(message);
- }
- if(data?.error)throw new Error(data.error);
- return data||{};
-}
-
-async function loadStatus(){
- if(loading)return;
- const view=ensurePage();if(!view)return;
- setBusy(true);
- const status=q("#deputy-integration-status",view),message=q("#deputy-integration-message",view),details=q("#deputy-integration-details",view),connect=q("#connect-deputy",view);
- try{
-  const result=await invoke("status");
-  if(result.connected&&result.connection){
-   const item=result.connection;
-   status.textContent="Connected";status.className="badge good";
-   message.textContent="Florence is securely connected to Deputy.";
-   const rows=[item.deputy_user_name?`Connected as ${item.deputy_user_name}`:null,item.deputy_endpoint?`Deputy site: ${item.deputy_endpoint}`:null,item.connected_at?`Connected ${B().fmt(item.connected_at)}`:null,item.last_synced_at?`Last sync ${B().fmt(item.last_synced_at)}`:"No workforce sync has run yet"].filter(Boolean);
-   details.textContent=rows.join(" · ");details.classList.remove("hidden");
-   connect.textContent="Reconnect Deputy";
-  }else{
-   status.textContent="Not connected";status.className="badge amber";
-   message.textContent="Connect I-Care Connect’s Deputy account to prepare secure workforce syncing.";
-   details.textContent="";details.classList.add("hidden");connect.textContent="Connect Deputy";
-  }
- }catch(error){
-  status.textContent="Needs attention";status.className="badge red";
-  message.textContent=error.message||"Florence could not check Deputy.";
-  details.classList.add("hidden");
- }finally{setBusy(false)}
-}
-
-async function startConnection(){
- if(loading)return;
- setBusy(true);
- try{
-  const result=await invoke("start");
-  if(!result.authorization_url)throw new Error("Deputy did not return a secure authorisation page");
-  location.href=result.authorization_url;
- }catch(error){B()?.toast(error.message||"Florence could not start the Deputy connection");setBusy(false)}
-}
-
-function handleReturn(){
- const url=new URL(location.href),result=url.searchParams.get("deputy");
- if(!result)return;
- ensurePage();
- if(result==="connected"){
-  B()?.toast("Deputy connected securely");
-  B()?.showView("deputy");
-  setTimeout(()=>void loadStatus(),80);
- }else B()?.toast("Deputy connection was not completed");
- url.searchParams.delete("deputy");url.searchParams.delete("reason");
- history.replaceState({},"",url.pathname+(url.search?url.search:"")+url.hash);
-}
-
-function install(){
- if(!ensurePage())return false;
- handleReturn();
- return true;
-}
-window.addEventListener("florence:ready",()=>{if(install())void loadStatus()});
-window.addEventListener("pageshow",()=>setTimeout(()=>{if(install())void loadStatus()},50));
-let attempts=0;const timer=setInterval(()=>{attempts++;if(install()||attempts>120)clearInterval(timer)},250);
+function openView(){document.querySelectorAll(".view").forEach(e=>e.classList.toggle("active",e.id==="deputy-view"));document.querySelectorAll("[data-view]").forEach(e=>e.classList.toggle("active",e.dataset.view==="deputy"));q("#drawer")?.classList.remove("open");q("#scrim")?.classList.add("hidden");scrollTo({top:0,behavior:"smooth"});void loadAll()}
+async function invoke(action,extra={}){const b=B();if(!b?.db||!b.profile)throw new Error("Florence is still loading your secure account");const {data,error}=await b.db.functions.invoke("deputy-connect",{body:{action,...extra}});if(error){let m=data?.error||error.message||"Deputy is unavailable";try{if(error.context instanceof Response){const p=await error.context.clone().json();m=p?.error||m}}catch{}throw new Error(m)}if(data?.error)throw new Error(data.error);return data||{}}
+function busy(v){loading=v;for(const el of document.querySelectorAll("#deputy-view button,#deputy-view select,#deputy-view input"))el.disabled=v}
+async function status(){const view=ensurePage();if(!view)return null;const r=await invoke("status"),badge=q("#deputy-status",view),msg=q("#deputy-message",view),details=q("#deputy-details",view),connectBtn=q("#deputy-connect",view);if(r.connected){badge.textContent="Connected";badge.className="badge good";msg.textContent="Florence is securely connected to Deputy.";const d=r.connection||{};details.textContent=[d.deputy_user_name?`Connected as ${d.deputy_user_name}`:null,d.deputy_endpoint?`Deputy site: ${d.deputy_endpoint}`:null,d.last_synced_at?`Last sync ${B().fmt(d.last_synced_at)}`:"No shift sync has run yet"].filter(Boolean).join(" · ");connectBtn.textContent="Reconnect Deputy";q("#deputy-setup-panel",view).classList.remove("hidden");q("#deputy-sync-panel",view).classList.remove("hidden");const pending=Number(r.pending||0),failed=Number(r.failed||0);q("#deputy-sync-summary",view).textContent=`${pending} waiting · ${failed} failed`;const sb=q("#deputy-sync-badge",view);sb.textContent=failed?"Needs attention":pending?"Waiting":"Up to date";sb.className=`badge ${failed?"red":pending?"amber":"good"}`}else{badge.textContent="Not connected";badge.className="badge amber";msg.textContent="Connect Deputy before configuring roster sync.";details.textContent="";connectBtn.textContent="Connect Deputy";q("#deputy-setup-panel",view).classList.add("hidden");q("#deputy-sync-panel",view).classList.add("hidden")}return r}
+function employeeEmail(e){return String(e.Email||e.EmailAddress||e.ContactObject?.Email||"").trim().toLowerCase()}
+function renderSetup(data){lastSetup=data;const areas=(data.areas||[]).filter(a=>a.Active!==0&&a.Active!==false);const area=q("#deputy-area");area.innerHTML='<option value="">Choose a Deputy area</option>'+areas.map(a=>`<option value="${a.Id}" data-company="${a.Company||""}">${esc(a.OperationalUnitName||a.Name||`Area ${a.Id}`)}</option>`).join("");const settings=data.settings||{};if(settings.deputy_area_id)area.value=String(settings.deputy_area_id);q("#deputy-label").value=settings.privacy_label||"SIL support shift";q("#deputy-notification").value=String(settings.notification_mode||5);q("#deputy-auto-sync").checked=Boolean(settings.auto_sync_published);const existing=new Map((data.mappings||[]).map(m=>[m.profile_id,String(m.deputy_employee_id)]));const employees=(data.employees||[]).filter(e=>e.Active!==0&&e.Active!==false);q("#deputy-worker-mappings").innerHTML=(data.profiles||[]).map(p=>{let selected=existing.get(p.id)||"";if(!selected){const email=String(p.email||"").toLowerCase();const hit=employees.find(e=>email&&employeeEmail(e)===email);if(hit)selected=String(hit.Id)}return `<label>${esc(p.full_name)}<select data-profile-id="${p.id}" data-profile-name="${esc(p.full_name)}"><option value="">Do not sync this worker</option>${employees.map(e=>`<option value="${e.Id}" data-name="${esc(e.DisplayName||`${e.FirstName||""} ${e.LastName||""}`.trim())}" data-email="${esc(employeeEmail(e))}" ${String(e.Id)===selected?"selected":""}>${esc(e.DisplayName||`${e.FirstName||""} ${e.LastName||""}`.trim()||`Employee ${e.Id}`)}</option>`).join("")}</select></label>`}).join("")||'<div class="empty">No active Florence workers found.</div>'}
+async function loadAll(){if(loading)return;ensurePage();busy(true);try{const s=await status();if(s?.connected){const data=await invoke("setup_data");renderSetup(data);scheduleAuto(Boolean(data.settings?.auto_sync_published))}}catch(e){const badge=q("#deputy-status"),msg=q("#deputy-message");if(badge){badge.textContent="Needs attention";badge.className="badge red"}if(msg)msg.textContent=e.message||"Florence could not load Deputy"}finally{busy(false)}}
+async function connect(){if(loading)return;busy(true);try{const r=await invoke("start");if(!r.authorization_url)throw new Error("Deputy did not return an authorisation page");location.href=r.authorization_url}catch(e){toast(e.message||"Florence could not start Deputy");busy(false)}}
+async function saveSetup(){if(loading)return;const area=q("#deputy-area"),opt=area.selectedOptions[0];if(!area.value)return toast("Choose a Deputy area");const mappings=[...document.querySelectorAll("#deputy-worker-mappings select[data-profile-id]")].filter(s=>s.value).map(s=>{const o=s.selectedOptions[0];return{profile_id:s.dataset.profileId,deputy_employee_id:Number(s.value),deputy_employee_name:o.dataset.name||o.textContent,deputy_employee_email:o.dataset.email||null}});busy(true);try{await invoke("save_setup",{area_id:Number(area.value),location_id:opt.dataset.company?Number(opt.dataset.company):null,area_name:opt.textContent,privacy_label:q("#deputy-label").value.trim()||"SIL support shift",notification_mode:Number(q("#deputy-notification").value),auto_sync_published:q("#deputy-auto-sync").checked,mappings});toast("Deputy roster setup saved");scheduleAuto(q("#deputy-auto-sync").checked);await syncNow(false)}catch(e){toast(e.message||"Florence could not save Deputy setup")}finally{busy(false);void loadAll()}}
+async function syncNow(showToast){if(loading&&showToast)return;try{const r=await invoke("sync_pending",{limit:30});if(showToast)toast(r.message||`${r.synced||0} synced · ${r.failed||0} failed · ${r.skipped||0} skipped`);await status()}catch(e){if(showToast)toast(e.message||"Deputy shift sync failed")}}
+function scheduleAuto(enabled){if(autoTimer){clearInterval(autoTimer);autoTimer=null}if(enabled)autoTimer=setInterval(()=>void syncNow(false),30000)}
+function returned(){const u=new URL(location.href),r=u.searchParams.get("deputy");if(!r)return;if(r==="connected"){toast("Deputy connected securely");setTimeout(()=>{openView();void loadAll()},200)}else toast("Deputy connection was not completed");u.searchParams.delete("deputy");u.searchParams.delete("reason");history.replaceState({},"",u.pathname+(u.search||"")+u.hash)}
+function install(){const page=ensurePage();if(!page)return false;returned();return true}
+window.addEventListener("florence:ready",()=>{install();void loadAll()});window.addEventListener("pageshow",()=>setTimeout(()=>{install();void loadAll()},100));let attempts=0;const timer=setInterval(()=>{attempts++;if(install()||attempts>120)clearInterval(timer)},250);
 })();
