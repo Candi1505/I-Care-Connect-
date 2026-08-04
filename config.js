@@ -84,10 +84,9 @@ window.FLORENCE_CONFIG = {
     "secure-document-careplan-fix.js?v=20260803-1",
     "participant-edit-controls.js?v=20260803-1",
     "medication-prn-fix.js?v=20260804-2",
-    "regular-medication-tab.js?v=20260804-6",
-    "invoicing-workspace.js?v=20260804-session-1",
-    "invoice-menu-fix.js?v=20260804-session-1",
-    "evelyn-invoice-presets.js?v=20260804-1",
+    "regular-medication-tab.js?v=20260804-7",
+    "invoicing-workspace.js?v=20260804-evelyn-1",
+    "invoice-menu-fix.js?v=20260804-evelyn-1",
     "florence-readiness-controls.js?v=20260802-1",
     "remote-s8-verification.js?v=20260802-1"
   ];
