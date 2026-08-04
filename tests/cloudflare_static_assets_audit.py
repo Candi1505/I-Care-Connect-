@@ -20,6 +20,7 @@ EXPECTED_ASSETS = {
     "medication-prn-fix.js",
     "regular-medication-tab.js",
     "roster-30-day.js",
+    "deputy-integration.js",
     "florence-readiness-controls.js",
     "remote-s8-verification.js",
     "set-password.html",
@@ -55,6 +56,7 @@ remote_js = (ROOT / "remote-s8-verification.js").read_text(encoding="utf-8")
 participant_controls_js = (ROOT / "participant-edit-controls.js").read_text(encoding="utf-8")
 regular_tab_js = (ROOT / "regular-medication-tab.js").read_text(encoding="utf-8")
 roster_js = (ROOT / "roster-30-day.js").read_text(encoding="utf-8")
+deputy_js = (ROOT / "deputy-integration.js").read_text(encoding="utf-8")
 
 assert "SUPABASE_SERVICE_ROLE_KEY" not in config_js
 assert "pushVapidPublicKey" in config_js
@@ -70,12 +72,17 @@ assert "roster-30-day.js?v=20260804-1" in regular_tab_js
 assert "VIEW_DAYS=30" in roster_js
 assert "MAX_SHIFTS=45" in roster_js
 assert "Number of weekly shifts to create (1–45)" in roster_js
+assert "deputy-integration.js?v=20260804-1" in worker_js
+assert 'functions.invoke("deputy-connect"' in deputy_js
+assert "Connect Deputy" in deputy_js
+assert "Reconnect Deputy" in deputy_js
+assert "authorization_url" in deputy_js
+assert "DEPUTY_CLIENT_SECRET" not in deputy_js
 assert 'self.addEventListener("push"' in worker_js
 assert 'self.addEventListener("notificationclick"' in worker_js
 
-# Florence currently rewrites only same-origin HTML responses so the approved
-# runtime repair bundle is present on stale Home Screen installations. Audit the
-# exact safety boundaries rather than banning all string replacement.
+# Florence currently rewrites only same-origin HTML responses so approved
+# runtime controls are present on stale Home Screen installations.
 assert "async function withRuntimeFixes" in worker_js
 assert 'url.origin!==self.location.origin' in worker_js
 assert 'type.includes("text/html")' in worker_js
