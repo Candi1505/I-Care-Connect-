@@ -63,7 +63,7 @@ function ensureParticipantControls(){
 const observer=new MutationObserver(ensureParticipantControls);
 function startControls(){const host=q('#pf-content')||q('#participant-file-content');if(host&&!host.__nativeControls){observer.observe(host,{childList:true,subtree:true});host.__nativeControls=true}ensureParticipantControls()}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',startControls,{once:true});else startControls();
-window.addEventListener('florence:ready',()=>{void verifySessionAge();startControls()});
+window.addEventListener('florence:ready',()=>{if(!readLast())writeLast();void verifySessionAge();startControls()});
 window.addEventListener('pageshow',()=>{void verifySessionAge();startControls()});
 document.addEventListener('click',()=>setTimeout(ensureParticipantControls,60));
 setInterval(startControls,500);
