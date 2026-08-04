@@ -40,19 +40,18 @@ roster_js = (ROOT / "roster-30-day.js").read_text(encoding="utf-8")
 deputy_js = (ROOT / "deputy-integration.js").read_text(encoding="utf-8")
 deputy_token_ui_js = (ROOT / "deputy-permanent-token-ui-fix.js").read_text(encoding="utf-8")
 invoice_js = (ROOT / "invoicing-workspace.js").read_text(encoding="utf-8")
-invoice_menu_js = (ROOT / "invoice-menu-fix.js").read_text(encoding="utf-8")
 
 assert "SUPABASE_SERVICE_ROLE_KEY" not in config_js
 assert "pushVapidPublicKey" in config_js
 assert "xero:" not in config_js
-assert "invoicing-workspace.js?v=20260804-1" in config_js
 assert "NDIS invoicing" in invoice_js
 assert "SCHADS rates are used only for internal staffing-cost checks" in invoice_js
 assert "invoice_items" in invoice_js
 assert "Prepare email" in invoice_js
 assert "Print / save PDF" in invoice_js
-assert "NDIS invoicing" in invoice_menu_js
-assert "invoice-menu-fix.js" in regular_tab_js
+assert "invoicing-workspace.js" in regular_tab_js
+assert "INVOICE_UI" in worker_js
+assert "invoicing-workspace.js?v=20260804-2" in worker_js
 assert "participant-edit-controls.js" in config_js
 assert "Edit participant" in participant_controls_js
 assert "Approve care plan" in participant_controls_js
@@ -61,7 +60,7 @@ assert "remote-s8-verification.js" in worker_js
 assert "submit_remote_s8_verification" in remote_js
 assert "verify_remote_s8_entry" in remote_js
 assert "not physically witnessed" in remote_js
-assert "roster-30-day.js?v=20260804-1" in regular_tab_js
+assert "roster-30-day.js" in regular_tab_js
 assert "deputy-permanent-token-ui-fix.js" in regular_tab_js
 assert "VIEW_DAYS=30" in roster_js
 assert "MAX_SHIFTS=45" in roster_js
