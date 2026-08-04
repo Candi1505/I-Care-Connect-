@@ -21,6 +21,7 @@ EXPECTED_ASSETS = {
     "regular-medication-tab.js",
     "roster-30-day.js",
     "deputy-integration.js",
+    "deputy-permanent-token-ui-fix.js",
     "florence-readiness-controls.js",
     "remote-s8-verification.js",
     "set-password.html",
@@ -57,6 +58,7 @@ participant_controls_js = (ROOT / "participant-edit-controls.js").read_text(enco
 regular_tab_js = (ROOT / "regular-medication-tab.js").read_text(encoding="utf-8")
 roster_js = (ROOT / "roster-30-day.js").read_text(encoding="utf-8")
 deputy_js = (ROOT / "deputy-integration.js").read_text(encoding="utf-8")
+deputy_token_ui_js = (ROOT / "deputy-permanent-token-ui-fix.js").read_text(encoding="utf-8")
 
 assert "SUPABASE_SERVICE_ROLE_KEY" not in config_js
 assert "pushVapidPublicKey" in config_js
@@ -69,6 +71,7 @@ assert "submit_remote_s8_verification" in remote_js
 assert "verify_remote_s8_entry" in remote_js
 assert "not physically witnessed" in remote_js
 assert "roster-30-day.js?v=20260804-1" in regular_tab_js
+assert "deputy-permanent-token-ui-fix.js" in regular_tab_js
 assert "VIEW_DAYS=30" in roster_js
 assert "MAX_SHIFTS=45" in roster_js
 assert "Number of weekly shifts to create (1–45)" in roster_js
@@ -76,11 +79,13 @@ assert "deputy-integration.js?v=20260804-3" in worker_js
 assert 'functions.invoke("deputy-connect"' in deputy_js
 assert "Connect Deputy" in deputy_js
 assert "Reconnect Deputy" in deputy_js
-assert "authorization_url" in deputy_js
 assert "Automatically send assigned Florence shifts" in deputy_js
 assert "Sync waiting shifts now" in deputy_js
 assert "Participant names" in deputy_js
 assert "DEPUTY_CLIENT_SECRET" not in deputy_js
+assert 'body:{action:"start"}' in deputy_token_ui_js
+assert "authorization_url" not in deputy_token_ui_js
+assert "DEPUTY_PERMANENT_TOKEN" not in deputy_token_ui_js
 assert 'self.addEventListener("push"' in worker_js
 assert 'self.addEventListener("notificationclick"' in worker_js
 
