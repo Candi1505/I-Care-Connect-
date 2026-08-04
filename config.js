@@ -75,6 +75,8 @@ window.FLORENCE_CONFIG = {
 
 (() => {
   const modules = [
+    "core-ui-fixes-v3.js?v=20260804-1",
+    "deputy-integration.js?v=20260804-3",
     "setup-code-display.js?v=20260802-1",
     "portal-participant-label.js?v=20260802-2",
     "portal-care-plan.js?v=20260803-2",
@@ -83,7 +85,9 @@ window.FLORENCE_CONFIG = {
     "participant-edit-controls.js?v=20260803-1",
     "medication-prn-fix.js?v=20260804-2",
     "regular-medication-tab.js?v=20260804-6",
-    "invoicing-workspace.js?v=20260804-8",
+    "invoicing-workspace.js?v=20260804-session-1",
+    "invoice-menu-fix.js?v=20260804-session-1",
+    "evelyn-invoice-presets.js?v=20260804-1",
     "florence-readiness-controls.js?v=20260802-1",
     "remote-s8-verification.js?v=20260802-1"
   ];

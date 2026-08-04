@@ -50,10 +50,14 @@ assert "invoice_items" in invoice_js
 assert "Prepare email" in invoice_js
 assert "Print / save PDF" in invoice_js
 assert "invoicing-workspace.js" in regular_tab_js
+assert 'loadRuntime("invoicing-workspace.js","20260804-session-1")' in regular_tab_js
+assert 'loadRuntime("invoice-menu-fix.js","20260804-session-1")' in regular_tab_js
 assert 'regular-medication-tab.js?v=20260804-6' in config_js
 assert 'regular-medication-tab.js?v=20260804-6' in worker_js
 assert "INVOICE_UI" in worker_js
-assert "invoicing-workspace.js?v=20260804-8" in worker_js
+assert "invoicing-workspace.js?v=20260804-session-1" in worker_js
+assert "invoicing-workspace.js?v=20260804-session-1" in config_js
+assert "invoice-menu-fix.js?v=20260804-session-1" in config_js
 assert "participant-edit-controls.js" in config_js
 assert "Edit participant" in participant_controls_js
 assert "Approve care plan" in participant_controls_js
@@ -76,10 +80,8 @@ assert "authorization_url" not in deputy_token_ui_js
 assert "DEPUTY_PERMANENT_TOKEN" not in deputy_token_ui_js
 assert 'self.addEventListener("push"' in worker_js
 assert 'self.addEventListener("notificationclick"' in worker_js
-assert "async function withRuntimeFixes" in worker_js
 assert 'url.origin!==self.location.origin' in worker_js
-assert 'type.includes("text/html")' in worker_js
-assert 'headers.set("cache-control","no-store")' in worker_js
+assert "withRuntimeFixes" not in worker_js
 assert 'url.pathname.endsWith("/set-password.html")' in worker_js
 assert "core-ui-fixes-v3.js" in worker_js
 assert "participant-actions-direct.js" not in worker_js

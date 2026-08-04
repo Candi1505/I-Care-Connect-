@@ -74,12 +74,13 @@ config = text("config.js")
 require("@supabase/supabase-js@2.106.2" in index, "index pins Supabase JS 2.106.2")
 require("@supabase/supabase-js@2.106.2" in sil_html, "sil.html pins Supabase JS 2.106.2")
 require("@supabase/supabase-js" not in set_password_html, "setup page does not create a browser Supabase session")
-require('app.js?v=20260804-medication-1' in index, "index loads medication-safe app asset")
+require('app.js?v=20260804-invoice-session-1' in index, "index loads invoice-session-safe app asset")
+require('config.js?v=20260804-invoice-session-1' in index, "index loads invoice-session-safe runtime configuration")
 require('operations.js?v=20260802-1' in index, "index loads final operations asset")
 require('sil.js?v=20260801-4' in sil_html, "SIL page loads final SIL asset")
 require('set-password.js?v=20260802-2' in set_password_html, "setup page loads its controlled asset")
-require('florence-shell-20260804-medication-1' in service_worker, "service worker uses current cache namespace")
-for marker in ['app.js?v=20260804-medication-1', 'operations.js?v=20260802-1', 'sil.js?v=20260801-4']:
+require('florence-shell-20260804-invoice-session-1' in service_worker, "service worker uses current cache namespace")
+for marker in ['config.js?v=20260804-invoice-session-1', 'app.js?v=20260804-invoice-session-1', 'operations.js?v=20260802-1', 'sil.js?v=20260801-4']:
     require(marker in service_worker, f"service worker caches {marker}")
 require('url.pathname.endsWith("/set-password.html")' in service_worker, "service worker never stores setup-link HTML")
 require('/set-password.html\n  Cache-Control: no-store, max-age=0' in headers, "setup page is marked no-store")
@@ -105,8 +106,17 @@ direct_handler_ids = set(re.findall(r'\$\("#([A-Za-z0-9_-]+)"\)\.(?:onclick|onsu
 missing_handler_ids = sorted(direct_handler_ids - index_ids)
 require(not missing_handler_ids, f"app.js direct event handlers have matching index elements: {missing_handler_ids}")
 require('addEventListener("DOMContentLoaded",()=>void boot(),{once:true})' in app, "app.js reaches the authenticated boot entrypoint")
-require('data-med-tab="Regular"' in index and index.index('data-med-tab="Regular"') < index.index('app.js?v=20260804-medication-1'), "Regular medication tab exists before app handlers initialise")
+require('data-med-tab="Regular"' in index and index.index('data-med-tab="Regular"') < index.index('app.js?v=20260804-invoice-session-1'), "Regular medication tab exists before app handlers initialise")
 require('$$("[data-round-status]",$("#med-content")).forEach' in app, "MAR round outcome buttons receive direct mobile-safe handlers")
+require('if(!legacyInvoiceList)return' in app, "legacy invoice renderer does not overwrite the smart invoicing workspace")
+require('ensureReady' in app, "authenticated bridge can recover a mobile session before invoicing")
+invoice_workspace = text("invoicing-workspace.js")
+require('view.dataset.smartInvoicingInstalled==="true"' in invoice_workspace, "smart invoicing installs only once")
+require('await b.ensureReady?.()||b.profile' in invoice_workspace, "smart invoicing validates the current supervisor organisation")
+require('b.profile.organisation_id' not in invoice_workspace, "smart invoicing never dereferences a missing bridge profile")
+for marker in ['invoicing-workspace.js?v=20260804-session-1', 'invoice-menu-fix.js?v=20260804-session-1']:
+    require(marker in config, f"config owns one controlled invoice runtime loader for {marker}")
+require("withRuntimeFixes" not in service_worker, "service worker does not rewrite app HTML or duplicate runtime scripts")
 contains(
     "app.js",
     'if(isPortalUser()&&v!=="portal")v="portal"',
