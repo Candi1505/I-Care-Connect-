@@ -621,7 +621,8 @@ $("#add-med").onclick=()=>form("Add medication profile",[
  field("hold_from","Hold from (optional)","date",[],false),field("hold_until","Hold until (optional)","date",[],false),field("ceased_at","Ceased date (optional)","date",[],false),
  field("instructions","Administration instructions (optional)","textarea",[],false)
 ],async v=>{const payload={organisation_id:profile.organisation_id,active:!v.ceased_at,created_by:profile.id,...v};for(const key of ["administration_time","prn_indication","max_prn_dose","hold_from","hold_until","ceased_at","instructions"])if(!payload[key])payload[key]=null;const {error}=await db.from("medications").insert(payload);if(error)throw error;await refreshAll();toast("Medication added")});
-$("#create-invoice").onclick=()=>form("Create invoice",[field("participant_id","Participant","select",state.participants.map(p=>({value:p.id,label:p.full_name}))),field("description","NDIS support or line item"),field("hours","Billable hours","number"),field("rate","Hourly rate","number"),field("invoice_date","Invoice date","date")],async v=>{const number=`ICC-${Date.now().toString().slice(-8)}`;const {error}=await db.from("invoices").insert({organisation_id:profile.organisation_id,invoice_number:number,status:"Draft",created_by:profile.id,...v});if(error)throw error;await refreshAll();toast("Invoice created")});
+const legacyCreateInvoice=$("#create-invoice");
+if(legacyCreateInvoice)legacyCreateInvoice.onclick=()=>form("Create invoice",[field("participant_id","Participant","select",state.participants.map(p=>({value:p.id,label:p.full_name}))),field("description","NDIS support or line item"),field("hours","Billable hours","number"),field("rate","Hourly rate","number"),field("invoice_date","Invoice date","date")],async v=>{const number=`ICC-${Date.now().toString().slice(-8)}`;const {error}=await db.from("invoices").insert({organisation_id:profile.organisation_id,invoice_number:number,status:"Draft",created_by:profile.id,...v});if(error)throw error;await refreshAll();toast("Invoice created")});
 
 
 $("#add-timeline-event").onclick=()=>form("Add client timeline event",[
@@ -743,8 +744,9 @@ $("#pin-form").onsubmit=async e=>{e.preventDefault();try{
 $("#close-pin").onclick=$("#cancel-pin").onclick=()=>{closeDialog($("#pin-dialog"));pendingMed=null};
 $("#backup").onclick=async()=>{try{await exportBackup()}catch(err){if(err?.name!=="AbortError")toast(err.message)}};
 $("#import-backup").onclick=()=>{try{importBackup()}catch(err){toast(err.message)}};
-$("#connect-xero").onclick=async()=>{try{const {data,error}=await db.functions.invoke("xero-connect",{body:{action:"start"}});if(error||!data?.authorization_url)throw new Error("Xero setup is not deployed yet");location.href=data.authorization_url}catch(err){toast(err.message)}};
-$("#disconnect-xero").onclick=async()=>{try{if(!confirm("Disconnect Florence from Xero?"))return;const {data,error}=await db.functions.invoke("xero-connect",{body:{action:"disconnect"}});if(error||data?.error)throw new Error(data?.error||"Could not disconnect Xero");await loadXeroStatus();toast("Xero disconnected")}catch(err){toast(err.message)}};
+const connectXero=$("#connect-xero"),disconnectXero=$("#disconnect-xero");
+if(connectXero)connectXero.onclick=async()=>{try{const {data,error}=await db.functions.invoke("xero-connect",{body:{action:"start"}});if(error||!data?.authorization_url)throw new Error("Xero setup is not deployed yet");location.href=data.authorization_url}catch(err){toast(err.message)}};
+if(disconnectXero)disconnectXero.onclick=async()=>{try{if(!confirm("Disconnect Florence from Xero?"))return;const {data,error}=await db.functions.invoke("xero-connect",{body:{action:"disconnect"}});if(error||data?.error)throw new Error(data?.error||"Could not disconnect Xero");await loadXeroStatus();toast("Xero disconnected")}catch(err){toast(err.message)}};
 $("#mar-outcome").onchange=()=>{$("#mar-reason-label").classList.toggle("required-reason",$("#mar-outcome").value!=="Administered");setS8DualSignoffVisibility()};
 window.FlorenceBridge={
  get db(){return db},get profile(){return profile},get organisation(){return organisation},get state(){return state},
