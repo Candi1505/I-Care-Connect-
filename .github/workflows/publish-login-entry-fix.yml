@@ -1,0 +1,53 @@
+name: Publish Florence login entry fix
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: ${{ !contains(github.event.head_commit.message, '[skip login entry fix]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Attach login repair directly
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          index = Path('index.html')
+          html = index.read_text(encoding='utf-8')
+          old = '<script src="app.js?v=20260802-1"></script>'
+          new = '<script src="app.js?v=20260802-1"></script>\n<script src="login-recovery.js?v=20260804-3"></script>'
+          if 'login-recovery.js?v=20260804-3' not in html:
+              if old not in html:
+                  raise SystemExit('Could not find app.js entry point')
+              html = html.replace(old, new)
+              index.write_text(html, encoding='utf-8')
+
+          sw = Path('service-worker.js')
+          text = sw.read_text(encoding='utf-8')
+          text = text.replace('florence-shell-20260804-11', 'florence-shell-20260804-12')
+          if '"./login-recovery.js?v=20260804-3"' not in text:
+              text = text.replace('"./app.js?v=20260802-1",', '"./app.js?v=20260802-1","./login-recovery.js?v=20260804-3",')
+          sw.write_text(text, encoding='utf-8')
+          PY
+      - name: Validate login runtime
+        run: |
+          node --check app.js
+          node --check login-recovery.js
+          node --check service-worker.js
+      - name: Commit login entry fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html service-worker.js
+          git diff --cached --quiet && exit 0
+          git commit -m "Publish Florence login recovery at app entry [skip login entry fix]"
+          git push origin HEAD:main
