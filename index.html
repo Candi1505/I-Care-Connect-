@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260804-pricing-1">
+  <link rel="stylesheet" href="styles.css?v=20260805-daily-delivery-1">
 </head>
 <body>
 <div id="toast" class="toast"></div>
@@ -57,7 +57,7 @@
     <button data-view="governance">🔐 Governance <span id="notification-count" class="badge amber">0</span></button>
     <button class="admin-only" data-view="staff-management">👥 People & access management</button>
     <button class="staff-only" data-view="my-account">🔑 My account & PIN</button>
-    <button class="staff-only" type="button" onclick="location.href='sil.html'">📚 Controlled policies, handbooks & SIL resources</button>
+    <button class="staff-only" type="button" onclick="location.href='sil.html'">🌱 Daily SIL delivery & participant plans</button>
     <button data-view="finance">💳 Invoicing & Xero</button>
     <button id="backup" class="admin-only">🔐 Export encrypted archive</button>
     <button id="import-backup" class="admin-only">🛡️ Restore guidance</button>
@@ -69,6 +69,10 @@
     <section id="dashboard-view" class="view active">
       <div class="welcome"><div><p class="eyebrow" id="greeting">Good afternoon</p><h2 id="welcome-name">Welcome back, Candice</h2><p>Every small act of care makes a difference.</p></div><span class="pill good">● System ready</span></div>
       <div id="stats" class="stats"></div>
+      <article class="panel staff-only">
+        <div class="panel-head"><div><p class="eyebrow">Everyday SIL delivery</p><h3>Participant instructions, choices and handover</h3><p>Check current support and emergency information before support, record the participant’s choices during the shift, and complete handover before leaving.</p></div><button type="button" class="primary" onclick="location.href='sil.html'">Open daily delivery</button></div>
+        <div class="sil-dashboard-actions"><a class="secondary button-link" href="sil.html?tab=shift&form=choice">Record a choice</a><a class="secondary button-link" href="sil.html?tab=shift&form=handover">Shift handover</a><a class="secondary button-link" href="sil.html?tab=participants">Participant plans</a><a class="secondary button-link" href="sil.html?tab=houses&form=meeting">House meeting</a></div>
+      </article>
       <article id="dashboard-timeclock-panel" class="panel dashboard-timeclock staff-only">
         <div class="panel-head timeclock-head">
 <div><p class="eyebrow">Time & attendance</p><h3 id="dashboard-clock-status">Checking clock status…</h3><p id="dashboard-clock-detail">Workers and supervisors can record support, administration and other work.</p></div>
