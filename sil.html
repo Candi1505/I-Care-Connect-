@@ -4,21 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#5f8f72">
-  <title>Florence · SIL homes & compliance</title>
+  <title>Florence · Daily SIL delivery</title>
   <link rel="icon" href="florence-icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="florence-icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css?v=20260723-15">
-  <link rel="stylesheet" href="sil.css?v=20260731-1">
+  <link rel="stylesheet" href="sil.css?v=20260805-1">
   <style>html.sil-auth-pending body{visibility:hidden}</style>
 </head>
 <body>
 <div id="sil-toast" class="toast"></div>
 <header class="topbar sil-topbar">
   <button class="icon-btn" type="button" onclick="location.href='index.html'">←</button>
-  <div><h1>Florence</h1><p>SIL homes & compliance</p></div>
+  <div><h1>Florence</h1><p>Daily SIL delivery</p></div>
   <button id="sil-refresh" class="icon-btn" type="button" aria-label="Refresh">↻</button>
 </header>
 
@@ -26,8 +26,8 @@
   <section class="welcome sil-welcome">
     <div>
       <p class="eyebrow">Supported Independent Living</p>
-      <h2>House, participant and provider evidence</h2>
-      <p>Complete live SIL records, track outstanding information and export an auditor-ready evidence pack.</p>
+      <h2>What VJ and every worker need each day</h2>
+      <p>Read current participant instructions, record choices and handover, and keep support, emergency and consultation records ready.</p>
     </div>
     <span id="sil-storage-status" class="pill good">● Loading</span>
   </section>
@@ -51,6 +51,10 @@
   </div>
 
   <section id="sil-dashboard-panel" class="sil-panel active">
+    <article class="panel sil-readiness-panel">
+      <div class="panel-head"><div><p class="eyebrow">Before support and every shift</p><h3>Participant delivery readiness</h3><p>Florence shows missing and overdue plans here. Workers can open today’s choice and handover records; supervisors create approved plan versions.</p></div></div>
+      <div id="sil-readiness" class="sil-readiness-grid"></div>
+    </article>
     <div class="grid two">
       <article class="panel">
         <div class="panel-head"><div><p class="eyebrow">Attention required</p><h3>Outstanding SIL information</h3></div></div>
@@ -85,6 +89,10 @@
   <section id="sil-participants-panel" class="sil-panel">
     <div class="page-head"><div><p class="eyebrow">Participant rights and supports</p><h2>Participant SIL records</h2><p>Communication, agreements, choices, instructions, rights and private-space preferences.</p></div></div>
     <div class="sil-action-grid">
+      <button class="secondary" data-open-form="intake">Participant intake & onboarding</button>
+      <button class="secondary" data-open-form="supportPlan">Participant support plan</button>
+      <button class="secondary" data-open-form="emergencyPlan">Participant emergency plan</button>
+      <button class="secondary" data-open-form="riskAssessment">Participant risk assessment</button>
       <button class="secondary" data-open-form="communication">Communication & decision-making profile</button>
       <button class="secondary" data-open-form="instructions">Participant-specific worker instructions</button>
       <button class="secondary" data-open-form="choice">Choice & daily life record</button>
@@ -98,6 +106,7 @@
 
   <section id="sil-shift-panel" class="sil-panel">
     <div class="page-head"><div><p class="eyebrow">Daily practice evidence</p><h2>Shift and household records</h2><p>Handover, participant choices, visitors and follow-up actions.</p></div><button class="primary" data-open-form="handover">+ Shift handover</button></div>
+    <div class="sil-action-grid"><button class="secondary" data-open-form="choice">Record participant choice</button><button class="secondary" data-open-form="visitor">Visitor / contractor log</button></div>
     <div id="sil-shift-list" class="stack"></div>
   </section>
 
@@ -166,6 +175,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.2"></script>
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script src="sil.js?v=20260801-4"></script>
+<script src="sil.js?v=20260805-1"></script>
 </body>
 </html>

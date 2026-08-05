@@ -74,6 +74,7 @@ index = text("index.html")
 set_password_html = text("set-password.html")
 set_password = text("set-password.js")
 sil_html = text("sil.html")
+sil_js = text("sil.js")
 service_worker = text("service-worker.js")
 headers = text("_headers")
 config = text("config.js")
@@ -84,11 +85,17 @@ require("@supabase/supabase-js" not in set_password_html, "setup page does not c
 require('app.js?v=20260804-session-rpc-1' in index, "index loads secure session-RPC app asset")
 require('config.js?v=20260804-session-rpc-1' in index, "index loads current secure session runtime configuration")
 require('operations.js?v=20260802-1' in index, "index loads final operations asset")
-require('sil.js?v=20260801-4' in sil_html, "SIL page loads final SIL asset")
+require('sil.js?v=20260805-1' in sil_html, "SIL page loads final SIL asset")
 require('set-password.js?v=20260802-2' in set_password_html, "setup page loads its controlled asset")
-require('florence-static-20260804-hardening-1' in service_worker, "service worker uses current cache namespace")
-for marker in ['config.js?v=20260804-session-rpc-1', 'app.js?v=20260804-session-rpc-1', 'operations.js?v=20260802-1', 'sil.js?v=20260801-4']:
+require('florence-static-20260805-daily-delivery-1' in service_worker, "service worker uses current cache namespace")
+for marker in ['config.js?v=20260804-session-rpc-1', 'app.js?v=20260804-session-rpc-1', 'operations.js?v=20260802-1', 'sil.js?v=20260805-1']:
     require(marker in service_worker, f"service worker caches {marker}")
+
+for record_type in ['supportPlan', 'emergencyPlan', 'riskAssessment', 'intake', 'communication', 'instructions', 'choice']:
+    require(f'data-open-form="{record_type}"' in sil_html, f"daily delivery exposes {record_type}")
+    require(f'{record_type}:' in sil_js, f"daily delivery defines {record_type} form")
+require('sil-readiness' in sil_html and 'renderReadiness' in sil_js, "participant delivery readiness is visible")
+require('declaration' in sil_js and 'true, factual record' in sil_js, "choice records require worker declaration")
 require('event.request.mode==="navigate"' in service_worker, "service worker never stores navigation HTML")
 require('"/set-password"' in service_worker, "service worker excludes the canonical setup route")
 require('/set-password.html\n  Cache-Control: no-store, max-age=0' in headers, "setup page is marked no-store")
