@@ -10,7 +10,7 @@ assert 'localStorage.setItem(ACTIVITY_KEY,String(Date.now()))' in APP
 assert APP.count('localStorage.removeItem(ACTIVITY_KEY)') >= 4
 assert 'async function secureRpc(functionName,parameters)' in APP
 assert 'await secureRpc("record_progress_note"' in APP
-assert APP.count('await secureRpc("record_medication_administration"') == 2
+assert APP.count('secureRpc("record_medication_administration"') == 2
 assert 'db.auth.refreshSession()' in APP
 assert 'if(!readLast())writeLast()' in CORE
 assert 'revoke all on function public.record_progress_note(uuid,text,text,text,text,boolean) from public, anon;' in SQL

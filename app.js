@@ -32,6 +32,25 @@ function setS8DualSignoffVisibility(){
  }
  for(const element of [witness,witnessPin,quantity,balance])if(element){element.required=required;if(!required)element.value=""}
 }
+function setPinStatus(message=""){
+ const status=$("#pin-status");if(!status)return;
+ status.textContent=String(message||"").replace(/\s+/g," ").trim();
+ status.classList.toggle("hidden",!status.textContent);
+}
+function resetPinSigningUi(){
+ setPinStatus();
+ const submit=$("#pin-submit");if(submit){submit.disabled=false;submit.textContent="Sign and save MAR"}
+}
+function openMedicationSignature(medication,outcome="Administered"){
+ pendingMed=medication;
+ const form=$("#pin-form");form.reset();resetPinSigningUi();
+ $("#mar-outcome").value=outcome;
+ $("#mar-reason-label").classList.toggle("required-reason",outcome!=="Administered");
+ $("#pin-summary").textContent=`${medication.medication_name} · ${medication.dose} for ${medication.participant?.full_name}`;
+ setS8DualSignoffVisibility();
+ openDialog($("#pin-dialog"));
+ window.dispatchEvent(new CustomEvent("florence:medication-sign-open",{detail:{medicationId:medication.id}}));
+}
 function requireConfig(){
  if(!C.supabaseUrl||!C.supabaseAnonKey){
    $("#connection-message").textContent="Supabase setup is required before staff can sign in.";
@@ -710,24 +729,18 @@ document.addEventListener("click",async e=>{
   b=e.target.closest("[data-archive-thread]");if(b){if(!isStaffUser())throw new Error("This action is available to staff only");const archive=b.dataset.archive==="true";const {error}=await db.from("portal_threads").update({status:archive?"Closed":"Open",updated_at:new Date().toISOString()}).eq("id",b.dataset.archiveThread);if(error)throw error;activePortalThread=null;await refreshAll();return toast(archive?"Conversation archived":"Conversation restored")}
   b=e.target.closest("[data-mar-sign]");if(b){
    if(!isStaffUser())throw new Error("This action is available to staff only");
-   pendingMed=state.medications.find(x=>x.id===b.dataset.marSign);
-   if(!pendingMed)throw new Error("Medication profile not found");
-   $("#pin-form").reset();
-   $("#mar-outcome").value=b.dataset.outcome||"Administered";
-   $("#mar-reason-label").classList.toggle("required-reason",$("#mar-outcome").value!=="Administered");
-   $("#pin-summary").textContent=`${pendingMed.medication_name} · ${pendingMed.dose} for ${pendingMed.participant?.full_name}`;
-   setS8DualSignoffVisibility();openDialog($("#pin-dialog"));return
+   const medication=state.medications.find(x=>x.id===b.dataset.marSign);
+   if(!medication)throw new Error("Medication profile not found");
+   openMedicationSignature(medication,b.dataset.outcome||"Administered");return
   }
   b=e.target.closest("[data-claim-shift]");if(b){const {error}=await secureRpc("claim_open_shift",{p_shift_id:b.dataset.claimShift});if(error)throw error;await refreshAll();return toast("Open shift claimed")}
   b=e.target.closest("[data-cancel-shift]");if(b){const reason=prompt("Why is this shift being cancelled?");if(!reason)return;const {error}=await db.from("shifts").update({status:"Cancelled",cancellation_reason:reason,cancelled_at:new Date().toISOString()}).eq("id",b.dataset.cancelShift);if(error)throw error;await refreshAll();return toast("Shift cancelled")}
   b=e.target.closest("[data-publish]");if(b){const {error}=await db.from("shifts").update({status:"Published",response:"Pending",published_at:new Date().toISOString()}).eq("id",b.dataset.publish);if(error)throw error;await refreshAll();return toast("Shift published")}
   b=e.target.closest("[data-shift-response]");if(b){const {error}=await secureRpc("respond_to_shift",{p_shift_id:b.dataset.shiftResponse,p_response:b.dataset.response});if(error)throw error;await refreshAll();return toast("Shift "+b.dataset.response.toLowerCase())}
   b=e.target.closest("[data-administer]");if(b){
-   pendingMed=state.medications.find(x=>x.id===b.dataset.administer);
-   if(!pendingMed)throw new Error("Medication profile not found");
-   $("#pin-form").reset();$("#mar-outcome").value="Administered";
-   $("#pin-summary").textContent=`${pendingMed.medication_name} · ${pendingMed.dose} for ${pendingMed.participant?.full_name}`;
-   setS8DualSignoffVisibility();openDialog($("#pin-dialog"));return
+   const medication=state.medications.find(x=>x.id===b.dataset.administer);
+   if(!medication)throw new Error("Medication profile not found");
+   openMedicationSignature(medication);return
   }
   b=e.target.closest("[data-open-doc]");if(b){const d=state.compliance.find(x=>x.id===b.dataset.openDoc);if(!d)throw new Error("Document record not found");await auditAccess("DOWNLOAD","compliance_documents",d.id,{title:d.title,scope:d.scope});const {data,error}=await db.storage.from(C.storageBucket).createSignedUrl(d.storage_path,60);if(error)throw error;window.open(data.signedUrl,"_blank");return}
   b=e.target.closest("[data-careplan]");if(b){const p=state.participants.find(x=>x.id===b.dataset.careplan);form("Upload PDF care plan",[field("title","Document title"),field("review_date","Review date","date"),field("file","PDF care plan","file")],async(v,fd)=>uploadDocument(fd.get("file"),{scope:"Participant",subject_name:p.full_name,subject_id:p.id,category:"Care plan",title:v.title,review_date:v.review_date}));return}
@@ -754,7 +767,8 @@ $("#set-pay-period").onclick=()=>form("Set fortnightly pay period",[
 },{pay_period_anchor:organisation?.pay_period_anchor||brisbaneYmd()});
 $("#dynamic-form").onsubmit=async e=>{e.preventDefault();if(!pending)return;const formElement=e.currentTarget,fd=new FormData(formElement),v=Object.fromEntries(fd.entries()),submit=formElement.querySelector('button[type="submit"]'),status=$("#dialog-status"),isInvite=$("#dialog-title")?.textContent.startsWith("Invite ");if(status){status.textContent="";status.classList.add("hidden")}if(submit){submit.disabled=true;submit.textContent=isInvite?"Sending invitation…":"Saving…"}try{const result=await Promise.race([pending(v,fd),new Promise((_,reject)=>setTimeout(()=>reject(new Error("Florence did not receive a response. Check the Edge Function logs and try again.")),20000))]);closeDialog($("#dialog"));pending=null;formElement.reset();toast(typeof result==="string"?result:(isInvite?"Invitation sent securely":"Saved successfully"))}catch(err){const message=err.message||"Florence could not save this form.";if(status){status.textContent=message;status.classList.remove("hidden")}else toast(message)}finally{if(submit){submit.disabled=false;submit.textContent="Save"}}};
 $("#close-dialog").onclick=$("#cancel-dialog").onclick=()=>{closeDialog($("#dialog"));pending=null};
-$("#pin-form").onsubmit=async e=>{e.preventDefault();try{
+$("#pin-form").onsubmit=async e=>{e.preventDefault();const formElement=e.currentTarget,submit=$("#pin-submit");if(submit?.disabled)return;setPinStatus();if(submit){submit.disabled=true;submit.textContent="Signing and saving…"}try{
+ if(!pendingMed)throw new Error("Florence lost the medication selection. Close this window and choose the medication again.");
  const pin=$("#med-pin").value;
  const outcome=$("#mar-outcome").value;
  const reason=$("#mar-reason").value;
@@ -772,15 +786,17 @@ $("#pin-form").onsubmit=async e=>{e.preventDefault();try{
   if(!Number.isFinite(s8Quantity)||s8Quantity<=0)throw new Error("Enter the Schedule 8 quantity removed from stock");
   if(!Number.isFinite(s8Balance)||s8Balance<0)throw new Error("Enter the Schedule 8 balance remaining after administration");
  }
- const {error}=await secureRpc("record_medication_administration",{
-  p_medication_id:pendingMed.id,p_pin:pin,p_status:outcome,p_notes:notes,
-  p_witness_id:witnessId,p_witness_pin:witnessPin,
-  p_s8_quantity:dualRequired?s8Quantity:null,p_s8_balance:dualRequired?s8Balance:null
- });
+ const signingRequest=secureRpc("record_medication_administration",{
+   p_medication_id:pendingMed.id,p_pin:pin,p_status:outcome,p_notes:notes,
+   p_witness_id:witnessId,p_witness_pin:witnessPin,
+   p_s8_quantity:dualRequired?s8Quantity:null,p_s8_balance:dualRequired?s8Balance:null
+  });
+ const {error}=await Promise.race([signingRequest,new Promise((_,reject)=>setTimeout(()=>reject(new Error("Florence did not receive a signing response. Close this window and refresh the MAR before trying again, so the dose is not recorded twice.")),20000))]);
  if(error)throw error;
- closeDialog($("#pin-dialog"));$("#pin-form").reset();pendingMed=null;await refreshAll();toast(dualRequired?"Schedule 8 MAR dual-signed and saved":`${outcome} MAR entry digitally signed`);
-}catch(err){toast(err.message)}};
-$("#close-pin").onclick=$("#cancel-pin").onclick=()=>{closeDialog($("#pin-dialog"));pendingMed=null};
+ closeDialog($("#pin-dialog"));formElement.reset();pendingMed=null;toast(dualRequired?"Schedule 8 MAR dual-signed and saved":`${outcome} MAR entry digitally signed`);
+ try{await refreshAll()}catch(_refreshError){toast("Medication entry saved. Refresh Florence to update the MAR list.")}
+}catch(err){setPinStatus(err?.message||"Florence could not sign this medication entry.")}finally{if(submit){submit.disabled=false;submit.textContent="Sign and save MAR"}}};
+$("#close-pin").onclick=$("#cancel-pin").onclick=()=>{closeDialog($("#pin-dialog"));$("#pin-form").reset();pendingMed=null;resetPinSigningUi()};
 $("#backup").onclick=async()=>{try{await exportBackup()}catch(err){if(err?.name!=="AbortError")toast(err.message)}};
 $("#import-backup").onclick=()=>{try{importBackup()}catch(err){toast(err.message)}};
 const connectXero=$("#connect-xero"),disconnectXero=$("#disconnect-xero");
