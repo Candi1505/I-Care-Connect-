@@ -339,13 +339,14 @@
       </div>
       <small>Neither worker may enter or disclose the other person’s PIN.</small>
     </div>
-    <div class="dialog-actions"><button type="button" id="cancel-pin" class="secondary">Cancel</button><button class="primary">Sign and save MAR</button></div>
+    <div id="pin-status" class="form-status hidden" role="alert" aria-live="assertive"></div>
+    <div class="dialog-actions"><button type="button" id="cancel-pin" class="secondary">Cancel</button><button id="pin-submit" type="submit" class="primary">Sign and save MAR</button></div>
   </form>
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.2"></script>
-<script src="config.js?v=20260804-session-rpc-1"></script>
-<script src="app.js?v=20260804-session-rpc-1"></script>
+<script src="config.js?v=20260806-prn-signing-1"></script>
+<script src="app.js?v=20260806-prn-signing-1"></script>
 <script src="operations.js?v=20260802-1"></script>
 <script src="staff-management.js?v=20260801-1"></script>
 <script>
