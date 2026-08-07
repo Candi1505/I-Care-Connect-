@@ -27,6 +27,12 @@
 /sil
   Cache-Control: no-store, max-age=0
 
+/sil-record.html
+  Cache-Control: no-store, max-age=0
+
+/sil-record
+  Cache-Control: no-store, max-age=0
+
 /config.js
   Cache-Control: no-store, max-age=0
 

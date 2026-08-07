@@ -32,8 +32,10 @@
 !set-password.html
 !set-password.js
 !sil.html
+!sil-record.html
 !sil.css
 !sil.js
+!sil-record.js
 !service-worker.js
 !manifest.webmanifest
 !florence-icon.svg
