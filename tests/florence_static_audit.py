@@ -130,7 +130,7 @@ for path in browser_paths:
 # Portal least privilege.
 app = text("app.js")
 require('related_sil_record_id' in app and 'sil-record.html?id=' in app, "choice timeline entries open their audited SIL form")
-require('florence:sil-record-return' in app and 'target.origin===location.origin' in app, "sign-in restores only a same-origin secure evidence link")
+require('florence:sil-record-return' in app and 'target.origin===location.origin' in app and 'sil-record(?:\\.html)?$' in app, "sign-in restores only a same-origin canonical or HTML evidence link")
 portal_care_plan = text("portal-care-plan.js")
 require('related_sil_record_id' in portal_care_plan and 'sil-record.html?id=' in portal_care_plan, "participant history links to completed choice evidence")
 index_parser = IdParser()

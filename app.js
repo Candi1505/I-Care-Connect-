@@ -274,7 +274,7 @@ async function enterApp(s){
  if(recordReturn&&isStaffUser()){
   try{
    const target=new URL(recordReturn);
-   if(target.origin===location.origin&&/\/sil-record\.html$/.test(target.pathname)){
+   if(target.origin===location.origin&&/\/sil-record(?:\.html)?$/.test(target.pathname)){
     sessionStorage.removeItem("florence:sil-record-return");
     location.replace(target.href);
     return
