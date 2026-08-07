@@ -184,6 +184,21 @@ function openForm(type){
  const dialog=$("#sil-dialog");dialog.showModal?dialog.showModal():dialog.setAttribute("open","")
 }
 function closeForm(){const dialog=$("#sil-dialog");dialog.close?dialog.close():dialog.removeAttribute("open")}
+function fieldLabel(record,key){
+ const field=schemas[record.type]?.fields?.find(([name])=>name===key);
+ return field?.[1]||key.replaceAll("_"," ").replace(/\b\w/g,letter=>letter.toUpperCase())
+}
+function closeRecord(){const dialog=$("#sil-record-dialog");dialog.close?dialog.close():dialog.removeAttribute("open")}
+function openRecord(recordId){
+ const record=state.records.find(item=>item.id===recordId);
+ if(!record){toast("That completed SIL record is no longer available");return}
+ $("#sil-record-detail-title").textContent=record.title;
+ $("#sil-record-detail-meta").innerHTML=`${badge(statusOf(record))}${badge(participantName(record.participant_id))}${badge(fmt(record.createdAt))}`;
+ const entries=Object.entries(record.fields||{}).filter(([,value])=>value!==null&&value!==undefined&&value!=="");
+ $("#sil-record-detail-fields").innerHTML=entries.map(([key,value])=>`<dt>${esc(fieldLabel(record,key))}</dt><dd>${esc(value)}</dd>`).join("")||"<dt>Record</dt><dd>No form fields were stored.</dd>";
+ void auditSilAccess("READ","sil_records",record.id,{record_type:record.type,source:"audit_evidence"});
+ const dialog=$("#sil-record-dialog");dialog.showModal?dialog.showModal():dialog.setAttribute("open","")
+}
 async function submit(event){
  event.preventDefault();
  const formElement=event.currentTarget,type=formElement.dataset.type,schema=schemas[type];
@@ -218,8 +233,8 @@ async function submit(event){
 }
 function recordCard(r){
  const entries=Object.entries(r.fields||{}).filter(([,value])=>value).slice(0,5),riskLevel=r.fields?.overall_risk||r.fields?.risk_level||"",risk=riskLevel?` sil-risk-${String(riskLevel).split(" ")[0].toLowerCase()}`:"";
- const archive=currentProfile?.role==="supervisor"?`<div class="sil-record-actions"><button class="link" data-archive-record="${r.id}">Archive record</button></div>`:"";
- return`<article class="record${risk}"><div class="record-top"><div><h3>${esc(r.title)}</h3><p>${esc(r.category)} · ${fmt(r.createdAt)}</p></div>${badge(statusOf(r))}</div><p>${entries.map(([key,value])=>`<strong>${esc(key.replaceAll("_"," "))}:</strong> ${esc(value)}`).join("<br>")}</p>${archive}</article>`
+ const archive=currentProfile?.role==="supervisor"?`<button class="link" data-archive-record="${r.id}">Archive record</button>`:"";
+ return`<article class="record sil-evidence-record${risk}" data-open-record="${r.id}"><div class="record-top"><div><h3><button type="button" class="link sil-record-title-button" data-open-record-button="${r.id}">${esc(r.title)}</button></h3><p>${esc(r.category)} · ${fmt(r.createdAt)}</p></div>${badge(statusOf(r))}</div><p>${entries.map(([key,value])=>`<strong>${esc(fieldLabel(r,key))}:</strong> ${esc(value)}`).join("<br>")}</p><div class="sil-record-actions"><button type="button" class="link" data-open-record-button="${r.id}">View completed form</button>${archive}</div></article>`
 }
 const requiredParticipantRecords=[
  ["intake","Intake & onboarding","📥"],["supportPlan","Support plan","🧩"],["emergencyPlan","Emergency plan","🚨"],["riskAssessment","Risk assessment","⚠️"],["communication","Communication & decisions","🗣️"],["instructions","Worker quick-read instructions","📌"]
@@ -374,6 +389,7 @@ $$('[data-open-form]').forEach(button=>button.onclick=()=>openForm(button.datase
 $("#edit-provider").onclick=()=>{openForm("provider");setTimeout(()=>Object.entries(state.provider||PROVIDER).forEach(([key,value])=>{const input=$(`[name="${key}"]`);if(input)input.value=value}),0)};
 $("#sil-form").onsubmit=event=>void submit(event);
 $("#sil-dialog-close").onclick=closeForm;$("#sil-dialog-cancel").onclick=closeForm;
+$("#sil-record-detail-close").onclick=closeRecord;$("#sil-record-detail-done").onclick=closeRecord;
 $("#sil-refresh").onclick=async()=>{try{await loadSilState();await loadPrivateDocuments();render();toast("SIL workspace refreshed")}catch(error){toast(error.message||"Florence could not refresh SIL records")}};
 $("#sil-import-library")?.addEventListener("click",()=>$("#sil-library-zip")?.click());
 $("#sil-library-zip")?.addEventListener("change",event=>{const file=event.target.files?.[0];if(file)void importPrivateLibrary(file).catch(error=>{const status=$("#sil-library-import-status");if(status)status.textContent=error.message||"The private library could not be installed";toast(error.message||"The private library could not be installed")})});
@@ -386,6 +402,8 @@ async function archiveSilRecord(recordId){
  await loadSilState();render();toast("SIL record archived with its audit history retained")
 }
 document.addEventListener("click",event=>{
+ const openButton=event.target.closest("[data-open-record-button]");
+ if(openButton){event.stopPropagation();openRecord(openButton.dataset.openRecordButton);return}
  const participantForm=event.target.closest("[data-open-participant-form]");
  if(participantForm){
   const url=new URL(location.href);url.searchParams.set("participant",participantForm.dataset.participant);history.replaceState({},"",url);openForm(participantForm.dataset.openParticipantForm);return
@@ -393,7 +411,9 @@ document.addEventListener("click",event=>{
  const privateButton=event.target.closest("[data-open-private-document]");
  if(privateButton){void openPrivateDocument(privateButton.dataset.openPrivateDocument);return}
  const archiveButton=event.target.closest("[data-archive-record]");
- if(archiveButton&&confirm("Archive this SIL record? It will remain in the secure audit history."))void archiveSilRecord(archiveButton.dataset.archiveRecord).catch(error=>toast(error.message))
+ if(archiveButton){event.stopPropagation();if(confirm("Archive this SIL record? It will remain in the secure audit history."))void archiveSilRecord(archiveButton.dataset.archiveRecord).catch(error=>toast(error.message));return}
+ const recordCard=event.target.closest("[data-open-record]");
+ if(recordCard)openRecord(recordCard.dataset.openRecord)
 });
 async function authorise(){
  try{
@@ -423,9 +443,10 @@ async function authorise(){
   render();
   document.documentElement.classList.remove("sil-auth-pending");
   try{sessionStorage.removeItem("florence:return-to")}catch(_ignored){}
-  const params=new URL(location.href).searchParams,requestedTab=params.get("tab"),requestedForm=params.get("form");
+  const params=new URL(location.href).searchParams,requestedTab=params.get("tab"),requestedForm=params.get("form"),requestedRecord=params.get("record");
   if(requestedTab)activateTab(requestedTab);
   if(requestedForm&&schemas[requestedForm])setTimeout(()=>openForm(requestedForm),0);
+  if(requestedRecord)setTimeout(()=>openRecord(requestedRecord),0);
  }catch(error){
   console.error("SIL access check failed",error);
   showSilStartupError(error);

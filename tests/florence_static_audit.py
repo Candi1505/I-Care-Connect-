@@ -59,6 +59,7 @@ required_files = [
     "florence-controlled-library-upload-hotfix.sql",
     "florence-final-readiness-upgrade.sql",
     "florence-s8-dual-signoff-timeline-upgrade.sql",
+    "florence-choice-evidence-timeline-fix.sql",
 ]
 for path in required_files:
     require((ROOT / path).exists(), f"required file exists: {path}")
@@ -82,13 +83,14 @@ config = text("config.js")
 require("@supabase/supabase-js@2.106.2" in index, "index pins Supabase JS 2.106.2")
 require("@supabase/supabase-js@2.106.2" in sil_html, "sil.html pins Supabase JS 2.106.2")
 require("@supabase/supabase-js" not in set_password_html, "setup page does not create a browser Supabase session")
-require('app.js?v=20260806-prn-signing-1' in index, "index loads visible PRN signing app asset")
+require('app.js?v=20260807-choice-review-1' in index, "index loads current choice-review app asset")
 require('config.js?v=20260806-prn-signing-1' in index, "index loads current PRN signing runtime configuration")
 require('operations.js?v=20260802-1' in index, "index loads final operations asset")
-require('sil.js?v=20260805-1' in sil_html, "SIL page loads final SIL asset")
+require('sil.js?v=20260807-choice-review-1' in sil_html, "SIL page loads current record-review asset")
+require('sil.css?v=20260807-choice-review-1' in sil_html, "SIL page loads current record-review styles")
 require('set-password.js?v=20260802-2' in set_password_html, "setup page loads its controlled asset")
-require('florence-static-20260806-prn-signing-1' in service_worker, "service worker uses current cache namespace")
-for marker in ['config.js?v=20260806-prn-signing-1', 'app.js?v=20260806-prn-signing-1', 'medication-prn-fix.js?v=20260806-prn-signing-1', 'operations.js?v=20260802-1', 'sil.js?v=20260805-1']:
+require('florence-static-20260807-choice-review-1' in service_worker, "service worker uses current cache namespace")
+for marker in ['config.js?v=20260806-prn-signing-1', 'app.js?v=20260807-choice-review-1', 'medication-prn-fix.js?v=20260806-prn-signing-1', 'operations.js?v=20260802-1', 'sil.css?v=20260807-choice-review-1', 'sil.js?v=20260807-choice-review-1']:
     require(marker in service_worker, f"service worker caches {marker}")
 
 for record_type in ['supportPlan', 'emergencyPlan', 'riskAssessment', 'intake', 'communication', 'instructions', 'choice']:
@@ -96,6 +98,7 @@ for record_type in ['supportPlan', 'emergencyPlan', 'riskAssessment', 'intake', 
     require(f'{record_type}:' in sil_js, f"daily delivery defines {record_type} form")
 require('sil-readiness' in sil_html and 'renderReadiness' in sil_js, "participant delivery readiness is visible")
 require('declaration' in sil_js and 'true, factual record' in sil_js, "choice records require worker declaration")
+require('data-open-record' in sil_js and 'openRecord(recordId)' in sil_js, "completed SIL evidence records open for review")
 require('event.request.mode==="navigate"' in service_worker, "service worker never stores navigation HTML")
 require('"/set-password"' in service_worker, "service worker excludes the canonical setup route")
 require('/set-password.html\n  Cache-Control: no-store, max-age=0' in headers, "setup page is marked no-store")
@@ -115,6 +118,7 @@ for path in browser_paths:
 
 # Portal least privilege.
 app = text("app.js")
+require('related_sil_record_id' in app and 'View completed choice form' in app, "choice timeline entries open their audited SIL form")
 index_parser = IdParser()
 index_parser.feed(index)
 index_ids = set(index_parser.ids)
@@ -122,7 +126,7 @@ direct_handler_ids = set(re.findall(r'\$\("#([A-Za-z0-9_-]+)"\)\.(?:onclick|onsu
 missing_handler_ids = sorted(direct_handler_ids - index_ids)
 require(not missing_handler_ids, f"app.js direct event handlers have matching index elements: {missing_handler_ids}")
 require('addEventListener("DOMContentLoaded",()=>void boot(),{once:true})' in app, "app.js reaches the authenticated boot entrypoint")
-require('data-med-tab="Regular"' in index and index.index('data-med-tab="Regular"') < index.index('app.js?v=20260806-prn-signing-1'), "Regular medication tab exists before app handlers initialise")
+require('data-med-tab="Regular"' in index and index.index('data-med-tab="Regular"') < index.index('app.js?v=20260807-choice-review-1'), "Regular medication tab exists before app handlers initialise")
 require('id="pin-status"' in index and 'aria-live="assertive"' in index, "medication signing errors remain visible inside the modal")
 require('id="pin-submit" type="submit"' in index, "medication signing has an explicit submit control")
 require('submit.textContent="Signing and saving…"' in app, "medication signing shows an in-progress state")
@@ -203,6 +207,14 @@ require('workerCreateRecordTypes=new Set(["visitor","choice","handover"])' in si
 controlled_match = re.search(r"const controlledDocuments=\[(.*?)\n\];\nlet privateDocuments", sil, re.S)
 controlled_count = len(re.findall(r'^\["', controlled_match.group(1), re.M)) if controlled_match else 0
 require(controlled_count == 44, f"controlled private library manifest has 44 documents (found {controlled_count})")
+
+choice_timeline = text("florence-choice-evidence-timeline-fix.sql")
+for marker in [
+    "related_sil_record_id", "sync_sil_choice_to_timeline",
+    "sil_choice_timeline_sync", "PASS_CHOICE_EVIDENCE_TIMELINE",
+    "set search_path=public,pg_temp",
+]:
+    require(marker in choice_timeline, f"choice timeline SQL contains {marker!r}")
 
 # Database hardening, RLS, cleanup and verification.
 final_sql = text("florence-final-readiness-upgrade.sql")

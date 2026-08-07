@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css?v=20260723-15">
-  <link rel="stylesheet" href="sil.css?v=20260805-1">
+  <link rel="stylesheet" href="sil.css?v=20260807-choice-review-1">
   <style>html.sil-auth-pending body{visibility:hidden}</style>
 </head>
 <body>
@@ -172,9 +172,18 @@
   </form>
 </dialog>
 
+<dialog id="sil-record-dialog">
+  <article class="sil-record-detail">
+    <div class="dialog-head"><div><p class="eyebrow">Completed audit evidence</p><h3 id="sil-record-detail-title">SIL record</h3></div><button id="sil-record-detail-close" type="button" class="icon-btn dark" aria-label="Close completed record" title="Close completed record">×</button></div>
+    <div id="sil-record-detail-meta" class="record-meta"></div>
+    <dl id="sil-record-detail-fields" class="sil-record-detail-fields"></dl>
+    <div class="dialog-actions"><button id="sil-record-detail-done" type="button" class="primary">Done</button></div>
+  </article>
+</dialog>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.2"></script>
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script src="sil.js?v=20260805-1"></script>
+<script src="sil.js?v=20260807-choice-review-1"></script>
 </body>
 </html>
