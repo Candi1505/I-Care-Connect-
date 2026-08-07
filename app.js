@@ -270,6 +270,17 @@ async function enterApp(s){
  }
  const h=new Date().getHours();$("#greeting").textContent=h<12?"Good morning":h<17?"Good afternoon":"Good evening";
  await refreshAll();
+ let recordReturn="";try{recordReturn=sessionStorage.getItem("florence:sil-record-return")||""}catch(_ignored){}
+ if(recordReturn&&isStaffUser()){
+  try{
+   const target=new URL(recordReturn);
+   if(target.origin===location.origin&&/\/sil-record\.html$/.test(target.pathname)){
+    sessionStorage.removeItem("florence:sil-record-return");
+    location.replace(target.href);
+    return
+   }
+  }catch(_ignored){try{sessionStorage.removeItem("florence:sil-record-return")}catch(_ignoredAgain){}}
+ }
  const requestedReturn=new URL(location.href).searchParams.get("return");
  if(requestedReturn==="sil"&&isStaffUser()){
   history.replaceState({},"",location.pathname);
@@ -518,7 +529,7 @@ function renderTimeline(){
  let items=state.timeline;
  if(timelineFilter!=="all")items=items.filter(x=>x.event_type===timelineFilter);
  if(!isSupervisor()&&profile.participant_id)items=items.filter(x=>x.participant_id===profile.participant_id);
- $("#timeline-list").innerHTML=items.map(e=>`<article class="record timeline-event ${esc(e.event_type.toLowerCase())}"><div class="record-top"><div><h3>${esc(e.title)}</h3><p>${esc(e.participant?.full_name)} · ${esc(e.event_type)}</p></div>${badge(e.severity||"Recorded")}</div><p>${esc(e.description)}</p>${e.action_taken?`<p><strong>Action taken:</strong> ${esc(e.action_taken)}</p>`:""}${e.follow_up?`<p><strong>Follow-up:</strong> ${esc(e.follow_up)}</p>`:""}${e.related_sil_record_id?`<div class="actions"><a class="secondary button-link" href="sil.html?tab=evidence&amp;record=${encodeURIComponent(e.related_sil_record_id)}">View completed choice form</a></div>`:""}<div class="record-meta">${badge(fmt(e.occurred_at))}${e.created_by_profile?.full_name?badge("Added by "+e.created_by_profile.full_name):""}</div></article>`).join("")||empty("No timeline events in this category.");
+ $("#timeline-list").innerHTML=items.map(e=>`<article class="record timeline-event ${esc(e.event_type.toLowerCase())}"><div class="record-top"><div><h3>${esc(e.title)}</h3><p>${esc(e.participant?.full_name)} · ${esc(e.event_type)}</p></div>${badge(e.severity||"Recorded")}</div><p>${esc(e.description)}</p>${e.action_taken?`<p><strong>Action taken:</strong> ${esc(e.action_taken)}</p>`:""}${e.follow_up?`<p><strong>Follow-up:</strong> ${esc(e.follow_up)}</p>`:""}${e.related_sil_record_id?`<div class="actions"><a class="secondary button-link" href="sil-record.html?id=${encodeURIComponent(e.related_sil_record_id)}">View completed choice form</a></div>`:""}<div class="record-meta">${badge(fmt(e.occurred_at))}${e.created_by_profile?.full_name?badge("Added by "+e.created_by_profile.full_name):""}</div></article>`).join("")||empty("No timeline events in this category.");
 }
 function canSeePortalThread(t){
  if(isSupervisor()||profile.role==="staff")return true;

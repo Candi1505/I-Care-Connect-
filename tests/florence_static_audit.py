@@ -44,7 +44,7 @@ required_files = [
     "index.html", "styles.css", "config.js", "app.js", "operations.js",
     "staff-management.js", "set-password.html", "set-password.js",
     "medication-prn-fix.js", "participant-edit-controls.js",
-    "sil.html", "sil.css", "sil.js", "service-worker.js",
+    "sil.html", "sil-record.html", "sil.css", "sil.js", "sil-record.js", "service-worker.js",
     "supabase/functions/staff-management/index.ts",
     "supabase/functions/xero-connect/index.ts",
     "supabase/functions/deputy-connect/index.ts",
@@ -65,7 +65,7 @@ for path in required_files:
     require((ROOT / path).exists(), f"required file exists: {path}")
 
 # HTML structure and controlled dependencies.
-for path in ["index.html", "set-password.html", "sil.html"]:
+for path in ["index.html", "set-password.html", "sil.html", "sil-record.html"]:
     parser = IdParser()
     parser.feed(text(path))
     duplicates = {key: value for key, value in Counter(parser.ids).items() if value > 1}
@@ -76,21 +76,25 @@ set_password_html = text("set-password.html")
 set_password = text("set-password.js")
 sil_html = text("sil.html")
 sil_js = text("sil.js")
+sil_record_html = text("sil-record.html")
+sil_record_js = text("sil-record.js")
 service_worker = text("service-worker.js")
 headers = text("_headers")
 config = text("config.js")
 
 require("@supabase/supabase-js@2.106.2" in index, "index pins Supabase JS 2.106.2")
 require("@supabase/supabase-js@2.106.2" in sil_html, "sil.html pins Supabase JS 2.106.2")
+require("@supabase/supabase-js@2.106.2" in sil_record_html, "evidence page pins Supabase JS 2.106.2")
 require("@supabase/supabase-js" not in set_password_html, "setup page does not create a browser Supabase session")
-require('app.js?v=20260807-choice-review-1' in index, "index loads current choice-review app asset")
-require('config.js?v=20260806-prn-signing-1' in index, "index loads current PRN signing runtime configuration")
+require('app.js?v=20260807-evidence-page-2' in index, "index loads current evidence-navigation app asset")
+require('config.js?v=20260807-evidence-page-2' in index, "index loads current evidence-navigation runtime configuration")
 require('operations.js?v=20260802-1' in index, "index loads final operations asset")
-require('sil.js?v=20260807-choice-review-1' in sil_html, "SIL page loads current record-review asset")
-require('sil.css?v=20260807-choice-review-1' in sil_html, "SIL page loads current record-review styles")
+require('sil.js?v=20260807-evidence-page-2' in sil_html, "SIL page loads current record-review asset")
+require('sil.css?v=20260807-evidence-page-2' in sil_html, "SIL page loads current record-review styles")
+require('sil-record.js?v=20260807-evidence-page-2' in sil_record_html, "evidence page loads its current secure viewer")
 require('set-password.js?v=20260802-2' in set_password_html, "setup page loads its controlled asset")
-require('florence-static-20260807-choice-review-1' in service_worker, "service worker uses current cache namespace")
-for marker in ['config.js?v=20260806-prn-signing-1', 'app.js?v=20260807-choice-review-1', 'medication-prn-fix.js?v=20260806-prn-signing-1', 'operations.js?v=20260802-1', 'sil.css?v=20260807-choice-review-1', 'sil.js?v=20260807-choice-review-1']:
+require('florence-static-20260807-evidence-page-2' in service_worker, "service worker uses current cache namespace")
+for marker in ['config.js?v=20260807-evidence-page-2', 'app.js?v=20260807-evidence-page-2', 'medication-prn-fix.js?v=20260806-prn-signing-1', 'operations.js?v=20260802-1', 'portal-care-plan.js?v=20260807-evidence-page-2', 'sil.css?v=20260807-evidence-page-2', 'sil.js?v=20260807-evidence-page-2', 'sil-record.js?v=20260807-evidence-page-2']:
     require(marker in service_worker, f"service worker caches {marker}")
 
 for record_type in ['supportPlan', 'emergencyPlan', 'riskAssessment', 'intake', 'communication', 'instructions', 'choice']:
@@ -98,17 +102,24 @@ for record_type in ['supportPlan', 'emergencyPlan', 'riskAssessment', 'intake', 
     require(f'{record_type}:' in sil_js, f"daily delivery defines {record_type} form")
 require('sil-readiness' in sil_html and 'renderReadiness' in sil_js, "participant delivery readiness is visible")
 require('declaration' in sil_js and 'true, factual record' in sil_js, "choice records require worker declaration")
-require('data-open-record' in sil_js and 'openRecord(recordId)' in sil_js, "completed SIL evidence records open for review")
+require('sil-record.html?id=' in sil_js and 'evidenceUrl(recordId)' in sil_js, "completed SIL evidence uses a normal mobile-safe link")
+require('currentLevel!=="aal2"' in sil_record_js, "evidence viewer requires MFA")
+require('.eq("organisation_id",profile.organisation_id)' in sil_record_js, "evidence viewer is scoped to the worker organisation")
+require('record_access_event' in sil_record_js and 'dedicated_evidence_page' in sil_record_js, "evidence viewer records a compliance read event")
+require('textContent' in sil_record_js and 'innerHTML' not in sil_record_js, "evidence viewer renders record values without HTML injection")
 require('event.request.mode==="navigate"' in service_worker, "service worker never stores navigation HTML")
 require('"/set-password"' in service_worker, "service worker excludes the canonical setup route")
+require('"/sil-record"' in service_worker, "service worker excludes the secure evidence route")
 require('/set-password.html\n  Cache-Control: no-store, max-age=0' in headers, "setup page is marked no-store")
 require('/set-password\n  Cache-Control: no-store, max-age=0' in headers, "canonical setup route is marked no-store")
+require('/sil-record.html\n  Cache-Control: no-store, max-age=0' in headers, "evidence page is marked no-store")
+require('/sil-record\n  Cache-Control: no-store, max-age=0' in headers, "canonical evidence route is marked no-store")
 
 # No browser-side privileged secrets or public Drive links.
 browser_paths = [
     "index.html", "app.js", "operations.js", "staff-management.js",
     "set-password.html", "set-password.js", "medication-prn-fix.js",
-    "participant-edit-controls.js", "sil.html", "sil.js", "config.js",
+    "participant-edit-controls.js", "sil.html", "sil.js", "sil-record.html", "sil-record.js", "config.js",
 ]
 for path in browser_paths:
     source = text(path)
@@ -118,7 +129,10 @@ for path in browser_paths:
 
 # Portal least privilege.
 app = text("app.js")
-require('related_sil_record_id' in app and 'View completed choice form' in app, "choice timeline entries open their audited SIL form")
+require('related_sil_record_id' in app and 'sil-record.html?id=' in app, "choice timeline entries open their audited SIL form")
+require('florence:sil-record-return' in app and 'target.origin===location.origin' in app, "sign-in restores only a same-origin secure evidence link")
+portal_care_plan = text("portal-care-plan.js")
+require('related_sil_record_id' in portal_care_plan and 'sil-record.html?id=' in portal_care_plan, "participant history links to completed choice evidence")
 index_parser = IdParser()
 index_parser.feed(index)
 index_ids = set(index_parser.ids)
@@ -126,7 +140,7 @@ direct_handler_ids = set(re.findall(r'\$\("#([A-Za-z0-9_-]+)"\)\.(?:onclick|onsu
 missing_handler_ids = sorted(direct_handler_ids - index_ids)
 require(not missing_handler_ids, f"app.js direct event handlers have matching index elements: {missing_handler_ids}")
 require('addEventListener("DOMContentLoaded",()=>void boot(),{once:true})' in app, "app.js reaches the authenticated boot entrypoint")
-require('data-med-tab="Regular"' in index and index.index('data-med-tab="Regular"') < index.index('app.js?v=20260807-choice-review-1'), "Regular medication tab exists before app handlers initialise")
+require('data-med-tab="Regular"' in index and index.index('data-med-tab="Regular"') < index.index('app.js?v=20260807-evidence-page-2'), "Regular medication tab exists before app handlers initialise")
 require('id="pin-status"' in index and 'aria-live="assertive"' in index, "medication signing errors remain visible inside the modal")
 require('id="pin-submit" type="submit"' in index, "medication signing has an explicit submit control")
 require('submit.textContent="Signing and saving…"' in app, "medication signing shows an in-progress state")

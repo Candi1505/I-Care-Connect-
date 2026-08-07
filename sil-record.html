@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en-AU" class="sil-auth-pending">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#5f8f72">
+  <title>Florence · Completed SIL evidence</title>
+  <link rel="icon" href="florence-icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="florence-icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=20260723-15">
+  <link rel="stylesheet" href="sil.css?v=20260807-evidence-page-2">
+  <style>html.sil-auth-pending body{visibility:hidden}</style>
+</head>
+<body>
+<header class="topbar sil-topbar">
+  <a class="icon-btn sil-back-link" href="sil.html?tab=evidence" aria-label="Back to audit evidence">←</a>
+  <div><h1>Florence</h1><p>Completed audit evidence</p></div>
+  <a class="icon-btn sil-back-link" href="index.html" aria-label="Florence home">⌂</a>
+</header>
+
+<main class="sil-main sil-record-page">
+  <article id="sil-record-loading" class="panel sil-record-loading">
+    <p class="eyebrow">Secure participant record</p>
+    <h2>Opening completed SIL evidence…</h2>
+    <p>Florence is checking your account and loading the signed record.</p>
+  </article>
+
+  <article id="sil-record-error" class="panel sil-record-error hidden" role="alert">
+    <p class="eyebrow">Completed audit evidence</p>
+    <h2 id="sil-record-error-title">This record could not be opened</h2>
+    <p id="sil-record-error-message">Return to Audit Evidence and try again.</p>
+    <div class="actions"><a class="primary button-link" href="sil.html?tab=evidence">Return to Audit Evidence</a></div>
+  </article>
+
+  <article id="sil-record-content" class="panel sil-record-content hidden">
+    <div class="page-head">
+      <div>
+        <p class="eyebrow">Completed audit evidence</p>
+        <h2 id="sil-record-title">SIL record</h2>
+        <p id="sil-record-category"></p>
+      </div>
+      <span id="sil-record-status" class="badge good">Complete</span>
+    </div>
+    <div id="sil-record-meta" class="sil-record-meta"></div>
+    <dl id="sil-record-fields" class="sil-record-detail-fields"></dl>
+    <div class="sil-record-footer">
+      <p>Read-only compliance record. Any correction must be made as a new version or documented amendment so the original evidence remains intact.</p>
+      <a class="primary button-link" href="sil.html?tab=evidence">Done — return to Audit Evidence</a>
+    </div>
+  </article>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.2"></script>
+<script src="config.js?v=20260807-evidence-page-2"></script>
+<script src="sil-record.js?v=20260807-evidence-page-2"></script>
+</body>
+</html>

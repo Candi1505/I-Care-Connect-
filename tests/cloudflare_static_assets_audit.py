@@ -16,7 +16,7 @@ EXPECTED_ASSETS = {
     "invoicing-workspace.js", "invoice-menu-fix.js", "florence-readiness-controls.js",
     "remote-s8-verification.js", "core-ui-fixes-v2.js", "core-ui-fixes-v3.js",
     "set-password.html", "set-password.js",
-    "sil.html", "sil.css", "sil.js", "service-worker.js", "manifest.webmanifest",
+    "sil.html", "sil-record.html", "sil.css", "sil.js", "sil-record.js", "service-worker.js", "manifest.webmanifest",
     "florence-icon.svg", "florence-icon-192.png", "florence-icon-512.png",
     "_headers", "robots.txt",
 }
@@ -40,7 +40,7 @@ assert not any(path.endswith((".sql", ".md", ".docx", ".pdf", ".zip")) for path 
 # prevents a dynamically loaded file from being omitted while the fixed
 # allowlist itself still appears internally consistent.
 runtime_pattern = re.compile(r'["\'](?:\./)?([A-Za-z0-9_-]+\.(?:js|css|html|webmanifest|svg|png))(?:\?[^"\']*)?["\']')
-pending = ["index.html", "set-password.html", "sil.html", "service-worker.js", "manifest.webmanifest"]
+pending = ["index.html", "set-password.html", "sil.html", "sil-record.html", "service-worker.js", "manifest.webmanifest"]
 visited: set[str] = set()
 references: set[str] = set()
 while pending:
@@ -110,7 +110,7 @@ assert 'self.addEventListener("notificationclick"' in worker_js
 assert 'url.origin!==self.location.origin' in worker_js
 assert "withRuntimeFixes" not in worker_js
 assert 'event.request.mode==="navigate"' in worker_js
-assert '"/set-password"' in worker_js and '"/sil"' in worker_js
+assert '"/set-password"' in worker_js and '"/sil"' in worker_js and '"/sil-record"' in worker_js
 assert "void caches.open" not in worker_js
 assert "core-ui-fixes-v3.js" in worker_js
 assert "participant-actions-direct.js" not in worker_js
