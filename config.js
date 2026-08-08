@@ -73,13 +73,40 @@ window.FLORENCE_CONFIG = {
   function decodeKey(value) { const padding="=".repeat((4-value.length%4)%4); const base64=(value+padding).replace(/-/g,"+").replace(/_/g,"/"); return Uint8Array.from(atob(base64),c=>c.charCodeAt(0)); }
   function supported() { return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window; }
   function ensurePanel() { const host=q("#my-account-view"); if(!host)return null; let panel=q("#push-notification-panel"); if(panel)return panel; panel=document.createElement("article"); panel.id="push-notification-panel"; panel.className="panel staff-only"; panel.innerHTML=`<div class="panel-head"><div><p class="eyebrow">Device alerts</p><h3>Push notifications</h3><p id="push-notification-message">Loading notification controls…</p></div><span id="push-notification-status" class="badge amber">Loading…</span></div><div class="actions"><button id="enable-push-notifications" type="button" class="primary">Enable notifications</button><button id="test-push-notifications" type="button" class="secondary" disabled>Test this device</button><button id="disable-push-notifications" type="button" class="secondary" disabled>Disable on this device</button></div><p class="record-meta">Lock-screen alerts do not show participant names, medication names or note contents.</p>`; const heading=host.querySelector(".page-head"); heading?.insertAdjacentElement("afterend",panel)||host.prepend(panel); return panel; }
-  async function currentState(){ if(!supported())return{supported:false}; const registration=await navigator.serviceWorker.ready; const subscription=await registration.pushManager.getSubscription(); const b=bridge(); let saved=null; if(subscription&&b?.db&&b?.profile){const {data,error}=await b.db.from("push_subscriptions").select("id,active").eq("endpoint",subscription.endpoint).eq("user_id",b.profile.id).maybeSingle(); if(error)throw error; saved=data||null;} return{supported:true,registration,subscription,saved}; }
+  async function currentState(){
+    if(!supported())return{supported:false,registration:null,subscription:null,saved:null};
+    // A new device may not have installed Florence's service worker yet. Waiting on
+    // the browser's service-worker readiness promise here can remain pending
+    // indefinitely, and the old
+    // polling loop started another pending check every 250 ms, eventually freezing
+    // lower-powered phones during first sign-in.
+    const registration=await navigator.serviceWorker.getRegistration();
+    if(!registration)return{supported:true,registration:null,subscription:null,saved:null};
+    const subscription=await registration.pushManager.getSubscription();
+    const b=bridge();let saved=null;
+    if(subscription&&b?.db&&b?.profile){const {data,error}=await b.db.from("push_subscriptions").select("id,active").eq("endpoint",subscription.endpoint).eq("user_id",b.profile.id).maybeSingle();if(error)throw error;saved=data||null;}
+    return{supported:true,registration,subscription,saved};
+  }
   async function saveSubscription(subscription){const b=bridge();if(!b?.db||!b?.profile)throw new Error("Florence is still loading your account. Try again in a moment.");const data=subscription.toJSON();const {error}=await b.db.from("push_subscriptions").upsert({organisation_id:b.profile.organisation_id,user_id:b.profile.id,endpoint:data.endpoint,p256dh:data.keys?.p256dh,auth_secret:data.keys?.auth,user_agent:navigator.userAgent,active:true,updated_at:new Date().toISOString()},{onConflict:"endpoint"});if(error)throw error;}
   async function enablePush(){if(!supported())throw new Error("This device does not support Florence push notifications.");if(isiOS&&!isStandalone)throw new Error("Open Florence from its Home Screen icon before enabling notifications.");const permission=await Notification.requestPermission();if(permission!=="granted")throw new Error("Notification permission was not granted.");const registration=await navigator.serviceWorker.ready;let subscription=await registration.pushManager.getSubscription();if(subscription)await subscription.unsubscribe();subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:decodeKey(window.FLORENCE_CONFIG.pushVapidPublicKey)});await saveSubscription(subscription);await registration.showNotification("Florence notifications enabled",{body:"This device is now registered for private Florence alerts.",icon:"./florence-icon.svg",badge:"./florence-icon.svg",tag:"florence-enabled",data:{url:"./"}});}
   async function disablePush(){const state=await currentState();const b=bridge();if(state.subscription&&b?.db&&b?.profile)await b.db.from("push_subscriptions").update({active:false,updated_at:new Date().toISOString()}).eq("endpoint",state.subscription.endpoint).eq("user_id",b.profile.id);if(state.subscription)await state.subscription.unsubscribe();}
   async function testPush(){const state=await currentState();if(!state.subscription||!state.saved?.active)throw new Error("This device is not registered yet. Tap Enable notifications first.");await state.registration.showNotification("Florence device test",{body:"Push notifications are working on this device.",icon:"./florence-icon.svg",badge:"./florence-icon.svg",tag:"florence-device-test",data:{url:"./"}});}
   async function renderPushPanel(){const panel=ensurePanel();if(!panel)return false;const b=bridge(),status=q("#push-notification-status"),message=q("#push-notification-message"),enable=q("#enable-push-notifications"),test=q("#test-push-notifications"),disable=q("#disable-push-notifications");if(!b?.profile){status.textContent="Loading…";message.textContent="Florence is finishing your secure account setup…";return false;}if(!["staff","supervisor"].includes(b.profile.role)){panel.classList.add("hidden");return true;}panel.classList.remove("hidden");const state=await currentState().catch(()=>({supported:supported(),subscription:null,saved:null})),registered=Boolean(state.subscription&&state.saved?.active),permission=window.Notification?.permission||"default";status.textContent=registered?"Registered":permission==="granted"?"Permission only":"Not enabled";status.className=`badge ${registered?"good":"amber"}`;message.textContent=!state.supported?"This device does not support Florence push notifications.":registered?"This device is securely registered for Florence alerts.":permission==="granted"?"Your phone allows alerts, but Florence still needs to register this device. Tap Enable notifications.":"Enable private alerts for shifts, medication tasks and care updates.";enable.disabled=registered;test.disabled=!registered;disable.disabled=!state.subscription;enable.onclick=async()=>{try{await enablePush();toast("Florence notifications enabled");await renderPushPanel()}catch(error){toast(error?.message||"Florence could not enable notifications")}};test.onclick=async()=>{try{await testPush();toast("Test notification sent")}catch(error){toast(error?.message||"Florence could not test this device")}};disable.onclick=async()=>{try{await disablePush();toast("Notifications disabled on this device");await renderPushPanel()}catch(error){toast(error?.message||"Florence could not disable notifications")}};return true;}
-  function startPushPanel(){ensurePanel();let attempts=0;const timer=setInterval(()=>{attempts++;void renderPushPanel().then(done=>{if(done||attempts>=240)clearInterval(timer)})},250)}
+  let pushRetryTimer=null,pushRenderBusy=false,pushAttempts=0;
+  async function renderPushPanelOnce(){
+    if(pushRenderBusy)return;
+    pushRenderBusy=true;
+    try{
+      const done=await renderPushPanel();
+      if(!done&&++pushAttempts<40)pushRetryTimer=setTimeout(()=>void renderPushPanelOnce(),500);
+    }finally{pushRenderBusy=false;}
+  }
+  function startPushPanel(){
+    ensurePanel();
+    if(pushRetryTimer)clearTimeout(pushRetryTimer);
+    pushAttempts=0;
+    void renderPushPanelOnce();
+  }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",startPushPanel,{once:true});else startPushPanel();window.addEventListener("pageshow",startPushPanel);document.addEventListener("click",event=>{const target=event.target instanceof Element?event.target:null;if(target?.closest('[data-view="my-account"]'))setTimeout(startPushPanel,50)});
 })();
 
