@@ -87,14 +87,14 @@ require("@supabase/supabase-js@2.106.2" in sil_html, "sil.html pins Supabase JS 
 require("@supabase/supabase-js@2.106.2" in sil_record_html, "evidence page pins Supabase JS 2.106.2")
 require("@supabase/supabase-js" not in set_password_html, "setup page does not create a browser Supabase session")
 require('app.js?v=20260807-evidence-page-2' in index, "index loads current evidence-navigation app asset")
-require('config.js?v=20260807-evidence-page-2' in index, "index loads current evidence-navigation runtime configuration")
+require('config.js?v=20260808-android-first-login-1' in index, "index loads the bounded first-login runtime configuration")
 require('operations.js?v=20260802-1' in index, "index loads final operations asset")
 require('sil.js?v=20260807-evidence-page-2' in sil_html, "SIL page loads current record-review asset")
 require('sil.css?v=20260807-evidence-page-2' in sil_html, "SIL page loads current record-review styles")
 require('sil-record.js?v=20260807-evidence-page-2' in sil_record_html, "evidence page loads its current secure viewer")
 require('set-password.js?v=20260802-2' in set_password_html, "setup page loads its controlled asset")
-require('florence-static-20260807-evidence-page-2' in service_worker, "service worker uses current cache namespace")
-for marker in ['config.js?v=20260807-evidence-page-2', 'app.js?v=20260807-evidence-page-2', 'medication-prn-fix.js?v=20260806-prn-signing-1', 'operations.js?v=20260802-1', 'portal-care-plan.js?v=20260807-evidence-page-2', 'sil.css?v=20260807-evidence-page-2', 'sil.js?v=20260807-evidence-page-2', 'sil-record.js?v=20260807-evidence-page-2']:
+require('florence-static-20260808-android-first-login-1' in service_worker, "service worker uses current cache namespace")
+for marker in ['config.js?v=20260808-android-first-login-1', 'app.js?v=20260807-evidence-page-2', 'medication-prn-fix.js?v=20260806-prn-signing-1', 'operations.js?v=20260802-1', 'portal-care-plan.js?v=20260807-evidence-page-2', 'sil.css?v=20260807-evidence-page-2', 'sil.js?v=20260807-evidence-page-2', 'sil-record.js?v=20260807-evidence-page-2']:
     require(marker in service_worker, f"service worker caches {marker}")
 
 for record_type in ['supportPlan', 'emergencyPlan', 'riskAssessment', 'intake', 'communication', 'instructions', 'choice']:
@@ -171,6 +171,10 @@ contains(
     '$$(".staff-only").forEach',
 )
 require('roleLabels={supervisor:"Supervisor workspace",staff:"Support worker workspace",family:"Family portal",client:"Client portal"}' in app, "all four account roles remain supported")
+require('navigator.serviceWorker.getRegistration()' in config, "first-login push setup checks registration without waiting indefinitely")
+current_state = re.search(r'async function currentState\(\).*?\n  \}', config, re.S)
+require(current_state is not None and 'await navigator.serviceWorker.ready' not in current_state.group(0), "push status never blocks on service-worker readiness")
+require('function startPushPanel(){' in config and 'setInterval(()=>{attempts++;void renderPushPanel' not in config, "push setup uses one bounded non-overlapping retry loop")
 
 # One-time setup-code account activation.
 staff_management = text("staff-management.js")
