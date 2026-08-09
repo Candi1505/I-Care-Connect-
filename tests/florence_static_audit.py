@@ -145,7 +145,7 @@ direct_handler_ids = set(re.findall(r'\$\("#([A-Za-z0-9_-]+)"\)\.(?:onclick|onsu
 missing_handler_ids = sorted(direct_handler_ids - index_ids)
 require(not missing_handler_ids, f"app.js direct event handlers have matching index elements: {missing_handler_ids}")
 require('addEventListener("DOMContentLoaded",()=>void boot(),{once:true})' in app, "app.js reaches the authenticated boot entrypoint")
-require('data-med-tab="Regular"' in index and index.index('data-med-tab="Regular"') < index.index('app.js?v=20260807-evidence-page-2'), "Regular medication tab exists before app handlers initialise")
+require('data-med-tab="Regular"' in index and '<script src="app.js?v=' in index and index.index('data-med-tab="Regular"') < index.index('<script src="app.js?v='), "Regular medication tab exists before app handlers initialise")
 require('id="pin-status"' in index and 'aria-live="assertive"' in index, "medication signing errors remain visible inside the modal")
 require('id="pin-submit" type="submit"' in index, "medication signing has an explicit submit control")
 require('submit.textContent="Signing and saving…"' in app, "medication signing shows an in-progress state")
