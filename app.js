@@ -326,6 +326,7 @@ function shiftCard(s,showOwnShiftActions=false){
  if(isSupervisor()&&s.status==="Draft")controls.push(`<button class="publish" data-publish="${s.id}">Publish shift</button>`);
  if(isStaffUser()&&s.status==="Published"&&s.response==="Pending"&&(s.assigned_staff_id===profile.id||showOwnShiftActions))controls.push(`<button class="accept" data-shift-response="${s.id}" data-response="Accepted">Accept</button><button class="decline" data-shift-response="${s.id}" data-response="Declined">Decline</button>`);
  if(isStaffUser()&&s.status==="Published"&&s.response==="Pending"&&!s.assigned_staff_id)controls.push(`<button class="accept" data-claim-shift="${s.id}">Claim open shift</button>`);
+ if(isStaffUser()&&s.status==="Published"&&s.response==="Accepted"&&s.assigned_staff_id===profile.id)controls.push(`<button class="accept" data-roster-clock-in="${s.id}">Clock in</button><button class="secondary" data-roster-clock-out="${s.id}">Clock out</button>`);
  if(isSupervisor()&&s.status==="Published")controls.push(`<button class="decline" data-cancel-shift="${s.id}">Cancel shift</button>`);
  const actions=controls.length?`<div class="actions">${controls.join("")}</div>`:"";
  return `<article class="record"><div class="record-top"><div><h3>${esc(shiftName(s))}</h3><p>${esc(s.shift_type)} · ${esc(workerName(s))}</p></div>${badge(s.status)}</div><p><strong>Start:</strong> ${fmt(s.starts_at)}<br><strong>Finish:</strong> ${fmt(s.ends_at)}</p>${s.handover_notes?`<p><strong>Handover:</strong> ${esc(s.handover_notes)}</p>`:""}<div class="record-meta">${badge(s.response)}</div>${actions}</article>`
@@ -392,8 +393,10 @@ function rosterClock(value){return new Intl.DateTimeFormat("en-AU",{timeZone:"Au
 function supervisorShiftCell(shifts){
  if(!shifts.length)return '<span class="roster-empty-cell">—</span>';
  return shifts.sort((a,b)=>new Date(a.starts_at)-new Date(b.starts_at)).map(s=>{
-  const controls=[];
+  const controls=[],isOwnShift=s.assigned_staff_id===profile.id;
   if(s.status==="Draft")controls.push(`<button class="publish" data-publish="${s.id}">Publish</button>`);
+  if(s.status==="Published"&&s.response==="Pending"&&isOwnShift)controls.push(`<button class="accept" data-shift-response="${s.id}" data-response="Accepted">Accept</button><button class="decline" data-shift-response="${s.id}" data-response="Declined">Decline</button>`);
+  if(s.status==="Published"&&s.response==="Accepted"&&isOwnShift)controls.push(`<button class="accept" data-roster-clock-in="${s.id}">Clock in</button><button class="secondary" data-roster-clock-out="${s.id}">Clock out</button>`);
   if(s.status==="Published")controls.push(`<button class="decline" data-cancel-shift="${s.id}">Cancel</button>`);
   return `<article class="calendar-shift ${s.status.toLowerCase()}">
    <strong>${esc(shiftName(s))}</strong>
@@ -424,6 +427,7 @@ function renderSupervisorRoster(list){
  </div>
  <div class="roster-calendar-scroll"><table class="roster-calendar"><thead><tr><th class="roster-worker">Worker</th>${header}</tr></thead><tbody>${body}</tbody></table></div>
  <p class="roster-calendar-hint">Swipe sideways to see all 14 days in the pay period.</p>`;
+ dispatchEvent(new CustomEvent("florence:roster-rendered"));
 }
 function renderRoster(){
  let list=state.shifts;
@@ -432,6 +436,7 @@ function renderRoster(){
  else list=list.filter(s=>s.participant_id===profile.participant_id&&s.status==="Published");
  if(isSupervisor())return renderSupervisorRoster(list);
  $("#roster-list").innerHTML=list.length?list.map(s=>shiftCard(s,rosterTab==="mine"&&s.assigned_staff_id===profile.id)).join(""):empty("No shifts in this view.");
+ dispatchEvent(new CustomEvent("florence:roster-rendered"));
 }
 function marActionButtons(m){
  if(!isStaffUser())return "";

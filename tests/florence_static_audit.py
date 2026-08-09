@@ -86,15 +86,15 @@ require("@supabase/supabase-js@2.106.2" in index, "index pins Supabase JS 2.106.
 require("@supabase/supabase-js@2.106.2" in sil_html, "sil.html pins Supabase JS 2.106.2")
 require("@supabase/supabase-js@2.106.2" in sil_record_html, "evidence page pins Supabase JS 2.106.2")
 require("@supabase/supabase-js" not in set_password_html, "setup page does not create a browser Supabase session")
-require('app.js?v=20260807-evidence-page-2' in index, "index loads current evidence-navigation app asset")
+require('app.js?v=20260809-roster-actions-1' in index, "index loads current evidence-navigation app asset")
 require('config.js?v=20260809-mobile-main-stability-1' in index, "index loads the mobile-stable runtime configuration")
-require('operations.js?v=20260809-mobile-main-stability-1' in index, "index loads the mobile-stable operations asset")
+require('operations.js?v=20260809-roster-actions-1' in index, "index loads the mobile-stable operations asset")
 require('sil.js?v=20260807-evidence-page-2' in sil_html, "SIL page loads current record-review asset")
 require('sil.css?v=20260807-evidence-page-2' in sil_html, "SIL page loads current record-review styles")
 require('sil-record.js?v=20260807-evidence-page-2' in sil_record_html, "evidence page loads its current secure viewer")
 require('set-password.js?v=20260802-2' in set_password_html, "setup page loads its controlled asset")
-require('florence-static-20260809-mobile-main-stability-1' in service_worker, "service worker uses current cache namespace")
-for marker in ['config.js?v=20260809-mobile-main-stability-1', 'app.js?v=20260807-evidence-page-2', 'medication-prn-fix.js?v=20260806-prn-signing-1', 'operations.js?v=20260809-mobile-main-stability-1', 'portal-care-plan.js?v=20260809-mobile-main-stability-1', 'sil.css?v=20260807-evidence-page-2', 'sil.js?v=20260807-evidence-page-2', 'sil-record.js?v=20260807-evidence-page-2']:
+require('florence-static-20260809-roster-actions-1' in service_worker, "service worker uses current cache namespace")
+for marker in ['config.js?v=20260809-mobile-main-stability-1', 'app.js?v=20260809-roster-actions-1', 'medication-prn-fix.js?v=20260806-prn-signing-1', 'operations.js?v=20260809-roster-actions-1', 'portal-care-plan.js?v=20260809-mobile-main-stability-1', 'sil.css?v=20260807-evidence-page-2', 'sil.js?v=20260807-evidence-page-2', 'sil-record.js?v=20260807-evidence-page-2']:
     require(marker in service_worker, f"service worker caches {marker}")
 
 for record_type in ['supportPlan', 'emergencyPlan', 'riskAssessment', 'intake', 'communication', 'instructions', 'choice']:
@@ -145,7 +145,7 @@ direct_handler_ids = set(re.findall(r'\$\("#([A-Za-z0-9_-]+)"\)\.(?:onclick|onsu
 missing_handler_ids = sorted(direct_handler_ids - index_ids)
 require(not missing_handler_ids, f"app.js direct event handlers have matching index elements: {missing_handler_ids}")
 require('addEventListener("DOMContentLoaded",()=>void boot(),{once:true})' in app, "app.js reaches the authenticated boot entrypoint")
-require('data-med-tab="Regular"' in index and index.index('data-med-tab="Regular"') < index.index('app.js?v=20260807-evidence-page-2'), "Regular medication tab exists before app handlers initialise")
+require('data-med-tab="Regular"' in index and '<script src="app.js?v=' in index and index.index('data-med-tab="Regular"') < index.index('<script src="app.js?v='), "Regular medication tab exists before app handlers initialise")
 require('id="pin-status"' in index and 'aria-live="assertive"' in index, "medication signing errors remain visible inside the modal")
 require('id="pin-submit" type="submit"' in index, "medication signing has an explicit submit control")
 require('submit.textContent="Signing and saving…"' in app, "medication signing shows an in-progress state")
