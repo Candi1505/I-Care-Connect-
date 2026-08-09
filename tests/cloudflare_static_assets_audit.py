@@ -98,6 +98,10 @@ assert "deputy-permanent-token-ui-fix.js" in regular_tab_js
 assert "VIEW_DAYS=30" in roster_js
 assert "MAX_SHIFTS=45" in roster_js
 assert "Number of weekly shifts to create (1–45)" in roster_js
+assert 'loadRuntime("roster-30-day.js","20260809-roster-response-1")' in regular_tab_js
+assert 'data-shift-response="${shift.id}"' in roster_js
+assert 'shift.assigned_staff_id===B().profile.id' in roster_js
+assert 'data-roster-days="30"' in roster_js and "__roster30Observer" in roster_js
 assert "deputy-integration.js?v=20260809-mobile-main-stability-1" in worker_js
 assert 'functions.invoke("deputy-connect"' in deputy_js
 assert "Automatically send assigned Florence shifts" in deputy_js
