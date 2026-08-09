@@ -87,14 +87,14 @@ require("@supabase/supabase-js@2.106.2" in sil_html, "sil.html pins Supabase JS 
 require("@supabase/supabase-js@2.106.2" in sil_record_html, "evidence page pins Supabase JS 2.106.2")
 require("@supabase/supabase-js" not in set_password_html, "setup page does not create a browser Supabase session")
 require('app.js?v=20260807-evidence-page-2' in index, "index loads current evidence-navigation app asset")
-require('config.js?v=20260808-android-first-login-1' in index, "index loads the bounded first-login runtime configuration")
-require('operations.js?v=20260802-1' in index, "index loads final operations asset")
+require('config.js?v=20260809-mobile-main-stability-1' in index, "index loads the mobile-stable runtime configuration")
+require('operations.js?v=20260809-mobile-main-stability-1' in index, "index loads the mobile-stable operations asset")
 require('sil.js?v=20260807-evidence-page-2' in sil_html, "SIL page loads current record-review asset")
 require('sil.css?v=20260807-evidence-page-2' in sil_html, "SIL page loads current record-review styles")
 require('sil-record.js?v=20260807-evidence-page-2' in sil_record_html, "evidence page loads its current secure viewer")
 require('set-password.js?v=20260802-2' in set_password_html, "setup page loads its controlled asset")
-require('florence-static-20260808-android-first-login-1' in service_worker, "service worker uses current cache namespace")
-for marker in ['config.js?v=20260808-android-first-login-1', 'app.js?v=20260807-evidence-page-2', 'medication-prn-fix.js?v=20260806-prn-signing-1', 'operations.js?v=20260802-1', 'portal-care-plan.js?v=20260807-evidence-page-2', 'sil.css?v=20260807-evidence-page-2', 'sil.js?v=20260807-evidence-page-2', 'sil-record.js?v=20260807-evidence-page-2']:
+require('florence-static-20260809-mobile-main-stability-1' in service_worker, "service worker uses current cache namespace")
+for marker in ['config.js?v=20260809-mobile-main-stability-1', 'app.js?v=20260807-evidence-page-2', 'medication-prn-fix.js?v=20260806-prn-signing-1', 'operations.js?v=20260809-mobile-main-stability-1', 'portal-care-plan.js?v=20260809-mobile-main-stability-1', 'sil.css?v=20260807-evidence-page-2', 'sil.js?v=20260807-evidence-page-2', 'sil-record.js?v=20260807-evidence-page-2']:
     require(marker in service_worker, f"service worker caches {marker}")
 
 for record_type in ['supportPlan', 'emergencyPlan', 'riskAssessment', 'intake', 'communication', 'instructions', 'choice']:
@@ -210,6 +210,17 @@ contains(
 require('clock_in:new Date().toISOString()' not in operations, "browser no longer supplies clock-in timestamp")
 require('clock_out:new Date().toISOString()' not in operations, "browser no longer supplies clock-out timestamp")
 require('.from("timesheets").insert' not in operations, "browser cannot directly insert a clock-in row")
+require('await loadTimeClock()' in operations and 'await loadOperations()' not in operations.split('window.addEventListener("florence:ready"', 1)[1].split(');', 1)[0], "main-page startup loads only the worker clock status")
+require('["safety","workforce","outcomes","governance"]' in operations, "operational archives load only when their view is opened")
+require('if(q("#participants-view.active"))' in portal_care_plan, "participant detail queries wait until the participant view is opened")
+for path, marker in [
+    ("core-ui-fixes-v2.js", "setInterval(ensure,750)"),
+    ("core-ui-fixes-v3.js", "setInterval(startControls,500)"),
+    ("participant-edit-controls.js", "setInterval(start,400)"),
+    ("participant-file.js", "setInterval(start,1000)"),
+    ("secure-document-careplan-fix.js", "setInterval(start,1200)"),
+]:
+    require(marker not in text(path), f"{path} has no permanent high-frequency DOM polling")
 
 # SIL operational records are server-side, MFA-protected and audited.
 sil = text("sil.js")

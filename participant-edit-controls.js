@@ -26,6 +26,7 @@ async function approvePlan(){
 function makeButton(id,label,kind,handler){const button=document.createElement("button");button.id=id;button.type="button";button.className=`${kind} participant-control`;button.textContent=label;button.onclick=e=>{e.preventDefault();e.stopPropagation();button.disabled=true;void handler().catch(error=>toast(error?.message||"Florence could not complete that action.")).finally(()=>button.disabled=false)};return button}
 function ensureControls(){
  const host=q("#pf-content")||q("#participant-file-content");if(!host)return;
+ if(!isSupervisor()){q("#edit-participant-details",host)?.remove();q("#approve-care-plan",host)?.remove();return}
  const hero=q(".pf-hero",host)||q(".participant-file-hero",host);
  if(hero&&!q("#edit-participant-details",hero)){
   let actions=q(".participant-native-actions",hero);if(!actions){actions=document.createElement("div");actions.className="participant-native-actions";hero.appendChild(actions)}
@@ -37,6 +38,6 @@ function ensureControls(){
 const observer=new MutationObserver(ensureControls);
 function start(){const host=q("#pf-content")||q("#participant-file-content");if(host&&!host.__participantControlsObserved){observer.observe(host,{childList:true,subtree:true});host.__participantControlsObserved=true}ensureControls()}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});else start();
-window.addEventListener("florence:ready",start);window.addEventListener("pageshow",start);document.addEventListener("click",()=>setTimeout(ensureControls,80));setInterval(start,400);
+window.addEventListener("florence:ready",start);window.addEventListener("pageshow",start);document.addEventListener("click",event=>{const target=event.target instanceof Element?event.target:null;if(target?.closest('[data-view="participants"],[data-pf-tab]'))setTimeout(start,80)});
 const style=document.createElement("style");style.textContent='.participant-native-actions{display:flex;flex-direction:column;align-items:flex-end;gap:8px}.pf-hero .participant-control,.participant-file-hero .participant-control{background:#fff!important;color:#315d46!important;border-color:#fff!important;white-space:nowrap}.pf-actions .participant-control{margin-left:auto}@media(max-width:560px){.participant-native-actions{align-items:flex-end}.participant-control{padding:10px 13px;font-size:.9rem}}';document.head.appendChild(style);
 })();

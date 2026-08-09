@@ -4,6 +4,7 @@ const B=()=>window.FlorenceBridge;
 const q=s=>document.querySelector(s);
 let ops={incidents:[],complaints:[],medicationIncidents:[],emergencyPlans:[],credentials:[],timesheets:[],availability:[],leave:[],travel:[],goals:[],funding:[],supportItems:[],controlledDrugs:[],notifications:[],audit:[],conflicts:[],meetings:[],delegations:[]};
 const tableMap={incidents:"incidents",complaints:"complaints",medicationIncidents:"medication_incidents",emergencyPlans:"emergency_plans",credentials:"staff_credentials",timesheets:"timesheets",availability:"worker_availability",leave:"leave_requests",travel:"travel_expenses",goals:"participant_goals",funding:"funding_plans",supportItems:"ndis_support_items",controlledDrugs:"controlled_drug_register",notifications:"notifications",audit:"audit_events",conflicts:"conflict_declarations",meetings:"meeting_minutes",delegations:"delegations"};
+let fullOperationsLoaded=false,fullOperationsPromise=null;
 const participantOptions=()=>B().state.participants.map(p=>({value:p.id,label:p.preferred_name||p.full_name}));
 const staffOptions=()=>B().state.staff.filter(p=>["staff","supervisor"].includes(p.role)).map(p=>({value:p.id,label:p.full_name}));
 const person=id=>B().state.participants.find(p=>p.id===id)?.full_name||"Organisation";
@@ -11,6 +12,8 @@ const worker=id=>B().state.staff.find(p=>p.id===id)?.full_name||"Staff member";
 const setupMessage=()=>'<div class="notice"><strong>Database upgrade required.</strong> Run <code>florence-audit-readiness-upgrade.sql</code> in Supabase before using this module.</div>';
 const card=(title,meta,body="",actions="")=>`<article class="record"><div class="record-top"><div><h3>${B().esc(title)}</h3><p>${B().esc(meta)}</p></div></div>${body?`<p>${B().esc(body)}</p>`:""}${actions?`<div class="record-meta">${actions}</div>`:""}</article>`;
 async function loadOperations(){
+ if(fullOperationsPromise)return fullOperationsPromise;
+ fullOperationsPromise=(async()=>{
  try{
   const db=B().db,org=B().profile.organisation_id,supervisor=B().isSupervisor();
   const queries=Object.entries(tableMap).map(([key,table])=>{
@@ -25,9 +28,23 @@ async function loadOperations(){
   const missing=results.find(r=>r.error);
   if(missing)throw missing.error;
   Object.keys(tableMap).forEach((key,i)=>ops[key]=results[i].data||[]);
+  fullOperationsLoaded=true;
   renderAll();
  }catch(error){
   ["#incident-list","#complaint-list","#medication-error-list","#timesheet-list","#workforce-request-list","#goal-list","#funding-list","#emergency-list","#credential-list","#notification-list","#audit-list","#conflict-list","#meeting-minutes-list","#delegation-list"].forEach(id=>{if(q(id))q(id).innerHTML=setupMessage()});
+ }finally{fullOperationsPromise=null}
+ })();
+ return fullOperationsPromise;
+}
+async function loadTimeClock(){
+ try{
+  const {data,error}=await B().db.from("timesheets").select("*").eq("organisation_id",B().profile.organisation_id).order("created_at",{ascending:false});
+  if(error)throw error;
+  ops.timesheets=data||[];
+  renderTimeClockStatus();
+ }catch(error){
+  const status=q("#dashboard-clock-status");
+  if(status)status.textContent="Open timesheets to check clock status";
  }
 }
 function renderAll(){renderSafety();renderWorkforce();renderOutcomes();renderGovernance()}
@@ -271,11 +288,13 @@ async function setupMfa(){
 }
 document.addEventListener("click",async e=>{
  try{
+  const viewButton=e.target.closest("[data-view]");
+  if(viewButton&&["safety","workforce","outcomes","governance"].includes(viewButton.dataset.view)&&!fullOperationsLoaded)void loadOperations();
   let b=e.target.closest("[data-close-incident]");if(b){const review=prompt("Supervisor review and corrective actions");if(!review)return;const {error}=await B().db.from("incidents").update({status:"Closed",supervisor_review:review,corrective_actions:review,reviewed_by:B().profile.id,closed_at:new Date().toISOString()}).eq("id",b.dataset.closeIncident);if(error)throw error;await loadOperations();return B().toast("Incident reviewed and closed")}
   b=e.target.closest("[data-resolve-complaint]");if(b){const outcome=prompt("Record the complaint outcome");if(!outcome)return;const {error}=await B().db.from("complaints").update({status:"Resolved",outcome,actions_taken:outcome,resolved_at:new Date().toISOString()}).eq("id",b.dataset.resolveComplaint);if(error)throw error;await loadOperations();return B().toast("Complaint resolved")}
   b=e.target.closest("[data-approve-timesheet]");if(b){const {error}=await B().db.from("timesheets").update({status:"Approved",approved_by:B().profile.id,approved_at:new Date().toISOString()}).eq("id",b.dataset.approveTimesheet);if(error)throw error;await loadOperations();return B().toast("Timesheet approved")}
  }catch(error){B().toast(error.message)}
 });
 let idleTimer;const resetIdle=()=>{clearTimeout(idleTimer);if(B()?.profile)idleTimer=setTimeout(()=>B().db.auth.signOut().then(()=>location.reload()),30*60*1000)};["pointerdown","keydown","touchstart"].forEach(name=>addEventListener(name,resetIdle,{passive:true}));
-window.addEventListener("florence:ready",async()=>{if(!B().isStaffUser())return;bindForms();await loadOperations();if(B().isSupervisor())await setupMfa();resetIdle()});
+window.addEventListener("florence:ready",async()=>{if(!B().isStaffUser())return;bindForms();await loadTimeClock();if(B().isSupervisor())await setupMfa();resetIdle()});
 })();

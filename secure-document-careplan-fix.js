@@ -75,6 +75,5 @@ const observer=new MutationObserver(()=>void enhanceCarePlan());
 function start(){const host=q("#pf-content");if(host&&!host.__careDocumentObserved){observer.observe(host,{childList:true,subtree:true});host.__careDocumentObserved=true}void enhanceCarePlan()}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});else start();
 window.addEventListener("florence:ready",start);window.addEventListener("pageshow",start);
-setInterval(start,1200);
 const style=document.createElement("style");style.textContent='.pf-care-document-status{margin-bottom:16px}.pf-care-document-status .panel-head{align-items:flex-start}.pf-care-document-status .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}.pf-care-document-status .care-plan-version{display:flex;gap:12px;flex-wrap:wrap;margin:8px 0 12px}';document.head.appendChild(style);
 })();
