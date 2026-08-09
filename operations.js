@@ -87,9 +87,10 @@ function rosterShiftOptions(){
   label:`${shift.shift_type} · ${shift.participant?.full_name||"Participant"} · ${B().fmt(shift.starts_at)}`
  }));
 }
-async function openClockInForm(){
+async function openClockInForm(shiftId=""){
  if(!B().isStaffUser())return B().toast("Clocking is available to workers and supervisors");
  if(openTimesheet())return B().toast("You are already clocked in");
+ const selectedShift=rosterShiftOptions().some(option=>option.value===shiftId)?shiftId:"";
  const {field,form}=B();
  form("Clock in",[
   field("work_type","Work type","select",WORK_TYPES),
@@ -105,7 +106,7 @@ async function openClockInForm(){
   if(error)throw error;
   await loadOperations();
   return `Clocked in — ${values.work_type}`;
- },{work_type:"Participant support"});
+ },{work_type:"Participant support",shift_id:selectedShift});
 }
 async function openClockOutForm(){
  if(!B().isStaffUser())return B().toast("Clocking is available to workers and supervisors");
@@ -131,8 +132,8 @@ function renderTimeClockStatus(){
  const open=openTimesheet(),status=q("#dashboard-clock-status"),detail=q("#dashboard-clock-detail");
  if(status)status.textContent=open?`Clocked in — ${timesheetWorkType(open)}`:"Not clocked in";
  if(detail)detail.textContent=open?`Started ${B().fmt(open.clock_in)}. Clock out when this work period finishes.`:"Choose participant support, administration / office work, training or another work type when you clock in.";
- document.querySelectorAll("#clock-in,#dashboard-clock-in").forEach(button=>{button.disabled=!!open;button.setAttribute("aria-disabled",String(!!open))});
- document.querySelectorAll("#clock-out,#dashboard-clock-out").forEach(button=>{button.disabled=!open;button.setAttribute("aria-disabled",String(!open))});
+ document.querySelectorAll("#clock-in,#dashboard-clock-in,[data-roster-clock-in]").forEach(button=>{button.disabled=!!open;button.setAttribute("aria-disabled",String(!!open))});
+ document.querySelectorAll("#clock-out,#dashboard-clock-out,[data-roster-clock-out]").forEach(button=>{button.disabled=!open;button.setAttribute("aria-disabled",String(!open))});
 }
 function currentPayPeriod(){
  const today=new Date(),anchorValue=B().organisation?.pay_period_anchor;
@@ -234,8 +235,14 @@ function bindForms(){
   });
   if(error)throw error;await loadOperations();B().toast("Dual-signed Schedule 8 transaction saved")
  });
- document.querySelectorAll("#clock-in,#dashboard-clock-in").forEach(button=>button.onclick=openClockInForm);
- document.querySelectorAll("#clock-out,#dashboard-clock-out").forEach(button=>button.onclick=openClockOutForm);
+ document.querySelectorAll("#clock-in,#dashboard-clock-in").forEach(button=>button.onclick=()=>openClockInForm());
+ document.querySelectorAll("#clock-out,#dashboard-clock-out").forEach(button=>button.onclick=()=>openClockOutForm());
+ document.addEventListener("click",event=>{
+  const clockInButton=event.target.closest("[data-roster-clock-in]");
+  if(clockInButton){event.preventDefault();void openClockInForm(clockInButton.dataset.rosterClockIn);return}
+  const clockOutButton=event.target.closest("[data-roster-clock-out]");
+  if(clockOutButton){event.preventDefault();void openClockOutForm()}
+ });
  q("#add-leave").onclick=()=>form("Request leave",[field("starts_on","First day","date"),field("ends_on","Last day","date"),field("leave_type","Leave type","select",["Annual leave","Personal or carers leave","Unpaid leave","Other"]),field("reason","Notes (optional)","textarea",[],false)],async v=>{const {error}=await B().db.from("leave_requests").insert({...v,organisation_id:B().profile.organisation_id,staff_id:B().profile.id,status:"Pending"});if(error)throw error;await loadOperations();B().toast("Leave request submitted")});
  q("#add-availability").onclick=()=>form("Add availability",[field("starts_at","Available from","datetime-local"),field("ends_at","Available until","datetime-local"),field("availability_type","Type","select",["Available","Unavailable","Preferred"]),field("notes","Notes (optional)","textarea",[],false)],async v=>{const {error}=await B().db.from("worker_availability").insert({...v,organisation_id:B().profile.organisation_id,staff_id:B().profile.id});if(error)throw error;await loadOperations();B().toast("Availability saved")});
  q("#add-travel").onclick=()=>form("Add travel or expense",[field("participant_id","Participant (optional)","select",[{value:"",label:"Not linked"},...participantOptions()],false),field("expense_date","Date","date"),field("expense_type","Type","select",["Participant transport","Provider travel","Parking","Toll","Meal allowance","Other"]),field("kilometres","Kilometres","number",[],false),field("amount","Expense amount","number",[],false),field("description","Description (optional)","textarea",[],false)],async v=>{const {error}=await B().db.from("travel_expenses").insert({...v,participant_id:v.participant_id||null,kilometres:Number(v.kilometres||0),amount:Number(v.amount||0),organisation_id:B().profile.organisation_id,staff_id:B().profile.id,status:"Pending"});if(error)throw error;await loadOperations();B().toast("Travel or expense submitted")});
@@ -296,5 +303,6 @@ document.addEventListener("click",async e=>{
  }catch(error){B().toast(error.message)}
 });
 let idleTimer;const resetIdle=()=>{clearTimeout(idleTimer);if(B()?.profile)idleTimer=setTimeout(()=>B().db.auth.signOut().then(()=>location.reload()),30*60*1000)};["pointerdown","keydown","touchstart"].forEach(name=>addEventListener(name,resetIdle,{passive:true}));
+window.addEventListener("florence:roster-rendered",renderTimeClockStatus);
 window.addEventListener("florence:ready",async()=>{if(!B().isStaffUser())return;bindForms();await loadTimeClock();if(B().isSupervisor())await setupMfa();resetIdle()});
 })();
