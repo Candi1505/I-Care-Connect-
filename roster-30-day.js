@@ -30,7 +30,9 @@ function shiftCell(shifts){
  if(!shifts.length)return '<span class="roster-empty-cell">—</span>';
  return shifts.sort((a,b)=>new Date(a.starts_at)-new Date(b.starts_at)).map(shift=>{
   const controls=[];
+  const ownPendingShift=shift.status==="Published"&&shift.response==="Pending"&&shift.assigned_staff_id===B().profile.id;
   if(shift.status==="Draft")controls.push(`<button class="publish" data-publish="${shift.id}">Publish</button>`);
+  if(ownPendingShift)controls.push(`<button class="accept" data-shift-response="${shift.id}" data-response="Accepted">Accept</button><button class="decline" data-shift-response="${shift.id}" data-response="Declined">Decline</button>`);
   if(shift.status==="Published")controls.push(`<button class="decline" data-cancel-shift="${shift.id}">Cancel</button>`);
   return `<article class="calendar-shift ${String(shift.status||"").toLowerCase()}"><strong>${esc(shiftName(shift))}</strong><span>${esc(clock(shift.starts_at))}–${esc(clock(shift.ends_at))}</span><small>${esc(shift.shift_type)} · ${esc(shift.response||shift.status)}</small>${shift.handover_notes?`<small class="calendar-note">${esc(shift.handover_notes)}</small>`:""}${controls.length?`<div class="calendar-actions">${controls.join("")}</div>`:""}</article>`;
  }).join("");
@@ -49,7 +51,7 @@ function render30DayRoster(){
  const header=days.map(day=>`<th><span>${new Intl.DateTimeFormat("en-AU",{weekday:"short",timeZone:"UTC"}).format(day)}</span><strong>${new Intl.DateTimeFormat("en-AU",{day:"numeric",month:"short",timeZone:"UTC"}).format(day)}</strong></th>`).join("");
  const body=rows.length?rows.map(worker=>`<tr><th class="roster-worker"><strong>${esc(worker.full_name)}</strong><small>${esc(worker.role==="supervisor"?"Supervisor":worker.role==="staff"?"Support worker":"Unassigned")}</small></th>${keys.map(key=>`<td>${shiftCell(shifts.filter(shift=>(shift.assigned_staff_id||null)===(worker.id||null)&&brisbaneYmd(shift.starts_at)===key))}</td>`).join("")}</tr>`).join(""):`<tr><td colspan="${VIEW_DAYS+1}"><div class="empty">No staff or shifts in this 30-day period.</div></td></tr>`;
  const range=new Intl.DateTimeFormat("en-AU",{day:"numeric",month:"short",year:"numeric",timeZone:"UTC"});
- host.innerHTML=`<div class="roster-calendar-toolbar"><button class="secondary" data-roster-30="-1" aria-label="Previous 30 days">‹</button><button class="secondary roster-today" data-roster-30="today">Today</button><div><p class="eyebrow">30-day roster</p><strong>${range.format(start)} – ${range.format(end)}</strong></div><button class="secondary" data-roster-30="1" aria-label="Next 30 days">›</button></div><div class="roster-calendar-scroll"><table class="roster-calendar"><thead><tr><th class="roster-worker">Worker</th>${header}</tr></thead><tbody>${body}</tbody></table></div><p class="roster-calendar-hint">Swipe sideways to see all 30 days.</p>`;
+ host.innerHTML=`<div class="roster-calendar-toolbar"><button class="secondary" data-roster-30="-1" aria-label="Previous 30 days">‹</button><button class="secondary roster-today" data-roster-30="today">Today</button><div><p class="eyebrow">30-day roster</p><strong>${range.format(start)} – ${range.format(end)}</strong></div><button class="secondary" data-roster-30="1" aria-label="Next 30 days">›</button></div><div class="roster-calendar-scroll"><table class="roster-calendar" data-roster-days="30"><thead><tr><th class="roster-worker">Worker</th>${header}</tr></thead><tbody>${body}</tbody></table></div><p class="roster-calendar-hint">Swipe sideways to see all 30 days. Accept or decline your own pending shifts directly from their cards.</p>`;
  return true;
 }
 function openShiftForm(){
@@ -80,6 +82,11 @@ function openShiftForm(){
 function install(){
  if(!bridgeReady()||!isSupervisor())return false;
  const add=q("#add-shift");if(add&&!add.dataset.roster30Bound){add.dataset.roster30Bound="true";add.onclick=openShiftForm}
+ const host=q("#roster-list");
+ if(host&&!host.__roster30Observer){
+  const observer=new MutationObserver(()=>{if(q("#roster-view.active")&&!q('[data-roster-days="30"]',host))queueMicrotask(render30DayRoster)});
+  observer.observe(host,{childList:true});host.__roster30Observer=observer;
+ }
  render30DayRoster();return true;
 }
 document.addEventListener("click",event=>{
