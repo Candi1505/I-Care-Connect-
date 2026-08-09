@@ -112,20 +112,20 @@ window.FLORENCE_CONFIG = {
 
 (() => {
   const modules = [
-    "core-ui-fixes-v3.js?v=20260804-session-rpc-1",
-    "deputy-integration.js?v=20260804-3",
+    "core-ui-fixes-v3.js?v=20260809-mobile-main-stability-1",
+    "deputy-integration.js?v=20260809-mobile-main-stability-1",
     "setup-code-display.js?v=20260802-1",
     "portal-participant-label.js?v=20260802-2",
-    "portal-care-plan.js?v=20260807-evidence-page-2",
-    "participant-file.js?v=20260803-1",
-    "secure-document-careplan-fix.js?v=20260803-1",
-    "participant-edit-controls.js?v=20260803-1",
+    "portal-care-plan.js?v=20260809-mobile-main-stability-1",
+    "participant-file.js?v=20260809-mobile-main-stability-1",
+    "secure-document-careplan-fix.js?v=20260809-mobile-main-stability-1",
+    "participant-edit-controls.js?v=20260809-mobile-main-stability-1",
     "medication-prn-fix.js?v=20260806-prn-signing-1",
     "regular-medication-tab.js?v=20260804-7",
     "invoicing-workspace.js?v=20260804-pricing-1",
     "invoice-menu-fix.js?v=20260804-pricing-1",
     "florence-readiness-controls.js?v=20260802-1",
-    "remote-s8-verification.js?v=20260802-1"
+    "remote-s8-verification.js?v=20260809-mobile-main-stability-1"
   ];
   const load = () => { for (const src of modules) { const path=src.split("?")[0]; if([...document.scripts].some(script=>(script.getAttribute("src")||"").includes(path)))continue; const script=document.createElement("script"); script.src=src; script.defer=true; script.dataset.florenceRuntime=path; document.head.appendChild(script);} };
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",load,{once:true});else load();

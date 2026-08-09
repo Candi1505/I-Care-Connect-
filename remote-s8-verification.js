@@ -61,6 +61,6 @@ function openVerify(id){
   await B().refreshAll();await load();return values.discrepancy==="true"?"Remote verification recorded with a discrepancy":"Remote S8 verification completed";
  });
 }
-window.addEventListener("florence:ready",()=>void load());
+window.addEventListener("florence:ready",ensurePanel);
 document.addEventListener("click",event=>{if(event.target.closest('[data-view="medications"]'))setTimeout(()=>void load(),50)});
 })();

@@ -40,5 +40,5 @@ async function syncNow(showToast){if(loading&&showToast)return;try{const r=await
 function scheduleAuto(enabled){if(autoTimer){clearInterval(autoTimer);autoTimer=null}if(enabled)autoTimer=setInterval(()=>void syncNow(false),30000)}
 function returned(){const u=new URL(location.href),r=u.searchParams.get("deputy");if(!r)return;if(r==="connected"){toast("Deputy connected securely");setTimeout(()=>{openView();void loadAll()},200)}else toast("Deputy connection was not completed");u.searchParams.delete("deputy");u.searchParams.delete("reason");history.replaceState({},"",u.pathname+(u.search||"")+u.hash)}
 function install(){const page=ensurePage();if(!page)return false;returned();return true}
-window.addEventListener("florence:ready",()=>{install();void loadAll()});window.addEventListener("pageshow",()=>setTimeout(()=>{install();void loadAll()},100));let attempts=0;const timer=setInterval(()=>{attempts++;if(install()||attempts>120)clearInterval(timer)},250);
+window.addEventListener("florence:ready",install);window.addEventListener("pageshow",()=>setTimeout(install,100));let attempts=0;const timer=setInterval(()=>{attempts++;if(install()||attempts>120)clearInterval(timer)},250);
 })();

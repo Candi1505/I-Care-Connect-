@@ -50,5 +50,5 @@ function ensure(){
 }
 function start(){ensure();const host=q("#pf-content");if(host&&!host.__editObserved){new MutationObserver(ensure).observe(host,{childList:true,subtree:true});host.__editObserved=true}}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});else start();
-window.addEventListener("pageshow",start);window.addEventListener("florence:ready",start);setInterval(start,1000);
+window.addEventListener("pageshow",start);window.addEventListener("florence:ready",start);document.addEventListener("click",event=>{const target=event.target instanceof Element?event.target:null;if(target?.closest('[data-view="participants"],[data-pf-tab]'))setTimeout(start,80)});
 })();

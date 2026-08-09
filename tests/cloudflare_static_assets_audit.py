@@ -98,7 +98,7 @@ assert "deputy-permanent-token-ui-fix.js" in regular_tab_js
 assert "VIEW_DAYS=30" in roster_js
 assert "MAX_SHIFTS=45" in roster_js
 assert "Number of weekly shifts to create (1–45)" in roster_js
-assert "deputy-integration.js?v=20260804-3" in worker_js
+assert "deputy-integration.js?v=20260809-mobile-main-stability-1" in worker_js
 assert 'functions.invoke("deputy-connect"' in deputy_js
 assert "Automatically send assigned Florence shifts" in deputy_js
 assert "DEPUTY_CLIENT_SECRET" not in deputy_js
