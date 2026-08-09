@@ -93,7 +93,7 @@ require('sil.js?v=20260807-evidence-page-2' in sil_html, "SIL page loads current
 require('sil.css?v=20260807-evidence-page-2' in sil_html, "SIL page loads current record-review styles")
 require('sil-record.js?v=20260807-evidence-page-2' in sil_record_html, "evidence page loads its current secure viewer")
 require('set-password.js?v=20260802-2' in set_password_html, "setup page loads its controlled asset")
-require('florence-static-20260809-mobile-main-stability-1' in service_worker, "service worker uses current cache namespace")
+require('florence-static-20260809-roster-actions-1' in service_worker, "service worker uses current cache namespace")
 for marker in ['config.js?v=20260809-mobile-main-stability-1', 'app.js?v=20260809-roster-actions-1', 'medication-prn-fix.js?v=20260806-prn-signing-1', 'operations.js?v=20260809-roster-actions-1', 'portal-care-plan.js?v=20260809-mobile-main-stability-1', 'sil.css?v=20260807-evidence-page-2', 'sil.js?v=20260807-evidence-page-2', 'sil-record.js?v=20260807-evidence-page-2']:
     require(marker in service_worker, f"service worker caches {marker}")
 
