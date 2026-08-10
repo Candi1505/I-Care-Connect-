@@ -28,7 +28,7 @@ function addMedicationControls(){
   if(q("[data-edit-medication]",card))return;
   const med=medByCard(card);if(!med)return;
   const row=document.createElement("div");row.className="record-meta medication-maintenance-actions";
-  row.innerHTML=`<button type="button" class="link" data-edit-medication="${med.id}">Edit profile</button><button type="button" class="link" data-hold-medication="${med.id}">${med.hold_from||med.hold_until?"Change hold":"Place on hold"}</button><button type="button" class="decline" data-cease-medication="${med.id}">${med.ceased_at||!med.active?"Ceased":"Cease medication"}</button>`;
+  row.innerHTML=`<button type="button" class="secondary" data-edit-medication="${med.id}">Edit medication</button><button type="button" class="secondary" data-hold-medication="${med.id}">${med.hold_from||med.hold_until?"Change hold":"Place on hold"}</button><button type="button" class="decline" data-cease-medication="${med.id}">${med.ceased_at||!med.active?"Ceased":"Cease medication"}</button>`;
   card.appendChild(row);
  });
 }
@@ -122,6 +122,8 @@ function openWeeklyUpdate(){
   const message=`Weekly update — week ending ${values.week_ending}\n\n${sections.map(([h,v])=>`${h}:\n${clean(v)}`).join("\n\n")}`;
   const {data:posted,error:messageError}=await B().db.from("portal_messages").insert({organisation_id:B().profile.organisation_id,thread_id:thread.id,sender_id:B().profile.id,message}).select().single();
   if(messageError)throw messageError;
+  const {error:threadError}=await B().db.from("portal_threads").update({updated_at:new Date().toISOString()}).eq("id",thread.id);
+  if(threadError)throw threadError;
   const {error:updateError}=await B().db.from("weekly_family_updates").upsert({organisation_id:B().profile.organisation_id,participant_id:values.participant_id,week_ending:values.week_ending,health_wellbeing:clean(values.health_wellbeing)||null,activities_appointments:clean(values.activities_appointments)||null,goals_progress:clean(values.goals_progress)||null,medication_clinical_updates:clean(values.medication_clinical_updates)||null,concerns_follow_up:clean(values.concerns_follow_up)||null,completed_by:B().profile.id,completed_at:new Date().toISOString(),portal_thread_id:thread.id,portal_message_id:posted.id},{onConflict:"participant_id,week_ending"});
   if(updateError)throw updateError;await B().refreshAll();return "Weekly family update saved and shared in the portal";
  },{participant_id:defaultParticipant,week_ending:fridayFor()});
