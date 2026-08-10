@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260809-roster-actions-1">
+  <link rel="stylesheet" href="styles.css?v=20260810-weekly-portal-1">
 </head>
 <body>
 <div id="toast" class="toast"></div>
@@ -146,6 +146,14 @@
         <button class="active" data-portal-filter="active">Active</button>
         <button data-portal-filter="archived">Archived</button>
       </div>
+
+      <article class="panel weekly-family-updates-panel">
+        <div class="panel-head">
+          <div><p class="eyebrow">Shared care record</p><h3>Weekly family updates</h3><p>Care, activities, goals and follow-up shared with participants and their approved family contacts.</p></div>
+          <span id="weekly-family-update-count" class="badge good">0 updates</span>
+        </div>
+        <div id="weekly-family-update-list" class="stack"></div>
+      </article>
 
       <div class="grid two portal-layout">
         <article class="panel">
@@ -345,8 +353,8 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.2"></script>
-<script src="config.js?v=20260809-mobile-main-stability-1"></script>
-<script src="app.js?v=20260809-roster-actions-1"></script>
+<script src="config.js?v=20260810-weekly-portal-1"></script>
+<script src="app.js?v=20260810-weekly-portal-1"></script>
 <script src="operations.js?v=20260809-roster-actions-1"></script>
 <script src="staff-management.js?v=20260801-1"></script>
 <script>

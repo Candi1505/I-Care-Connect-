@@ -9,7 +9,7 @@ const ACTIVITY_KEY="florence:last-activity";
 let db=null, session=null, profile=null, organisation=null, enterPromise=null, enteredUserId=null;
 let rosterTab="published",rosterWeekOffset=0,medTab="round",complianceTab="all",timelineFilter="all",portalFilter="active",pending=null,pendingMed=null,activePortalThread=null,marRoundParticipant="",marRoundDate="",marRoundName="Bedtime",marRoundSelections={};
 let xeroConnection={checked:false,connected:false,tenant_name:null};
-let state={staff:[],participants:[],shifts:[],medications:[],mar:[],notes:[],compliance:[],invoices:[],timeline:[],portalThreads:[],portalMessages:[]};
+let state={staff:[],participants:[],shifts:[],medications:[],mar:[],notes:[],compliance:[],invoices:[],timeline:[],portalThreads:[],portalMessages:[],weeklyFamilyUpdates:[]};
 const accessAuditTimes=new Map();
 
 function toast(t){const e=$("#toast");if(!e)return;const message=String(t||"Florence could not complete that action.").replace(/\s+/g," ").trim();e.textContent=message.length>240?message.slice(0,237)+"…":message;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),3500)}
@@ -306,7 +306,8 @@ async function refreshAll(){
   db.from("compliance_documents").select("*").eq("organisation_id",org).order("uploaded_at",{ascending:false}),
   db.from("client_timeline").select("*, participant:participants(full_name), created_by_profile:profiles!client_timeline_created_by_fkey(full_name)").eq("organisation_id",org).order("occurred_at",{ascending:false}),
   db.from("portal_threads").select("*, participant:participants(full_name), created_by_profile:profiles!portal_threads_created_by_fkey(full_name)").eq("organisation_id",org).order("updated_at",{ascending:false}),
-  db.from("portal_messages").select("*, sender:profiles!portal_messages_sender_id_fkey(full_name,role)").eq("organisation_id",org).order("created_at")
+  db.from("portal_messages").select("*, sender:profiles!portal_messages_sender_id_fkey(full_name,role)").eq("organisation_id",org).order("created_at"),
+  db.from("weekly_family_updates").select("*").eq("organisation_id",org).order("week_ending",{ascending:false}).order("completed_at",{ascending:false})
  ];
  const invoiceQuery=isSupervisor()
   ? db.from("invoices").select("*, participant:participants(full_name)").eq("organisation_id",org).order("created_at",{ascending:false})
@@ -314,8 +315,8 @@ async function refreshAll(){
  const results=await Promise.all([...commonQueries,invoiceQuery]);
  const firstError=results.find(r=>r.error)?.error;
  if(firstError)throw firstError;
- const [staff,participants,shifts,medications,mar,notes,compliance,timeline,portalThreads,portalMessages,invoices]=results.map(r=>r.data||[]);
- Object.assign(state,{staff,participants,shifts,medications,mar,notes,compliance,timeline,portalThreads,portalMessages,invoices});
+ const [staff,participants,shifts,medications,mar,notes,compliance,timeline,portalThreads,portalMessages,weeklyFamilyUpdates,invoices]=results.map(r=>r.data||[]);
+ Object.assign(state,{staff,participants,shifts,medications,mar,notes,compliance,timeline,portalThreads,portalMessages,weeklyFamilyUpdates,invoices});
  render();
 }function render(){renderDashboard();renderParticipants();renderRoster();renderMeds();renderNotes();renderTimeline();renderPortal();renderCompliance();renderFinance()}
 function expStatus(d){if(!d)return"No review date";const days=Math.ceil((new Date(d)-new Date())/86400000);return days<0?"Expired":days<=30?"Due soon":"Current"}
@@ -440,7 +441,7 @@ function renderRoster(){
 }
 function marActionButtons(m){
  if(!isStaffUser())return "";
- return `<div class="actions">
+ return `<div class="actions medication-administration-actions">
    <button class="accept" data-mar-sign="${m.id}" data-outcome="Administered">Administer & sign</button>
    <button class="publish" data-mar-sign="${m.id}" data-outcome="Withheld">Withheld</button>
    <button class="decline" data-mar-sign="${m.id}" data-outcome="Refused">Refused</button>
@@ -540,7 +541,36 @@ function canSeePortalThread(t){
  if(isSupervisor()||profile.role==="staff")return true;
  return !!profile.participant_id&&t.participant_id===profile.participant_id;
 }
+function weeklyUpdateSections(update){
+ return [
+  ["Health and wellbeing",update.health_wellbeing],
+  ["Activities and appointments",update.activities_appointments],
+  ["Goals and progress",update.goals_progress],
+  ["Medication or clinical updates",update.medication_clinical_updates],
+  ["Concerns and follow-up",update.concerns_follow_up]
+ ].filter(([,value])=>String(value||"").trim());
+}
+function renderWeeklyFamilyUpdates(){
+ const host=$("#weekly-family-update-list"),count=$("#weekly-family-update-count");
+ if(!host)return;
+ let updates=state.weeklyFamilyUpdates;
+ if(profile.participant_id)updates=updates.filter(update=>update.participant_id===profile.participant_id);
+ if(count)count.textContent=`${updates.length} ${updates.length===1?"update":"updates"}`;
+ host.innerHTML=updates.map((update,index)=>{
+  const participant=state.participants.find(person=>person.id===update.participant_id);
+  const author=state.staff.find(person=>person.id===update.completed_by);
+  const sections=weeklyUpdateSections(update);
+  const reviewLabel=isPortalUser()?"Shared":update.reviewed_at?"Reviewed":"Awaiting supervisor review";
+  return `<details class="record weekly-family-update" ${index===0?"open":""}>
+   <summary><span><strong>Week ending ${date(update.week_ending)}</strong><small>${esc(participant?.preferred_name||participant?.full_name||"Participant")}</small></span>${badge(reviewLabel)}</summary>
+   <div class="weekly-update-sections">${sections.map(([heading,value])=>`<section><h4>${esc(heading)}</h4><p>${esc(value)}</p></section>`).join("")||empty("No update details were recorded.")}</div>
+   <div class="record-meta">${badge(`Shared ${fmt(update.completed_at)}`)}${author?.full_name?badge(`Added by ${author.full_name}`):""}</div>
+   <div class="actions">${update.portal_thread_id?`<button type="button" class="secondary" data-weekly-thread="${update.portal_thread_id}">Open family conversation</button>`:""}${isSupervisor()&&!update.reviewed_at?`<button type="button" class="accept" data-review-weekly-update="${update.id}">Mark reviewed</button>`:""}</div>
+  </details>`;
+ }).join("")||empty("No weekly family updates have been shared yet.");
+}
 function renderPortal(){
+ renderWeeklyFamilyUpdates();
  const threads=state.portalThreads.filter(canSeePortalThread).filter(t=>portalFilter==="archived"?t.status==="Closed":t.status!=="Closed");
  $("#portal-thread-list").innerHTML=threads.map(t=>`<button class="thread-button ${activePortalThread===t.id?"active":""}" data-thread="${t.id}"><strong>${esc(t.subject)}</strong><span>${esc(t.participant?.full_name)} · ${esc(t.thread_type)}</span><small>${esc(t.status)} · ${fmt(t.updated_at)}</small></button>`).join("")||empty(portalFilter==="archived"?"No archived conversations.":"No active portal conversations.");
  const thread=threads.find(t=>t.id===activePortalThread);
@@ -564,10 +594,11 @@ const ARCHIVE_FIELDS={
  client_timeline:["id","organisation_id","participant_id","event_type","severity","occurred_at","title","description","action_taken","follow_up","created_by","created_at","updated_at"],
  portal_threads:["id","organisation_id","participant_id","thread_type","subject","status","created_by","assigned_to","created_at","updated_at"],
  portal_messages:["id","organisation_id","thread_id","sender_id","message","created_at"],
+ weekly_family_updates:["id","organisation_id","participant_id","week_ending","health_wellbeing","activities_appointments","goals_progress","medication_clinical_updates","concerns_follow_up","completed_by","completed_at","reviewed_by","reviewed_at","portal_thread_id","portal_message_id"],
  compliance_documents:["id","organisation_id","scope","subject_type","subject_id","subject_name","category","title","storage_path","original_filename","mime_type","review_date","version","uploaded_by","uploaded_at"],
  invoices:["id","organisation_id","participant_id","invoice_number","description","hours","rate","invoice_date","due_date","xero_invoice_id","status","created_by","created_at","updated_at"]
 };
-const ARCHIVE_STATE={participants:"participants",shifts:"shifts",medications:"medications",mar_entries:"mar",progress_notes:"notes",client_timeline:"timeline",portal_threads:"portalThreads",portal_messages:"portalMessages",compliance_documents:"compliance",invoices:"invoices"};
+const ARCHIVE_STATE={participants:"participants",shifts:"shifts",medications:"medications",mar_entries:"mar",progress_notes:"notes",client_timeline:"timeline",portal_threads:"portalThreads",portal_messages:"portalMessages",weekly_family_updates:"weeklyFamilyUpdates",compliance_documents:"compliance",invoices:"invoices"};
 const OPERATIONAL_ARCHIVE_TABLES=["incidents","complaints","medication_incidents","emergency_plans","staff_credentials","timesheets","worker_availability","leave_requests","travel_expenses","participant_goals","funding_plans","ndis_support_items","controlled_drug_register","conflict_declarations","meeting_minutes","delegations","participant_access_assignments","retention_rules","retention_register","notifications","audit_events"];
 function cleanArchiveRow(row,fields){return Object.fromEntries(fields.filter(key=>row[key]!==undefined).map(key=>[key,row[key]]))}
 function bytesToBase64(bytes){let binary="";for(let offset=0;offset<bytes.length;offset+=32768)binary+=String.fromCharCode(...bytes.subarray(offset,offset+32768));return btoa(binary)}
@@ -742,6 +773,17 @@ document.addEventListener("click",async e=>{
   }
   b=e.target.closest("[data-xero-invoice]");if(b){if(!confirm("Send this invoice to Xero as a draft?"))return;const {data,error}=await db.functions.invoke("xero-connect",{body:{action:"sync-invoice",invoice_id:b.dataset.xeroInvoice}});if(error||data?.error)throw new Error(data?.error||"Xero invoice sync failed");await refreshAll();return toast("Invoice sent to Xero as a draft")}
   b=e.target.closest("[data-thread]");if(b){activePortalThread=b.dataset.thread;renderPortal();return}
+  b=e.target.closest("[data-weekly-thread]");if(b){
+   const thread=state.portalThreads.find(item=>item.id===b.dataset.weeklyThread);
+   portalFilter=thread?.status==="Closed"?"archived":"active";
+   $$('[data-portal-filter]').forEach(button=>button.classList.toggle("active",button.dataset.portalFilter===portalFilter));
+   activePortalThread=b.dataset.weeklyThread;renderPortal();$("#portal-thread-title")?.scrollIntoView({behavior:"smooth",block:"center"});return
+  }
+  b=e.target.closest("[data-review-weekly-update]");if(b){
+   if(!isSupervisor())throw new Error("Only a supervisor can review a weekly family update");
+   const {error}=await db.from("weekly_family_updates").update({reviewed_by:profile.id,reviewed_at:new Date().toISOString()}).eq("id",b.dataset.reviewWeeklyUpdate);if(error)throw error;
+   await refreshAll();return toast("Weekly family update marked as reviewed")
+  }
   b=e.target.closest("[data-archive-thread]");if(b){if(!isStaffUser())throw new Error("This action is available to staff only");const archive=b.dataset.archive==="true";const {error}=await db.from("portal_threads").update({status:archive?"Closed":"Open",updated_at:new Date().toISOString()}).eq("id",b.dataset.archiveThread);if(error)throw error;activePortalThread=null;await refreshAll();return toast(archive?"Conversation archived":"Conversation restored")}
   b=e.target.closest("[data-mar-sign]");if(b){
    if(!isStaffUser())throw new Error("This action is available to staff only");

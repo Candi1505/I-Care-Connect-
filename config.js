@@ -124,7 +124,7 @@ window.FLORENCE_CONFIG = {
     "regular-medication-tab.js?v=20260804-7",
     "invoicing-workspace.js?v=20260804-pricing-1",
     "invoice-menu-fix.js?v=20260804-pricing-1",
-    "florence-readiness-controls.js?v=20260802-1",
+    "florence-readiness-controls.js?v=20260810-weekly-portal-1",
     "remote-s8-verification.js?v=20260809-mobile-main-stability-1"
   ];
   const load = () => { for (const src of modules) { const path=src.split("?")[0]; if([...document.scripts].some(script=>(script.getAttribute("src")||"").includes(path)))continue; const script=document.createElement("script"); script.src=src; script.defer=true; script.dataset.florenceRuntime=path; document.head.appendChild(script);} };
