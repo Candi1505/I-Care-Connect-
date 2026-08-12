@@ -1,9 +1,10 @@
 (()=>{
 "use strict";
-const loadLegacy=()=>{if(document.querySelector('script[data-florence-core-v2]'))return;const s=document.createElement('script');s.src='./core-ui-fixes-v2.js?v=20260809-mobile-main-stability-1';s.dataset.florenceCoreV2='true';document.head.appendChild(s)};
+const loadLegacy=()=>{if(document.querySelector('script[data-florence-core-v2]'))return;const s=document.createElement('script');s.src='./core-ui-fixes-v2.js?v=20260812-mobile-regressions-1';s.dataset.florenceCoreV2='true';document.head.appendChild(s)};
 loadLegacy();
 
 const q=(s,r=document)=>r.querySelector(s);
+const qa=(s,r=document)=>[...r.querySelectorAll(s)];
 const B=()=>window.FlorenceBridge;
 const TIMEOUT_MS=30*60*1000;
 const ACTIVITY_KEY='florence:last-activity';
@@ -55,9 +56,10 @@ async function approvePlan(){
 function button(id,label,kind,fn){const el=document.createElement('button');el.id=id;el.type='button';el.className=kind;el.textContent=label;el.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();void fn().catch(err=>toast(err?.message||'Florence could not complete that action.'))});return el}
 function ensureParticipantControls(){
  const host=q('#pf-content')||q('#participant-file-content');if(!host)return;
- if(!supervisor()){q('#edit-participant-native',host)?.remove();q('#approve-care-plan-native',host)?.remove();return}
+ const editButtons=qa('#edit-participant-details,#edit-participant-native',host);
+ if(!supervisor()){editButtons.forEach(element=>element.remove());q('#approve-care-plan-native',host)?.remove();return}
  const hero=q('.pf-hero',host)||q('.participant-file-hero',host);
- if(hero&&!q('#edit-participant-native',hero)){let area=q('.florence-native-actions',hero);if(!area){area=document.createElement('div');area.className='florence-native-actions';hero.appendChild(area)}area.appendChild(button('edit-participant-native','Edit participant','secondary',editParticipant))}
+ if(hero){let area=q('.florence-native-actions',hero);const canonical=editButtons.find(element=>element.id==='edit-participant-details'&&element.closest('.florence-native-actions'));editButtons.filter(element=>element!==canonical).forEach(element=>element.remove());if(!area){area=document.createElement('div');area.className='florence-native-actions';hero.appendChild(area)}if(!canonical)area.appendChild(button('edit-participant-details','Edit participant','secondary',editParticipant))}
  const active=q('[data-pf-tab="care"].active')||q('[data-pf-tab="care-plan"].active')||q('[data-participant-file-tab="care-plan"].active');
  if(active){const body=q('.pf-body',host)||q('.participant-file-tab-content',host)||host;const pending=/Approval pending/i.test(body.textContent||'');if(pending&&!q('#approve-care-plan-native',body)){const bar=q('.pf-actions',body)||body;bar.appendChild(button('approve-care-plan-native','Approve care plan','primary',approvePlan))}}
 }
@@ -67,5 +69,5 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 window.addEventListener('florence:ready',()=>{if(!readLast())writeLast();void verifySessionAge();startControls()});
 window.addEventListener('pageshow',()=>{void verifySessionAge();startControls()});
 document.addEventListener('click',event=>{const target=event.target instanceof Element?event.target:null;if(target?.closest('[data-view="participants"],[data-pf-tab]'))setTimeout(startControls,60)});
-const style=document.createElement('style');style.textContent='.florence-native-actions{display:flex;flex-direction:column;align-items:flex-end;gap:8px}.florence-native-actions button{background:#fff!important;color:#315d46!important;border-color:#fff!important;white-space:nowrap}';document.head.appendChild(style);
+const style=document.createElement('style');style.textContent='#participants-view{overflow-x:hidden}#pf-shell,#pf-content,.pf-toolbar,.pf-hero,.pf-alert,.pf-body{box-sizing:border-box;min-width:0;max-width:100%;overflow-wrap:anywhere}.florence-native-actions{display:flex;flex:0 1 auto;min-width:0;max-width:100%;flex-direction:column;align-items:flex-end;gap:8px}.florence-native-actions button{max-width:100%;background:#fff!important;color:#315d46!important;border-color:#fff!important;white-space:normal}@media(max-width:700px){.pf-hero{align-items:flex-start!important;flex-wrap:wrap}.florence-native-actions{width:100%;align-items:stretch}.florence-native-actions button{width:100%}}';document.head.appendChild(style);
 })();

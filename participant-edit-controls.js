@@ -1,5 +1,7 @@
 (()=>{
 "use strict";
+// Compatibility shim only. core-ui-fixes-v3 owns participant controls.
+return;
 const q=(selector,root=document)=>root.querySelector(selector);
 const B=()=>window.FlorenceBridge;
 const fields=["full_name","preferred_name","date_of_birth","ndis_number","address","phone","emergency_contact","guardian_nominee","gp","pharmacy","communication_needs","diagnoses","allergies","goals","preferences","risks_and_safeguards"];

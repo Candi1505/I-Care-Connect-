@@ -16,6 +16,9 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 
 (()=>{
 "use strict";
+// Participant editing is owned by core-ui-fixes-v3. Keeping this legacy block
+// inert prevents two observers from adding duplicate controls to the same card.
+return;
 const q=(selector,root=document)=>root.querySelector(selector);const B=()=>window.FlorenceBridge;const keys=["full_name","preferred_name","date_of_birth","ndis_number","address","phone","emergency_contact","guardian_nominee","gp","pharmacy","communication_needs","diagnoses","allergies","goals","preferences","risks_and_safeguards"];
 function toast(message){const b=B();if(b?.toast)return b.toast(message)}
 function participantId(){return q("#pf-select")?.value||q("#participant-file-select")?.value||""}

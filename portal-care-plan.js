@@ -2,8 +2,8 @@
 "use strict";
 const q=(s,r=document)=>r.querySelector(s),qa=(s,r=document)=>[...r.querySelectorAll(s)],B=()=>window.FlorenceBridge;
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
-const date=v=>v?new Intl.DateTimeFormat("en-AU",{day:"numeric",month:"short",year:"numeric"}).format(new Date(v)):"Not recorded";
-const dateTime=v=>v?new Intl.DateTimeFormat("en-AU",{day:"numeric",month:"short",year:"numeric",hour:"numeric",minute:"2-digit"}).format(new Date(v)):"";
+const date=v=>v?new Intl.DateTimeFormat("en-AU",{timeZone:"Australia/Brisbane",day:"numeric",month:"short",year:"numeric"}).format(new Date(v)):"Not recorded";
+const dateTime=v=>v?new Intl.DateTimeFormat("en-AU",{timeZone:"Australia/Brisbane",day:"numeric",month:"short",year:"numeric",hour:"numeric",minute:"2-digit"}).format(new Date(v)):"";
 let participantTab="overview",participantId="",participantCache=new Map();
 function toast(message){const b=B();if(b?.toast)return b.toast(message);const el=q("#toast");if(!el)return;el.textContent=message;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),2600)}
 function empty(message){return `<div class="empty">${esc(message)}</div>`}

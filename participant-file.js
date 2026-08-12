@@ -1,5 +1,7 @@
 (()=>{
 "use strict";
+// Compatibility shim only. core-ui-fixes-v3 owns participant controls.
+return;
 const q=(selector,root=document)=>root.querySelector(selector);
 const B=()=>window.FlorenceBridge;
 let busy=false;
