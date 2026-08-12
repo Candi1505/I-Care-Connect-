@@ -196,7 +196,7 @@ function bindForms(){
   field("severity","Severity","select",["Low","Moderate","High","Critical"]),field("description","What happened?","textarea"),
   field("immediate_actions","Immediate actions taken","textarea"),field("injury_or_harm","Injury or harm (optional)","textarea",[],false),
   field("witnesses","Witnesses (optional)","textarea",[],false),field("reportable_status","NDIS reportability","select",["Assessment required","Not reportable","Potentially reportable","Reported to NDIS Commission"])
- ],async v=>{const payload={...v,participant_id:v.participant_id||null,organisation_id:B().profile.organisation_id,reported_by:B().profile.id,emergency_services:false,status:"Open"};const {error}=await B().db.from("incidents").insert(payload);if(error)throw error;await loadOperations();B().toast("Incident recorded and supervisor notified")});
+ ],async v=>{const payload={...v,occurred_at:B().brisbaneLocalToIso(v.occurred_at),participant_id:v.participant_id||null,organisation_id:B().profile.organisation_id,reported_by:B().profile.id,emergency_services:false,status:"Open"};const {error}=await B().db.from("incidents").insert(payload);if(error)throw error;await loadOperations();B().toast("Incident recorded and supervisor notified")});
  q("#add-complaint").onclick=()=>form("Record complaint or feedback",[
   field("participant_id","Participant (optional)","select",[{value:"",label:"General organisation feedback"},...participantOptions()],false),
   field("complainant_name","Complainant name"),field("complainant_contact","Contact details (optional)","text",[],false),
@@ -210,7 +210,7 @@ function bindForms(){
   field("description","What occurred?","textarea"),field("immediate_actions","Immediate actions","textarea"),
   field("clinical_advice","Clinical advice obtained (optional)","textarea",[],false),field("notified_people","People notified (optional)","textarea",[],false),
   field("participant_outcome","Participant outcome (optional)","textarea",[],false),field("follow_up","Follow-up required (optional)","textarea",[],false)
- ],async v=>{const {error}=await B().db.from("medication_incidents").insert({...v,medication_id:v.medication_id||null,organisation_id:B().profile.organisation_id,reported_by:B().profile.id,status:"Open"});if(error)throw error;await loadOperations();B().toast("Medication error recorded")});
+ ],async v=>{const {error}=await B().db.from("medication_incidents").insert({...v,occurred_at:B().brisbaneLocalToIso(v.occurred_at),medication_id:v.medication_id||null,organisation_id:B().profile.organisation_id,reported_by:B().profile.id,status:"Open"});if(error)throw error;await loadOperations();B().toast("Medication error recorded")});
  q("#add-controlled-drug").onclick=()=>form("Schedule 8 stock transaction",[
   field("participant_id","Participant","select",participantOptions()),
   field("medication_id","Schedule 8 medication","select",B().state.medications.filter(m=>String(m.medication_type||"").toLowerCase().replace(/[^a-z0-9]+/g,"")==="schedule8").map(m=>({value:m.id,label:m.medication_name+" · "+(m.participant?.full_name||"")}))),

@@ -88,15 +88,15 @@ require("@supabase/supabase-js@2.106.2" in index, "index pins Supabase JS 2.106.
 require("@supabase/supabase-js@2.106.2" in sil_html, "sil.html pins Supabase JS 2.106.2")
 require("@supabase/supabase-js@2.106.2" in sil_record_html, "evidence page pins Supabase JS 2.106.2")
 require("@supabase/supabase-js" not in set_password_html, "setup page does not create a browser Supabase session")
-require('app.js?v=20260810-weekly-portal-1' in index, "index loads current weekly-portal app asset")
-require('config.js?v=20260810-weekly-portal-1' in index, "index loads the current runtime configuration")
-require('operations.js?v=20260809-roster-actions-1' in index, "index loads the mobile-stable operations asset")
+require('app.js?v=20260812-mobile-regressions-1' in index, "index loads current mobile-regression app asset")
+require('config.js?v=20260812-mobile-regressions-1' in index, "index loads the current runtime configuration")
+require('operations.js?v=20260812-mobile-regressions-1' in index, "index loads the current operations asset")
 require('sil.js?v=20260807-evidence-page-2' in sil_html, "SIL page loads current record-review asset")
 require('sil.css?v=20260807-evidence-page-2' in sil_html, "SIL page loads current record-review styles")
 require('sil-record.js?v=20260807-evidence-page-2' in sil_record_html, "evidence page loads its current secure viewer")
 require('set-password.js?v=20260802-2' in set_password_html, "setup page loads its controlled asset")
-require('florence-static-20260810-weekly-portal-1' in service_worker, "service worker uses current cache namespace")
-for marker in ['config.js?v=20260810-weekly-portal-1', 'app.js?v=20260810-weekly-portal-1', 'medication-prn-fix.js?v=20260806-prn-signing-1', 'operations.js?v=20260809-roster-actions-1', 'portal-care-plan.js?v=20260809-mobile-main-stability-1', 'sil.css?v=20260807-evidence-page-2', 'sil.js?v=20260807-evidence-page-2', 'sil-record.js?v=20260807-evidence-page-2']:
+require('florence-static-20260812-mobile-regressions-1' in service_worker, "service worker uses current cache namespace")
+for marker in ['config.js?v=20260812-mobile-regressions-1', 'app.js?v=20260812-mobile-regressions-1', 'medication-prn-fix.js?v=20260812-mobile-regressions-1', 'operations.js?v=20260812-mobile-regressions-1', 'portal-care-plan.js?v=20260812-mobile-regressions-1', 'roster-30-day.js?v=20260812-mobile-regressions-1', 'sil.css?v=20260807-evidence-page-2', 'sil.js?v=20260807-evidence-page-2', 'sil-record.js?v=20260807-evidence-page-2']:
     require(marker in service_worker, f"service worker caches {marker}")
 
 require('id="weekly-family-update-list"' in index, "portal contains a visible weekly family update record list")
@@ -147,6 +147,7 @@ require('related_sil_record_id' in portal_care_plan and 'sil-record.html?id=' in
 roster_30_day = text("roster-30-day.js")
 require('data-response="Accepted"' in roster_30_day and 'data-response="Declined"' in roster_30_day, "30-day roster offers accept and decline controls")
 require('shift.assigned_staff_id===B().profile.id' in roster_30_day and 'shift.response==="Pending"' in roster_30_day, "30-day roster responses are limited to the signed-in worker's pending shifts")
+require('data-roster-clock-in="${shift.id}"' in roster_30_day and 'data-roster-clock-out="${shift.id}"' in roster_30_day, "accepted personal shifts offer roster clock-in and clock-out controls")
 require('secureRpc("respond_to_shift",{p_shift_id:b.dataset.shiftResponse,p_response:b.dataset.response})' in app, "roster response controls use the secured shift-response function")
 require('data-roster-days="30"' in roster_30_day and "__roster30Observer" in roster_30_day, "30-day roster stays mounted after a secure shift response refresh")
 index_parser = IdParser()
@@ -165,6 +166,7 @@ require('florence:medication-sign-open' in app, "medication signing identifies t
 prn_fix = text("medication-prn-fix.js")
 require('showError(error.message)' in prn_fix, "PRN validation errors are displayed inside the signing modal")
 require('notes.dataset.prnAssessment' in prn_fix, "PRN retries do not duplicate the structured assessment")
+require('input[type="checkbox"]' in prn_fix and 'width:24px!important' in prn_fix, "PRN observed-sign checkboxes stay compact on mobile")
 require('$$("[data-round-status]",$("#med-content")).forEach' in app, "MAR round outcome buttons receive direct mobile-safe handlers")
 require('if(!legacyInvoiceList)return' in app, "legacy invoice renderer does not overwrite the smart invoicing workspace")
 require('ensureReady' in app, "authenticated bridge can recover a mobile session before invoicing")
@@ -350,9 +352,13 @@ require('p_witness_id:witnessId' in app and 'p_witness_pin:witnessPin' in app, "
 require('record_controlled_drug_transaction' in operations, "manual S8 stock uses dual-PIN RPC")
 require('.from("controlled_drug_register").insert' not in operations, "browser cannot directly insert S8 rows")
 
-# Participant controls and accessible PRN pain assessment remain published.
-participant_controls = text("participant-edit-controls.js")
-contains("participant-edit-controls.js", "Edit participant", "Approve care plan")
+# Participant controls have one canonical owner and accessible PRN pain assessment remains published.
+participant_controls = text("core-ui-fixes-v3.js")
+contains("core-ui-fixes-v3.js", "Edit participant", "Approve care plan", "edit-participant-details")
+require('participant-edit-controls.js' not in config and 'participant-file.js' not in config, "legacy participant observers are not loaded")
+require("Participant editing is owned by core-ui-fixes-v3" in text("core-ui-fixes-v2.js"), "legacy core participant observer stays inert")
+require('timeZone:BUSINESS_TIME_ZONE' in app and 'brisbaneLocalToIso' in app, "business timestamps display and save in Australia/Brisbane")
+require('occurred_at:B().brisbaneLocalToIso(v.occurred_at)' in operations, "incident forms convert Brisbane wall-clock time to UTC")
 prn = text("medication-prn-fix.js")
 for marker in [
     "Easy-read pain assessment", "Show me how much it hurts", "A little pain",

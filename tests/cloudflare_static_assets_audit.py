@@ -61,7 +61,7 @@ for referenced in references:
 config_js = (ROOT / "config.js").read_text(encoding="utf-8")
 worker_js = (ROOT / "service-worker.js").read_text(encoding="utf-8")
 remote_js = (ROOT / "remote-s8-verification.js").read_text(encoding="utf-8")
-participant_controls_js = (ROOT / "participant-edit-controls.js").read_text(encoding="utf-8")
+participant_controls_js = (ROOT / "core-ui-fixes-v3.js").read_text(encoding="utf-8")
 regular_tab_js = (ROOT / "regular-medication-tab.js").read_text(encoding="utf-8")
 roster_js = (ROOT / "roster-30-day.js").read_text(encoding="utf-8")
 deputy_js = (ROOT / "deputy-integration.js").read_text(encoding="utf-8")
@@ -85,7 +85,8 @@ assert "INVOICE_UI" in worker_js
 assert "invoicing-workspace.js?v=20260804-pricing-1" in worker_js
 assert "invoicing-workspace.js?v=20260804-pricing-1" in config_js
 assert "invoice-menu-fix.js?v=20260804-pricing-1" in config_js
-assert "participant-edit-controls.js" in config_js
+assert "participant-edit-controls.js" not in config_js
+assert "participant-file.js" not in config_js
 assert "Edit participant" in participant_controls_js
 assert "Approve care plan" in participant_controls_js
 assert "remote-s8-verification.js" in config_js
@@ -98,8 +99,10 @@ assert "deputy-permanent-token-ui-fix.js" in regular_tab_js
 assert "VIEW_DAYS=30" in roster_js
 assert "MAX_SHIFTS=45" in roster_js
 assert "Number of weekly shifts to create (1–45)" in roster_js
-assert 'loadRuntime("roster-30-day.js","20260809-roster-response-1")' in regular_tab_js
+assert 'loadRuntime("roster-30-day.js","20260812-mobile-regressions-1")' in regular_tab_js
 assert 'data-shift-response="${shift.id}"' in roster_js
+assert 'data-roster-clock-in="${shift.id}"' in roster_js
+assert 'data-roster-clock-out="${shift.id}"' in roster_js
 assert 'shift.assigned_staff_id===B().profile.id' in roster_js
 assert 'data-roster-days="30"' in roster_js and "__roster30Observer" in roster_js
 assert "deputy-integration.js?v=20260809-mobile-main-stability-1" in worker_js

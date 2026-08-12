@@ -2,8 +2,15 @@
 "use strict";
 const C=window.FLORENCE_CONFIG||{}, $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
-const fmt=v=>new Intl.DateTimeFormat("en-AU",{day:"numeric",month:"short",year:"numeric",hour:"numeric",minute:"2-digit"}).format(new Date(v));
-const date=v=>v?new Intl.DateTimeFormat("en-AU",{day:"numeric",month:"short",year:"numeric"}).format(new Date(v)):"";
+const BUSINESS_TIME_ZONE="Australia/Brisbane";
+const fmt=v=>new Intl.DateTimeFormat("en-AU",{timeZone:BUSINESS_TIME_ZONE,day:"numeric",month:"short",year:"numeric",hour:"numeric",minute:"2-digit"}).format(new Date(v));
+const date=v=>v?new Intl.DateTimeFormat("en-AU",{timeZone:BUSINESS_TIME_ZONE,day:"numeric",month:"short",year:"numeric"}).format(new Date(v)):"";
+function brisbaneLocalToIso(value){
+ const match=String(value||"").match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/);
+ if(!match)throw new Error("Enter a valid Brisbane date and time.");
+ const [,year,month,day,hour,minute,second="0"]=match;
+ return new Date(Date.UTC(Number(year),Number(month)-1,Number(day),Number(hour)-10,Number(minute),Number(second))).toISOString();
+}
 const id=()=>crypto.randomUUID?.()||Date.now()+"-"+Math.random().toString(16).slice(2);
 const ACTIVITY_KEY="florence:last-activity";
 let db=null, session=null, profile=null, organisation=null, enterPromise=null, enteredUserId=null;
@@ -736,7 +743,7 @@ $("#add-timeline-event").onclick=()=>form("Add client timeline event",[
  field("severity","Severity","select",["Low","Moderate","High"]),
  field("occurred_at","Date and time","datetime-local"),field("title","Short title"),
  field("description","What happened?","textarea"),field("action_taken","Action taken","textarea"),field("follow_up","Follow-up required","textarea")
-],async v=>{const {error}=await db.from("client_timeline").insert({organisation_id:profile.organisation_id,created_by:profile.id,...v,occurred_at:new Date(v.occurred_at).toISOString()});if(error)throw error;await refreshAll();toast("Timeline event added")});
+],async v=>{const {error}=await db.from("client_timeline").insert({organisation_id:profile.organisation_id,created_by:profile.id,...v,occurred_at:brisbaneLocalToIso(v.occurred_at)});if(error)throw error;await refreshAll();toast("Timeline event added")});
 
 $("#new-portal-item").onclick=()=>form("New portal message or request",[
  ...(isPortalUser()?[]:[field("participant_id","Participant","select",state.participants.map(p=>({value:p.id,label:p.full_name})))]),
@@ -863,7 +870,7 @@ if(disconnectXero)disconnectXero.onclick=async()=>{try{if(!confirm("Disconnect F
 $("#mar-outcome").onchange=()=>{$("#mar-reason-label").classList.toggle("required-reason",$("#mar-outcome").value!=="Administered");setS8DualSignoffVisibility()};
 window.FlorenceBridge={
  get db(){return db},get profile(){return profile},get organisation(){return organisation},get state(){return state},
- toast,form,field,showView,openDialog,closeDialog,esc,fmt,date,badge,empty,isSupervisor,isStaffUser,refreshAll,auditAccess,ensureReady
+ toast,form,field,showView,openDialog,closeDialog,esc,fmt,date,brisbaneLocalToIso,badge,empty,isSupervisor,isStaffUser,refreshAll,auditAccess,ensureReady
 };
 addEventListener("DOMContentLoaded",()=>void boot(),{once:true});
 })();
