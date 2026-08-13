@@ -127,6 +127,9 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f florence-sil-schema-cache-repair.sql | tee /tmp/florence-sil-repair-repeat.txt
           grep -q 'SIL_SCHEMA_READY_CACHE_RELOAD_SENT' /tmp/florence-sil-repair-repeat.txt
 
+      - name: Exercise controlled-document approval and audit evidence controls
+        run: psql -v ON_ERROR_STOP=1 -f tests/florence_complete_audit_library_smoke_test.sql
+
       - name: Exercise cleanup, server time clock and role RLS boundaries
         run: psql -v ON_ERROR_STOP=1 -f tests/florence_database_smoke_test.sql
 
@@ -141,6 +144,3 @@ jobs:
 
       - name: Exercise multi-client approved service boundaries
         run: psql -v ON_ERROR_STOP=1 -f tests/florence_multi_client_service_scope_smoke_test.sql
-
-      - name: Exercise controlled-document approval and audit evidence controls
-        run: psql -v ON_ERROR_STOP=1 -f tests/florence_complete_audit_library_smoke_test.sql
