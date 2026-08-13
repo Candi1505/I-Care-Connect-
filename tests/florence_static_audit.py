@@ -43,7 +43,7 @@ class IdParser(HTMLParser):
 required_files = [
     "index.html", "styles.css", "config.js", "app.js", "operations.js",
     "staff-management.js", "set-password.html", "set-password.js",
-    "medication-prn-fix.js", "participant-edit-controls.js", "portal-complaints.js",
+    "medication-prn-fix.js", "participant-edit-controls.js", "portal-complaints.js", "client-onboarding.js",
     "sil.html", "sil-record.html", "sil.css", "sil.js", "sil-record.js", "service-worker.js",
     "audit-document-catalogue.js",
     "supabase/functions/staff-management/index.ts",
@@ -62,6 +62,7 @@ required_files = [
     "florence-final-readiness-upgrade.sql",
     "florence-s8-dual-signoff-timeline-upgrade.sql",
     "florence-portal-complaints-upgrade.sql",
+    "florence-multi-client-service-scope.sql",
     "florence-choice-evidence-timeline-fix.sql",
 ]
 for path in required_files:
@@ -87,21 +88,22 @@ config = text("config.js")
 app_js = text("app.js")
 readiness_controls = text("florence-readiness-controls.js")
 portal_complaints = text("portal-complaints.js")
+quality_gate = text(".github/workflows/florence-quality-gate.yml")
 
 require("@supabase/supabase-js@2.106.2" in index, "index pins Supabase JS 2.106.2")
 require("@supabase/supabase-js@2.106.2" in sil_html, "sil.html pins Supabase JS 2.106.2")
 require("@supabase/supabase-js@2.106.2" in sil_record_html, "evidence page pins Supabase JS 2.106.2")
 require("@supabase/supabase-js" not in set_password_html, "setup page does not create a browser Supabase session")
-require('app.js?v=20260813-portal-complaints-1' in index, "index loads current portal-complaints app asset")
-require('config.js?v=20260813-portal-complaints-1' in index, "index loads the current runtime configuration")
-require('operations.js?v=20260813-portal-complaints-1' in index, "index loads the current operations asset")
+require('app.js?v=20260813-multi-client-1' in index, "index loads current multi-client app asset")
+require('config.js?v=20260813-multi-client-1' in index, "index loads the current runtime configuration")
+require('operations.js?v=20260813-multi-client-1' in index, "index loads the current operations asset")
 require('audit-document-catalogue.js?v=20260813-audit-library-1' in sil_html, "SIL page loads the complete audit catalogue")
 require('sil.js?v=20260813-audit-library-1' in sil_html, "SIL page loads current audit-library asset")
 require('sil.css?v=20260813-audit-library-1' in sil_html, "SIL page loads current audit-library styles")
 require('sil-record.js?v=20260807-evidence-page-2' in sil_record_html, "evidence page loads its current secure viewer")
 require('set-password.js?v=20260802-2' in set_password_html, "setup page loads its controlled asset")
-require('florence-static-20260813-portal-complaints-1' in service_worker, "service worker uses current cache namespace")
-for marker in ['styles.css?v=20260813-portal-complaints-1', 'config.js?v=20260813-portal-complaints-1', 'app.js?v=20260813-portal-complaints-1', 'operations.js?v=20260813-portal-complaints-1', 'medication-prn-fix.js?v=20260812-mobile-regressions-1', 'portal-care-plan.js?v=20260812-mobile-regressions-1', 'portal-complaints.js?v=20260813-portal-complaints-1', 'roster-30-day.js?v=20260812-mobile-regressions-1', 'sil.css?v=20260813-audit-library-1', 'audit-document-catalogue.js?v=20260813-audit-library-1', 'sil.js?v=20260813-audit-library-1', 'sil-record.js?v=20260807-evidence-page-2']:
+require('florence-static-20260813-multi-client-1' in service_worker, "service worker uses current cache namespace")
+for marker in ['styles.css?v=20260813-multi-client-1', 'config.js?v=20260813-multi-client-1', 'app.js?v=20260813-multi-client-1', 'operations.js?v=20260813-multi-client-1', 'medication-prn-fix.js?v=20260812-mobile-regressions-1', 'portal-care-plan.js?v=20260812-mobile-regressions-1', 'portal-complaints.js?v=20260813-portal-complaints-1', 'client-onboarding.js?v=20260813-multi-client-1', 'roster-30-day.js?v=20260812-mobile-regressions-1', 'sil.css?v=20260813-audit-library-1', 'audit-document-catalogue.js?v=20260813-audit-library-1', 'sil.js?v=20260813-audit-library-1', 'sil-record.js?v=20260807-evidence-page-2']:
     require(marker in service_worker, f"service worker caches {marker}")
 
 require('id="weekly-family-update-list"' in index, "portal contains a visible weekly family update record list")
@@ -148,7 +150,7 @@ require('/sil-record\n  Cache-Control: no-store, max-age=0' in headers, "canonic
 browser_paths = [
     "index.html", "app.js", "operations.js", "staff-management.js",
     "set-password.html", "set-password.js", "medication-prn-fix.js",
-    "participant-edit-controls.js", "portal-complaints.js", "sil.html", "sil.js", "sil-record.html", "sil-record.js", "config.js",
+    "participant-edit-controls.js", "portal-complaints.js", "client-onboarding.js", "sil.html", "sil.js", "sil-record.html", "sil-record.js", "config.js",
 ]
 for path in browser_paths:
     source = text(path)
@@ -196,8 +198,20 @@ invoice_workspace = text("invoicing-workspace.js")
 require('view.dataset.smartInvoicingInstalled==="true"' in invoice_workspace, "smart invoicing installs only once")
 require('await bridge.ensureReady?.()||bridge.profile' in invoice_workspace, "smart invoicing validates the current supervisor organisation")
 require('b.profile.organisation_id' not in invoice_workspace, "smart invoicing never dereferences a missing bridge profile")
-for marker in ['invoicing-workspace.js?v=20260804-pricing-1', 'invoice-menu-fix.js?v=20260804-pricing-1']:
+for marker in ['invoicing-workspace.js?v=20260813-multi-client-1', 'invoice-menu-fix.js?v=20260804-pricing-1']:
     require(marker in config, f"config owns one controlled invoice runtime loader for {marker}")
+client_onboarding = text("client-onboarding.js")
+contains(
+    "client-onboarding.js",
+    'create_participant_with_services',
+    'set_participant_service_scopes',
+    'Domestic duties only.',
+    'No participant currently has Medication support',
+    'Onboarding readiness',
+)
+require('participant_service_scopes' in app_js, "participant service scopes are included in encrypted organisation archives")
+require('service_type:line.service_type' in invoice_workspace and 'shift_id:line.shift_id||null' in invoice_workspace, "invoice lines carry the approved service and linked shift into database enforcement")
+require('florence-multi-client-service-scope.sql' in quality_gate and 'florence_multi_client_service_scope_smoke_test.sql' in quality_gate, "quality gate applies and tests the multi-client service-scope migration")
 require("withRuntimeFixes" not in service_worker, "service worker does not rewrite app HTML or duplicate runtime scripts")
 contains(
     "app.js",

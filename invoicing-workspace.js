@@ -44,11 +44,13 @@ const EVELYN_SERVICES=[
  return {...service,agreement:true,agreement_unit_price:agreementUnitPrice,unit_price:invoiceUnitPrice,price_source:AGREEMENT_SOURCE,pricing_effective_from:AGREEMENT_EFFECTIVE_FROM,payment_terms_days:7,gst_code:"GST Free",catalogue_price:cataloguePrice};
 });
 const EVELYN_RATES=new Map(EVELYN_SERVICES.map(service=>[service.support_item_number,service.unit_price]));
+const SERVICE_TYPES=["Domestic assistance","Personal care","Community access","Social support","Transport","Sleepover","24-hour support","Medication support"];
 
 let busy=false;
 let currentInvoice=null;
 let participants=[];
 let templates=[];
+let serviceScopes=[];
 let catalogue=[...OFFICIAL_QUICK_CATALOGUE];
 let selectedShifts=[];
 
@@ -71,9 +73,19 @@ function hours(start,end){return Math.max(0,(new Date(end)-new Date(start))/3600
 function participantById(id){return participants.find(participant=>participant.id===id)}
 function isEvelyn(participant){return String(participant?.ndis_number||"").replace(/\s/g,"")===EVELYN_NDIS_NUMBER||/\bevelyn\b/i.test(participant?.full_name||"")}
 function selectedParticipant(){return participantById(q("#smart-participant")?.value)}
+function participantServiceTypes(participant){
+ if(!participant)return[];
+ if(!participant.service_scope_confirmed_at)return SERVICE_TYPES;
+ const today=iso(new Date());
+ return serviceScopes.filter(scope=>scope.participant_id===participant.id&&scope.active&&(!scope.starts_on||scope.starts_on<=today)&&(!scope.ends_on||scope.ends_on>=today)).map(scope=>scope.service_type);
+}
+function serviceTypeOptions(selected=""){
+ return ['<option value="">Choose approved service</option>',...participantServiceTypes(selectedParticipant()).map(service=>`<option value="${esc(service)}"${service===selected?" selected":""}>${esc(service==="Domestic assistance"?"Domestic duties":service)}</option>`)].join("");
+}
 function selectableTemplates(){
  const participant=selectedParticipant();
- const saved=templates.filter(template=>!template.participant_id||template.participant_id===participant?.id);
+ const allowed=new Set(participantServiceTypes(participant));
+ const saved=templates.filter(template=>(!template.participant_id||template.participant_id===participant?.id)&&(!template.shift_type||allowed.has(template.shift_type)));
  if(!isEvelyn(participant))return saved;
  const agreedCodes=new Set(EVELYN_SERVICES.map(service=>service.support_item_number));
  return [...EVELYN_SERVICES,...saved.filter(template=>!agreedCodes.has(template.support_item_number))];
@@ -159,7 +171,7 @@ function install(){
  q("#smart-catalogue-search").oninput=renderCatalogue;
  q("#smart-catalogue-region").onchange=renderCatalogue;
  q("#smart-date").onchange=()=>{q("#smart-due").value=addDays(q("#smart-date").value,7)};
- q("#smart-participant").onchange=()=>{renderAgreementPicker();refreshLineTemplateChoices()};
+ q("#smart-participant").onchange=()=>{renderAgreementPicker();refreshLineTemplateChoices();refreshLineServiceChoices();renderReview()};
  view.addEventListener("click",event=>{
   const button=event.target.closest("[data-evelyn-service]");
   if(button)void startEvelynService(button.dataset.evelynService);
@@ -186,12 +198,12 @@ function templateOptions(selectedId=""){
 }
 
 function lineTemplate(item={}){
- return `<article class="record smart-line" data-shift-id="${esc(item.shift_id||"")}" data-pricing-effective-from="${esc(item.pricing_effective_from||"")}"><label>Agreed service<select data-k="template_id">${templateOptions(item.template_id)}</select></label><div class="grid two"><label>Service date<input data-k="service_date" type="date" value="${esc(item.service_date||iso(new Date()))}" required></label><label>Support item code<input data-k="support_item_number" value="${esc(item.support_item_number||"")}" required></label><label>Support item name<input data-k="support_item_name" value="${esc(item.support_item_name||"")}" required></label><label>Unit<select data-k="unit"><option>Hour</option><option>Each</option><option>Kilometre</option><option>Day</option></select></label><label>Quantity<input data-k="quantity" type="number" min="0.001" step="0.001" value="${item.quantity||1}" required></label><label>Unit price<input data-k="unit_price" type="number" min="0" step="0.01" value="${item.unit_price||0}" required></label><label>Claim type<input data-k="claim_type" value="${esc(item.claim_type||"")}"></label><label>Price source<input data-k="price_source" value="${esc(item.price_source||"Service agreement / approved template")}"></label></div><div class="record-top"><span data-line-total>${money((item.quantity||1)*(item.unit_price||0))}</span><button type="button" class="link" data-remove>Remove</button></div></article>`;
+ return `<article class="record smart-line" data-shift-id="${esc(item.shift_id||"")}" data-pricing-effective-from="${esc(item.pricing_effective_from||"")}"><div class="grid two"><label>Agreed service<select data-k="template_id">${templateOptions(item.template_id)}</select></label><label>Approved service type<select data-k="service_type" required>${serviceTypeOptions(item.service_type||"")}</select></label></div><div class="grid two"><label>Service date<input data-k="service_date" type="date" value="${esc(item.service_date||iso(new Date()))}" required></label><label>Support item code<input data-k="support_item_number" value="${esc(item.support_item_number||"")}" required></label><label>Support item name<input data-k="support_item_name" value="${esc(item.support_item_name||"")}" required></label><label>Unit<select data-k="unit"><option>Hour</option><option>Each</option><option>Kilometre</option><option>Day</option></select></label><label>Quantity<input data-k="quantity" type="number" min="0.001" step="0.001" value="${item.quantity||1}" required></label><label>Unit price<input data-k="unit_price" type="number" min="0" step="0.01" value="${item.unit_price||0}" required></label><label>Claim type<input data-k="claim_type" value="${esc(item.claim_type||"")}"></label><label>Price source<input data-k="price_source" value="${esc(item.price_source||"Service agreement / approved template")}"></label></div><div class="record-top"><span data-line-total>${money((item.quantity||1)*(item.unit_price||0))}</span><button type="button" class="link" data-remove>Remove</button></div></article>`;
 }
 
 function applyTemplateToLine(line,template){
  if(!template)return;
- const values={support_item_number:template.support_item_number||"",support_item_name:template.support_item_name,unit:template.unit,unit_price:template.unit_price,claim_type:template.claim_type||"",price_source:template.price_source||"Saved service template"};
+ const values={service_type:template.shift_type||"",support_item_number:template.support_item_number||"",support_item_name:template.support_item_name,unit:template.unit,unit_price:template.unit_price,claim_type:template.claim_type||"",price_source:template.price_source||"Saved service template"};
  for(const [key,value] of Object.entries(values)){
   const field=q(`[data-k="${key}"]`,line);
   if(field)field.value=value;
@@ -231,6 +243,12 @@ function refreshLineTemplateChoices(){
   select.innerHTML=templateOptions(selected);
  });
 }
+function refreshLineServiceChoices(){
+ qa(".smart-line").forEach(line=>{
+  const select=q('[data-k="service_type"]',line),selected=select.value;
+  select.innerHTML=serviceTypeOptions(participantServiceTypes(selectedParticipant()).includes(selected)?selected:"");
+ });
+}
 
 function removeEmptyStarterLine(){
  const lines=qa(".smart-line");
@@ -243,6 +261,7 @@ function addAgreementLine(service){
  removeEmptyStarterLine();
  const line=addLine({
   template_id:service.id,
+  service_type:service.shift_type,
   service_date:q("#smart-period-end")?.value||iso(new Date()),
   support_item_number:service.support_item_number,
   support_item_name:service.support_item_name,
@@ -265,7 +284,7 @@ async function addCatalogueService(code){
  const agreed=isEvelyn(selectedParticipant())&&EVELYN_SERVICES.find(service=>service.support_item_number===code);
  if(agreed)return addAgreementLine(agreed);
  removeEmptyStarterLine();
- addLine({service_date:q("#smart-period-end")?.value||iso(new Date()),support_item_number:item.support_item_number,support_item_name:item.support_item_name,unit:item.unit,quantity:1,unit_price:cataloguePrice(item),claim_type:(item.claim_types||[])[0]||"Standard",price_source:`${CATALOGUE_SOURCE} — confirm service agreement`,pricing_effective_from:item.effective_from});
+ addLine({service_date:q("#smart-period-end")?.value||iso(new Date()),service_type:participantServiceTypes(selectedParticipant()).length===1?participantServiceTypes(selectedParticipant())[0]:"",support_item_number:item.support_item_number,support_item_name:item.support_item_name,unit:item.unit,quantity:1,unit_price:cataloguePrice(item),claim_type:(item.claim_types||[])[0]||"Standard",price_source:`${CATALOGUE_SOURCE} — confirm service agreement`,pricing_effective_from:item.effective_from});
  toast("Catalogue maximum added for review — confirm the participant's signed rate before saving");
 }
 
@@ -354,15 +373,18 @@ function recalc(){
 
 async function loadBase(){
  const {db,organisationId}=await context();
- const [{data:participantRows,error:participantError},{data:templateRows,error:templateError},{data:catalogueRows}]=await Promise.all([
-  db.from("participants").select("id,full_name,ndis_number,guardian_nominee").eq("organisation_id",organisationId).eq("status","Active").order("full_name"),
+ const [{data:participantRows,error:participantError},{data:templateRows,error:templateError},{data:scopeRows,error:scopeError},{data:catalogueRows}]=await Promise.all([
+  db.from("participants").select("id,full_name,ndis_number,guardian_nominee,service_scope_confirmed_at").eq("organisation_id",organisationId).eq("status","Active").order("full_name"),
   db.from("invoice_service_templates").select("*").eq("organisation_id",organisationId).eq("active",true).order("template_name"),
+  db.from("participant_service_scopes").select("participant_id,service_type,active,starts_on,ends_on").eq("organisation_id",organisationId),
   db.from("ndis_support_catalogue").select("*").eq("active",true).order("support_item_number").limit(5000)
  ]);
  if(participantError)throw participantError;
  if(templateError)throw templateError;
+ if(scopeError)throw scopeError;
  participants=participantRows||[];
  templates=templateRows||[];
+ serviceScopes=scopeRows||[];
  const merged=new Map(OFFICIAL_QUICK_CATALOGUE.map(item=>[item.support_item_number,item]));
  for(const item of catalogueRows||[])merged.set(item.support_item_number,item);
  catalogue=[...merged.values()];
@@ -403,9 +425,10 @@ async function openEditor(invoice=null){
   q("#smart-shift-results").innerHTML="";
   q("#smart-import-shifts").disabled=true;
   q("#smart-pricing-confirm").checked=false;
-  q("#smart-editor-title").textContent=invoice?`Invoice ${invoice.invoice_number}`:"Create Evelyn invoice";
+  q("#smart-editor-title").textContent=invoice?`Invoice ${invoice.invoice_number}`:"Create participant invoice";
   renderAgreementPicker();
   refreshLineTemplateChoices();
+  refreshLineServiceChoices();
   q("#smart-invoice-editor").classList.remove("hidden");
   q("#smart-invoice-editor").scrollIntoView({behavior:"smooth"});
  }catch(error){toast(error.message||"Florence could not open smart invoicing")}
@@ -447,7 +470,7 @@ function importShifts(){
  const selectedIds=new Set(qa("[data-smart-shift]:checked").map(input=>input.dataset.smartShift));
  for(const shift of selectedShifts.filter(item=>selectedIds.has(item.id))){
   const template=matchTemplate(shift);
-  addLine({shift_id:shift.id,service_date:iso(shift.starts_at),template_id:template?.id||"",support_item_number:template?.support_item_number||"",support_item_name:template?.support_item_name||shift.shift_type,unit:template?.unit||"Hour",quantity:template?.unit==="Each"?1:Number(hours(shift.starts_at,shift.ends_at).toFixed(3)),unit_price:Number(template?.unit_price||0),claim_type:template?.claim_type||"",price_source:template?.price_source||"Review against signed service agreement",pricing_effective_from:template?.pricing_effective_from||""});
+  addLine({shift_id:shift.id,service_date:iso(shift.starts_at),service_type:shift.shift_type,template_id:template?.id||"",support_item_number:template?.support_item_number||"",support_item_name:template?.support_item_name||shift.shift_type,unit:template?.unit||"Hour",quantity:template?.unit==="Each"?1:Number(hours(shift.starts_at,shift.ends_at).toFixed(3)),unit_price:Number(template?.unit_price||0),claim_type:template?.claim_type||"",price_source:template?.price_source||"Review against signed service agreement",pricing_effective_from:template?.pricing_effective_from||""});
  }
  removeEmptyStarterLine();
  q("#smart-shift-results").innerHTML="";
@@ -467,6 +490,10 @@ async function saveInvoice(){
  if(busy)return;
  const lines=collectLines();
  if(!lines.length)return toast("Add at least one invoice line");
+ if(lines.some(line=>!line.service_type))return toast("Choose an approved service type for every invoice line");
+ const approvedServices=new Set(participantServiceTypes(selectedParticipant()));
+ const outsideScope=lines.find(line=>!approvedServices.has(line.service_type));
+ if(outsideScope)return toast(`${outsideScope.service_type} is not approved for this participant`);
  if(lines.some(line=>!line.support_item_number.trim()))return toast("Every invoice line needs an agreed support-item code");
  if(lines.some(line=>Number(line.unit_price)<=0))return toast("Every invoice line needs a confirmed rate above $0");
  const invoiceRegion=isEvelyn(selectedParticipant())?"national_price":q("#smart-catalogue-region")?.value||"national_price";
@@ -498,7 +525,7 @@ async function saveInvoice(){
    invoiceId=data.id;
   }
   for(const line of lines){
-   const {data:item,error}=await db.from("invoice_items").insert({invoice_id:invoiceId,organisation_id:organisationId,service_date:line.service_date,support_item_number:line.support_item_number,support_item_name:line.support_item_name,claim_type:line.claim_type||null,unit:line.unit,quantity:Number(line.quantity),unit_price:Number(line.unit_price),worker_cost_estimate:workerCostForLine(line),price_source:line.price_source||null,pricing_effective_from:line.pricing_effective_from||null}).select("id").single();
+   const {data:item,error}=await db.from("invoice_items").insert({invoice_id:invoiceId,organisation_id:organisationId,shift_id:line.shift_id||null,service_type:line.service_type,service_date:line.service_date,support_item_number:line.support_item_number,support_item_name:line.support_item_name,claim_type:line.claim_type||null,unit:line.unit,quantity:Number(line.quantity),unit_price:Number(line.unit_price),worker_cost_estimate:workerCostForLine(line),price_source:line.price_source||null,pricing_effective_from:line.pricing_effective_from||null}).select("id").single();
    if(error)throw error;
    if(line.shift_id){
     const {error:linkError}=await db.from("invoice_shift_links").insert({invoice_id:invoiceId,shift_id:line.shift_id,invoice_item_id:item.id,organisation_id:organisationId});
