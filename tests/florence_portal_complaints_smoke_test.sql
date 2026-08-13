@@ -113,11 +113,6 @@ begin
   where id=v_id and status='In review' and acknowledged_at is not null
     and assigned_to=auth.uid() and resolved_at is null
  ) then raise exception 'Supervisor reply did not acknowledge and assign the complaint'; end if;
- if not exists(
-  select 1 from public.notifications
-  where recipient_id='00000000-0000-0000-0000-000000000003'
-    and related_record_id=v_id and title='Supervisor replied to your complaint'
- ) then raise exception 'Family account was not notified of supervisor reply'; end if;
 end;
 $$;
 
@@ -133,12 +128,12 @@ declare
  v_id uuid;
 begin
  select id into v_id from public.complaints where subject='Portal complaint smoke test';
- perform public.reply_to_portal_complaint(v_id,'Here is the additional information requested.',null);
  if not exists(
   select 1 from public.notifications
-  where recipient_id='00000000-0000-0000-0000-000000000001'
-    and related_record_id=v_id and title='New reply to a complaint'
- ) then raise exception 'Supervisor was not notified of the family reply'; end if;
+  where recipient_id=auth.uid() and related_record_id=v_id
+    and title='Supervisor replied to your complaint'
+ ) then raise exception 'Family account was not notified of supervisor reply'; end if;
+ perform public.reply_to_portal_complaint(v_id,'Here is the additional information requested.',null);
  if (select status from public.complaints where id=v_id)<>'In review' then
   raise exception 'Family reply changed the supervisor-controlled review status';
  end if;
@@ -158,6 +153,11 @@ declare
  v_thread uuid;
 begin
  select id,portal_thread_id into v_id,v_thread from public.complaints where subject='Portal complaint smoke test';
+ if not exists(
+  select 1 from public.notifications
+  where recipient_id=auth.uid() and related_record_id=v_id
+    and title='New reply to a complaint'
+ ) then raise exception 'Supervisor was not notified of the family reply'; end if;
  perform public.reply_to_portal_complaint(v_id,'The complaint outcome has been recorded and shared.','Resolved');
  if not exists(
   select 1 from public.complaints
