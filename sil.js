@@ -33,7 +33,8 @@ const PROVIDER={legalName:"I-Care Connect PTY LTD",abn:"55 699 493 457",address:
 const AUDIT_CATALOGUE=window.FLORENCE_AUDIT_CATALOGUE;
 if(!AUDIT_CATALOGUE)throw new Error("Florence audit document catalogue did not load");
 const controlledDocuments=AUDIT_CATALOGUE.documents;
-let privateDocuments=new Map(),evidenceChecks=new Map(),pendingControlledUpload=null;
+let privateDocuments=new Map(),evidenceChecks=new Map(),pendingControlledUpload=null,pendingParticipantTemplate=null;
+const participantTemplateKeys=new Set(["core-participant-intake","core-incident-form","core-feedback-form","core-medication-consent","core-mealtime-checklist","core-mealtime-plan","core-medication-plan","core-home-risk","core-satisfaction-survey","core-service-agreement","core-risk-indemnity","core-money-declaration","core-privacy-consent","core-privacy-consent-easy","core-participant-risk","core-participant-emergency-plan","core-support-plan","core-exit-transition","core-advocate-request","sil-cotenant-review","sil-choice-record","sil-participant-instructions","sil-agreement-explanation","sil-service-agreement","sil-welcome-rights","sil-communication-profile"]);
 const schemas={
 house:{title:"Add SIL support location",category:"SIL home",help:"Create the location where I-Care Connect delivers SIL supports. Housing, rent, tenancy and SDA management remain outside this workspace.",fields:[["name","Support location name / identifier"],["address","Support location address"],["emergency_contact","Property emergency contact","text",false],["bedrooms","Number of participant bedrooms","number",false],["support_model","Support model","select",["24-hour support","Sleepover","Active night","Drop-in / scheduled","Other"]],["emergency_plan","Emergency and continuity arrangements","textarea",false],["status","Status","select",["Active","Planned","Inactive"]]]},
 safeguarding:{title:"SIL safeguarding assessment",category:"House safeguarding",help:"Assess participant-specific, environmental, visitor and worker-practice risks. High risks require immediate action.",fields:[["house","SIL support location"],["assessment_date","Assessment date","date"],["risk_level","Overall risk","select",["Low","Medium","High"]],["participant_risks","Participant-specific safeguarding risks","textarea"],["environmental_risks","Location and environmental risks","textarea"],["visitor_risks","Visitor or third-party risks","textarea",false],["worker_practice_risks","Worker-practice risks","textarea",false],["controls","Controls and safeguarding actions","textarea"],["responsible_person","Responsible person"],["next_review","Next review date","date"]]},
@@ -242,6 +243,7 @@ function resourceCard(requirement){
  const state=controlledDocumentState(requirement),document=state.document,supervisor=currentProfile?.role==="supervisor";
  const controls=[];
  if(document)controls.push(`<button type="button" class="secondary" data-open-private-document="${document.id}">Open private PDF</button>`);
+ if(supervisor&&document?.lifecycle_status==="Approved"&&participantTemplateKeys.has(requirement.key))controls.push(`<button type="button" class="secondary" data-use-participant-template="${esc(requirement.key)}">Use for participant</button>`);
  if(supervisor)controls.push(`<button type="button" class="secondary" data-upload-controlled-document="${esc(requirement.key)}">${document?"Upload new version":"Upload PDF"}</button>`);
  if(supervisor&&document&&document.lifecycle_status!=="Approved")controls.push(`<button type="button" class="primary" data-approve-controlled-document="${document.id}">Approve</button>`);
  if(!document&&!supervisor)controls.push(`<button type="button" class="secondary" disabled>Private PDF pending</button>`);
@@ -310,6 +312,74 @@ async function openPrivateDocument(recordId){
 async function sha256Hex(buffer){
  const digest=await crypto.subtle.digest("SHA-256",buffer);
  return [...new Uint8Array(digest)].map(value=>value.toString(16).padStart(2,"0")).join("");
+}
+function closeParticipantTemplate(){
+ pendingParticipantTemplate=null;
+ $("#sil-participant-template-file").value="";
+ $("#sil-participant-template-status").classList.add("hidden");
+ $("#sil-participant-template-dialog").close()
+}
+function openParticipantTemplate(requirementKey){
+ if(currentProfile?.role!=="supervisor")throw new Error("Only a supervisor can create participant document copies");
+ const requirement=controlledDocuments.find(document=>document.key===requirementKey),master=requirement&&privateDocuments.get(requirement.title);
+ if(!requirement||!participantTemplateKeys.has(requirement.key))throw new Error("This document is not a participant-use template");
+ if(!master||master.lifecycle_status!=="Approved")throw new Error("Approve the master document before using it for a participant");
+ if(!directory.participants.length)throw new Error("Add the participant to Florence before creating their document");
+ pendingParticipantTemplate=requirement;
+ $("#sil-participant-template-title").textContent=`Use ${requirement.title}`;
+ $("#sil-participant-template-participant").innerHTML=directory.participants.map(participant=>`<option value="${participant.id}">${esc(participant.preferred_name||participant.full_name)}</option>`).join("");
+ const requested=new URL(location.href).searchParams.get("participant");
+ if(requested&&directory.participants.some(participant=>participant.id===requested))$("#sil-participant-template-participant").value=requested;
+ $("#sil-participant-template-status").classList.add("hidden");
+ $("#sil-participant-template-dialog").showModal()
+}
+function selectedParticipantTemplate(){
+ const requirement=pendingParticipantTemplate,participant=directory.participants.find(item=>item.id===$("#sil-participant-template-participant").value),master=requirement&&privateDocuments.get(requirement.title);
+ if(!requirement||!participant||!master)throw new Error("Choose a valid participant and template");
+ return{requirement,participant,master}
+}
+function participantTemplateStatus(message,isError=false){
+ const status=$("#sil-participant-template-status");status.textContent=message;status.classList.remove("hidden");status.classList.toggle("error",isError)
+}
+function downloadBlob(blob,name){
+ const url=URL.createObjectURL(blob),anchor=document.createElement("a");anchor.href=url;anchor.download=name;document.body.appendChild(anchor);anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(url),30000)
+}
+async function createParticipantWorkingCopy(){
+ const {requirement,participant,master}=selectedParticipantTemplate(),button=$("#sil-participant-template-download"),bucket=window.FLORENCE_CONFIG.storageBucket;
+ button.disabled=true;
+ try{
+  participantTemplateStatus("Preparing the participant working copy…");
+  const {data:blob,error:downloadError}=await db.storage.from(bucket).download(master.storage_path);
+  if(downloadError||!blob)throw downloadError||new Error("Florence could not read the approved master PDF");
+  const participantName=participant.preferred_name||participant.full_name,filename=`${requirement.key}-${participantName.replace(/[^a-zA-Z0-9_-]/g,"_")}-working-copy.pdf`,storagePath=`${currentProfile.organisation_id}/participant/${participant.id}/${Date.now()}-${filename}`;
+  const {error:uploadError}=await db.storage.from(bucket).upload(storagePath,blob,{contentType:"application/pdf",upsert:false});
+  if(uploadError)throw uploadError;
+  const {data,error}=await db.from("compliance_documents").insert({organisation_id:currentProfile.organisation_id,scope:"Participant",subject_type:"participant",subject_id:participant.id,subject_name:participantName,category:"Participant form — working copy",title:requirement.title,storage_path:storagePath,original_filename:filename,mime_type:"application/pdf",version:1,uploaded_by:currentProfile.id,uploaded_at:new Date().toISOString()}).select("id").single();
+  if(error){await db.storage.from(bucket).remove([storagePath]).catch(()=>{});throw error}
+  await auditSilAccess("CREATE_PARTICIPANT_WORKING_COPY","compliance_documents",data.id,{participant_id:participant.id,catalogue_key:requirement.key,title:requirement.title});
+  downloadBlob(blob,filename);
+  participantTemplateStatus(`Working copy saved privately to ${participantName}'s Florence file and downloaded. Complete it, then return here to upload the completed PDF.`)
+ }catch(error){participantTemplateStatus(error.message||"The working copy could not be created",true);throw error}
+ finally{button.disabled=false}
+}
+async function uploadCompletedParticipantTemplate(file){
+ const {requirement,participant}=selectedParticipantTemplate(),button=$("#sil-participant-template-upload"),bucket=window.FLORENCE_CONFIG.storageBucket;
+ if(!file||!file.name.toLowerCase().endsWith(".pdf")||(file.type&&file.type!=="application/pdf"))throw new Error("Choose the completed PDF");
+ if(file.size>window.FLORENCE_CONFIG.maxDocumentBytes)throw new Error("The completed PDF exceeds Florence's document size limit");
+ if(new TextDecoder().decode(await file.slice(0,5).arrayBuffer())!=="%PDF-")throw new Error("The selected file is not a valid PDF");
+ button.disabled=true;
+ try{
+  participantTemplateStatus("Saving the completed PDF to the participant file…");
+  const participantName=participant.preferred_name||participant.full_name,safe=file.name.replace(/[^a-zA-Z0-9._-]/g,"_"),storagePath=`${currentProfile.organisation_id}/participant/${participant.id}/${Date.now()}-${safe}`;
+  const {error:uploadError}=await db.storage.from(bucket).upload(storagePath,file,{contentType:"application/pdf",upsert:false});
+  if(uploadError)throw uploadError;
+  const {data,error}=await db.from("compliance_documents").insert({organisation_id:currentProfile.organisation_id,scope:"Participant",subject_type:"participant",subject_id:participant.id,subject_name:participantName,category:"Participant form — completed",title:requirement.title,storage_path:storagePath,original_filename:file.name,mime_type:"application/pdf",version:1,uploaded_by:currentProfile.id,uploaded_at:new Date().toISOString()}).select("id").single();
+  if(error){await db.storage.from(bucket).remove([storagePath]).catch(()=>{});throw error}
+  await auditSilAccess("UPLOAD_COMPLETED_PARTICIPANT_FORM","compliance_documents",data.id,{participant_id:participant.id,catalogue_key:requirement.key,title:requirement.title});
+  participantTemplateStatus(`Completed ${requirement.title} saved securely in ${participantName}'s participant file.`);
+  toast("Completed participant document saved")
+ }catch(error){participantTemplateStatus(error.message||"The completed PDF could not be saved",true);throw error}
+ finally{button.disabled=false;$("#sil-participant-template-file").value=""}
 }
 async function uploadControlledDocument(requirement,file,reviewDate){
  if(currentProfile?.role!=="supervisor")throw new Error("Only a supervisor can upload controlled documents");
@@ -437,6 +507,11 @@ $$('[data-open-form]').forEach(button=>button.onclick=()=>openForm(button.datase
 $("#edit-provider").onclick=()=>{openForm("provider");setTimeout(()=>Object.entries(state.provider||PROVIDER).forEach(([key,value])=>{const input=$(`[name="${key}"]`);if(input)input.value=value}),0)};
 $("#sil-form").onsubmit=event=>void submit(event);
 $("#sil-dialog-close").onclick=closeForm;$("#sil-dialog-cancel").onclick=closeForm;
+$("#sil-participant-template-close")?.addEventListener("click",closeParticipantTemplate);
+$("#sil-participant-template-cancel")?.addEventListener("click",closeParticipantTemplate);
+$("#sil-participant-template-download")?.addEventListener("click",()=>void createParticipantWorkingCopy().catch(error=>toast(error.message)));
+$("#sil-participant-template-upload")?.addEventListener("click",()=>$("#sil-participant-template-file")?.click());
+$("#sil-participant-template-file")?.addEventListener("change",event=>{const file=event.target.files?.[0];if(file)void uploadCompletedParticipantTemplate(file).catch(error=>toast(error.message))});
 $("#sil-refresh").onclick=async()=>{try{await Promise.all([loadSilState(),loadPrivateDocuments(),loadEvidenceChecks()]);render();toast("SIL workspace refreshed")}catch(error){toast(error.message||"Florence could not refresh SIL records")}};
 $("#sil-import-library")?.addEventListener("click",()=>$("#sil-library-zip")?.click());
 $("#sil-library-zip")?.addEventListener("change",event=>{const file=event.target.files?.[0];if(file)void importPrivateLibrary(file).catch(error=>{const status=$("#sil-library-import-status");if(status)status.textContent=error.message||"The private library could not be installed";toast(error.message||"The private library could not be installed")})});
@@ -465,6 +540,8 @@ document.addEventListener("click",event=>{
  }
  const privateButton=event.target.closest("[data-open-private-document]");
  if(privateButton){void openPrivateDocument(privateButton.dataset.openPrivateDocument);return}
+ const participantTemplateButton=event.target.closest("[data-use-participant-template]");
+ if(participantTemplateButton){try{openParticipantTemplate(participantTemplateButton.dataset.useParticipantTemplate)}catch(error){toast(error.message)}return}
  const uploadButton=event.target.closest("[data-upload-controlled-document]");
  if(uploadButton){pendingControlledUpload=uploadButton.dataset.uploadControlledDocument;$("#sil-controlled-document-file")?.click();return}
  const approveButton=event.target.closest("[data-approve-controlled-document]");
