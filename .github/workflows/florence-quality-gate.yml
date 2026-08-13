@@ -113,6 +113,10 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f florence-portal-complaints-upgrade.sql | tee /tmp/florence-portal-complaints.txt
           grep -q 'PORTAL_COMPLAINTS_READY' /tmp/florence-portal-complaints.txt
           psql -v ON_ERROR_STOP=1 -f florence-multi-client-service-scope.sql
+          psql -v ON_ERROR_STOP=1 -f florence-complete-audit-library-upgrade.sql | tee /tmp/florence-audit-library.txt
+          grep -q 'COMPLETE_AUDIT_LIBRARY_READY' /tmp/florence-audit-library.txt
+          psql -v ON_ERROR_STOP=1 -f florence-complete-audit-library-security-hardening.sql | tee /tmp/florence-audit-library-hardening.txt
+          grep -q 'COMPLETE_AUDIT_LIBRARY_HARDENED' /tmp/florence-audit-library-hardening.txt
 
       - name: Reproduce and repair the live missing SIL table condition
         run: |
@@ -122,6 +126,9 @@ jobs:
           grep -q 'SIL_SCHEMA_READY_CACHE_RELOAD_SENT' /tmp/florence-sil-repair.txt
           psql -v ON_ERROR_STOP=1 -f florence-sil-schema-cache-repair.sql | tee /tmp/florence-sil-repair-repeat.txt
           grep -q 'SIL_SCHEMA_READY_CACHE_RELOAD_SENT' /tmp/florence-sil-repair-repeat.txt
+
+      - name: Exercise controlled-document approval and audit evidence controls
+        run: psql -v ON_ERROR_STOP=1 -f tests/florence_complete_audit_library_smoke_test.sql
 
       - name: Exercise cleanup, server time clock and role RLS boundaries
         run: psql -v ON_ERROR_STOP=1 -f tests/florence_database_smoke_test.sql
