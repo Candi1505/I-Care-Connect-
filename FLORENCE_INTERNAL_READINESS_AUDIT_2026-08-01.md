@@ -1,5 +1,7 @@
 # Florence Internal Readiness Audit
 
+> Historical engineering snapshot only. The 44-document result below was superseded on 13 August 2026 by the 97-requirement Core + Module 5A catalogue and separate live-evidence matrix in `FLORENCE_CORE_MODULE_5A_AUDIT_CHECKLIST.md`. It is not evidence that I-Care Connect is currently audit ready.
+
 **Organisation:** I-Care Connect PTY LTD  
 **Application:** Florence  
 **Audit date:** 1 August 2026  
@@ -14,7 +16,7 @@
 | JavaScript syntax | **PASS** |
 | Full PostgreSQL migration build | **PASS — base schema and every production migration** |
 | Database cleanup and RLS smoke test | **PASS — worker, family and supervisor boundaries exercised** |
-| Controlled private document library | **PASS — 44-document manifest** |
+| Controlled private document library | **Historical pass — 44-document manifest; superseded and requires management re-verification** |
 | Code-level security baseline | **PASS FOR LIVE UAT** |
 | Known fake participant and medication cleanup | **PASS in an isolated database; pending one live migration run** |
 | Live role-based user acceptance testing | **Not yet completed** |
@@ -35,7 +37,7 @@ The review covered:
 - medication administration and MAR signing;
 - progress-note signing and immutability;
 - participant, portal, timeline, incident, complaint, emergency, workforce and governance modules;
-- private document storage and the 44-document controlled library;
+- private document storage and the then-current 44-document controlled library;
 - staff-management and Xero Edge Function privilege boundaries;
 - time and attendance;
 - SIL operational records;
@@ -95,7 +97,7 @@ The release workflow completed all of the following on the reviewed branch:
 - exact browser Supabase client pin checks;
 - no browser service-role key or service-role credential checks;
 - no Google Drive runtime-link checks;
-- 44 controlled-document manifest count;
+- 44 controlled-document manifest count (historical; now superseded by 97 unique requirements representing 98 sources);
 - no SIL `localStorage.getItem` or `localStorage.setItem` use;
 - audited SIL database and archival markers;
 - portal-only interface markers;

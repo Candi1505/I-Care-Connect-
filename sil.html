@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css?v=20260723-15">
-  <link rel="stylesheet" href="sil.css?v=20260807-evidence-page-2">
+<link rel="stylesheet" href="sil.css?v=20260813-audit-library-1">
   <style>html.sil-auth-pending body{visibility:hidden}</style>
 </head>
 <body>
@@ -131,7 +131,7 @@
         <div id="sil-worker-resources" class="stack"></div>
       </article>
       <article id="sil-supervisor-resource-panel" class="panel">
-        <div class="panel-head"><div><p class="eyebrow">Supervisors</p><h3>Complete Core & Module 5A library</h3><p>All 44 approved operational documents.</p></div></div>
+        <div class="panel-head"><div><p class="eyebrow">Supervisors</p><h3>Complete Core & Module 5A library</h3><p>Every controlled policy, procedure, form, guide, plan and register template referenced by I-Care Connect’s audit pack.</p></div></div>
         <div id="sil-supervisor-resources" class="stack"></div>
       </article>
     </div>
@@ -140,14 +140,20 @@
   <section id="sil-provider-panel" class="sil-panel">
     <div class="page-head"><div><p class="eyebrow">Provider governance</p><h2>I-Care Connect SIL governance</h2><p>Pre-filled provider details, controlled documents, review cycles and responsibilities.</p></div><button id="edit-provider" class="primary">Edit provider profile</button></div>
     <article id="sil-library-import-panel" class="panel">
-      <div class="panel-head"><div><p class="eyebrow">One-time secure migration</p><h3>Install private controlled-document copies</h3><p>Choose the approved Florence private-library ZIP. Florence verifies and uploads all 44 PDFs into I-Care Connect’s private Supabase Storage. The app does not retain or open Google Drive links.</p></div><button id="sil-import-library" type="button" class="primary">Import 44 private PDFs</button></div>
+      <div class="panel-head"><div><p class="eyebrow">Secure bulk upload</p><h3>Install private controlled-document copies</h3><p>Choose an approved Florence private-library ZIP. Version 2 contains all 97 controlled requirements representing the 98 source references; the duplicate WHS source is deliberately controlled as one policy. The earlier 44-file ZIP remains accepted as a partial migration only.</p></div><button id="sil-import-library" type="button" class="primary">Import private PDFs</button></div>
       <input id="sil-library-zip" type="file" accept=".zip,application/zip" hidden>
+      <input id="sil-controlled-document-file" type="file" accept="application/pdf,.pdf" hidden>
       <p id="sil-library-import-status" class="record-meta">No private-library import has been started.</p>
     </article>
     <div id="sil-provider-profile"></div>
     <article class="panel">
-      <div class="panel-head"><div><h3>Controlled SIL documents</h3><p>The complete private 44-document Core and Module 5A PDF pack. The business plan and unfinished self-assessment are intentionally not published here.</p></div></div>
+      <div class="panel-head"><div><h3>Controlled Core and Module 5A documents</h3><p>Florence shows whether each document is missing, awaiting approval, due for review, expired or current. Uploading a template does not prove that the corresponding live register or participant record is complete.</p></div></div>
       <div id="sil-template-register" class="stack"></div>
+    </article>
+    <article class="panel">
+      <div class="panel-head"><div><p class="eyebrow">Audit evidence matrix</p><h3>Live evidence auditors may sample</h3><p>Verify the actual signed, current and populated evidence separately from the controlled template library. Conditional items must be confirmed as applicable or not applicable.</p></div><button id="sil-export-audit-checklist" type="button" class="secondary">Export audit checklist</button></div>
+      <div id="sil-audit-evidence-summary" class="stats sil-audit-summary"></div>
+      <div id="sil-audit-evidence-matrix" class="stack"></div>
     </article>
   </section>
 
@@ -175,6 +181,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.2"></script>
 <script src="config.js?v=20260807-evidence-page-2"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script src="sil.js?v=20260807-evidence-page-2"></script>
+<script src="audit-document-catalogue.js?v=20260813-audit-library-1"></script>
+<script src="sil.js?v=20260813-audit-library-1"></script>
 </body>
 </html>

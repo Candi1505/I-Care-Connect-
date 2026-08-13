@@ -2,15 +2,18 @@
 
 This release adds software controls that support I-Care Connect's audit evidence. It does not replace organisational policies, worker training, management review or independent audit advice.
 
+> Release hold: do not run SQL, merge or deploy the current audit-library work until a recoverable production backup and both required Edge Functions have been confirmed. The complete Core + Module 5A process is in `FLORENCE_CORE_MODULE_5A_AUDIT_CHECKLIST.md`.
+
 ## Activate the release
 
 1. Open the I-Care Connect Supabase project.
 2. Open **SQL Editor** and create a new query.
 3. Copy and run `florence-audit-readiness-upgrade.sql`.
 4. Copy and run `florence-operational-controls-upgrade.sql`.
-5. Redeploy `supabase/functions/staff-management` so family and participant invitations are available.
-6. Sign out of Florence and sign in again.
-7. Open each new workspace and complete the verification checklist below.
+5. After the backup and Edge Function hold is cleared, run `florence-complete-audit-library-upgrade.sql`.
+6. Redeploy `supabase/functions/staff-management` so family and participant invitations are available.
+7. Sign out of Florence and sign in again.
+8. Open each new workspace and complete the verification checklist below, including the full in-app audit evidence matrix.
 
 The migration is non-destructive and does not delete existing Florence records.
 

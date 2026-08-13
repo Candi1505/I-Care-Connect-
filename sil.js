@@ -30,53 +30,10 @@ async function auditSilAccess(action,tableName,recordId=null,metadata={}){
  }catch(error){console.warn("Florence SIL audit event failed",error)}
 }
 const PROVIDER={legalName:"I-Care Connect PTY LTD",abn:"55 699 493 457",address:"1387 Amiens Rd, Amiens, QLD 4380",registrationGroup:"0138 — Assistance with Supported Independent Living",jurisdiction:"Queensland, Australia",keyManagementPersonnel:"Victoria Kussrow",seniorWorker:"Candice Long",reviewCycle:"At least annually, and earlier following legislative, service or risk changes",houseSafeguardingReview:"Every 6 months, after a significant incident, household change or environmental change",houseMeetingFrequency:"At least monthly and whenever a proposed change affects the home",recordRetention:"Retain in accordance with NDIS, privacy, incident and employment obligations",status:"Provider details pre-filled — verify registration and contact details before audit"};
-const controlledDocuments=[
-["Principal documents","📗","SIL Staff Handbook","Employee rights, responsibilities, conduct, incidents, safeguarding and SIL practice.",true],
-["Principal documents","👩‍⚕️","Position Description — Disability Support Worker (SIL)","Role duties, qualifications, documentation and professional obligations.",true],
-["Principal documents","🧭","Position Description — SIL Team Leader","Practice leadership, supervision, safeguarding oversight and quality responsibilities.",false],
-["Principal documents","🤝","SIL Service Agreement","Current participant agreement template for I-Care Connect SIL services.",false],
-["Governance and safeguarding","💬","SIL Supported Decision-Making Policy","Supporting genuine participant choice, communication and dignity of risk.",true],
-["Governance and safeguarding","🛡️","SIL Safeguarding Policy","Recognising and responding to harm, conflict, neglect and exploitation.",true],
-["Governance and safeguarding","🔐","SIL Practice Governance Policy","Workforce capability, supervision, evidence-informed practice and assurance.",true],
-["Governance and safeguarding","📝","SIL Participant Agreement Explanation Record","Records accessible explanation and participant understanding of the SIL agreement.",false],
-["Governance and safeguarding","🧡","SIL Participant Welcome and Rights Guide","Accessible introduction to rights, choices, complaints and safeguards.",true],
-["SIL operations and worker tools","🗣️","SIL Participant Communication and Decision-Making Profile","Participant communication preferences and supported decision-making instructions.",true],
-["SIL operations and worker tools","✅","SIL Worker Competency Checklist","Evidence-based competency assessment before unsupervised work and during refreshers.",true],
-["SIL operations and worker tools","📌","SIL Participant-Specific Worker Instruction Form","Current authorised instructions required for safe, consistent participant support.",true],
-["SIL operations and worker tools","🏡","SIL Worker House Induction Checklist","Property and participant-specific checks before an unsupervised shift.",true],
-["SIL operations and worker tools","🎓","SIL Worker Training and Competency Register","Training currency, competency outcomes and refresher tracking.",false],
-["SIL operations and worker tools","👀","SIL Practice Observation Checklist","Structured observation and development actions for frontline practice.",false],
-["SIL operations and worker tools","🔄","SIL Shift Handover Form","Required factual handover information for outgoing and incoming workers.",true],
-["SIL operations and worker tools","🌱","SIL Participant Choice and Daily Life Record","Records options, communication support and the participant’s own choice.",true],
-["Participant records and service delivery","🚨","Participant Emergency Plan — SIL","Participant-specific emergency, evacuation and continuity arrangements.",true],
-["Participant records and service delivery","⚠️","Participant Risk Assessment Form — SIL","Identifies participant risks, safeguards, controls and review actions.",true],
-["Participant records and service delivery","📥","Participant Intake Form — SIL","Captures intake, consent, support needs and commencement information.",false],
-["Participant records and service delivery","⚖️","Participant Rights and Responsibilities Policy","Rights, responsibilities, choice, dignity, privacy and complaint pathways.",true],
-["Participant records and service delivery","📣","Incident Report Form","Factual reporting and escalation of incidents and reportable incidents.",true],
-["Participant records and service delivery","💭","Feedback and Complaints Form","Accessible record for feedback, concerns and complaints.",true],
-["Participant records and service delivery","🤲","Advocate or Support Person Request Form","Records a participant request for an advocate or support person.",true],
-["Participant records and service delivery","🚪","Participant Exit and Transition Form","Plans safe, coordinated service exit or transition.",false],
-["Participant records and service delivery","🧩","Participant Support Plan — SIL","Participant goals, preferences, routines and agreed supports.",true],
-["Participant records and service delivery","🔏","Privacy Consent Form — Easy Read","Accessible consent choices for collecting, using and sharing information.",true],
-["Participant records and service delivery","🔏","Privacy Consent Form","Consent choices for collecting, using and sharing participant information.",true],
-["Participant records and service delivery","🗒️","Participant File Notes — SIL","Controlled participant file-note template.",true],
-["Organisational compliance","🛑","Violence, Abuse, Neglect, Exploitation and Discrimination Policy","Prevention, identification, response and escalation obligations.",true],
-["Organisational compliance","✍️","Worker Declarations","Worker acknowledgements, conflicts, conduct and compliance declarations.",true],
-["Organisational compliance","⚖️","Conflict of Interest Policy","Identification, disclosure and management of actual or perceived conflicts.",true],
-["Organisational compliance","🧭","Assessment and Provision of Supports Policy — SIL","Safe, suitable and participant-centred assessment and delivery of SIL supports.",true],
-["Organisational compliance","📋","Worker Induction Checklist — SIL","Organisation-wide induction and compliance onboarding checklist.",true],
-["Organisational compliance","🧼","Infection Prevention and Control Policy","Standard precautions, infection risks, outbreaks and worker responsibilities.",true],
-["Organisational compliance","⛑️","Work Health and Safety Policy","Safe work practices, consultation, hazards and incident response.",true],
-["Organisational compliance","🏢","Governance and Operational Management Policy","Governance, delegations, accountability and operational oversight.",false],
-["Organisational compliance","👥","Human Resources Management Policy","Recruitment, screening, induction, supervision and workforce management.",false],
-["Organisational compliance","📈","Continuous Improvement Policy","Improvement identification, action tracking and effectiveness review.",true],
-["Organisational compliance","🔒","Privacy and Information Management Policy","Collection, access, storage, disclosure and breach response obligations.",true],
-["Organisational compliance","💬","Feedback and Complaints Policy","Accessible, fair and non-retaliatory feedback and complaint management.",true],
-["Organisational compliance","🌧️","Emergency and Disaster Management Policy","Preparedness, continuity, communication, response and recovery.",true],
-["Organisational compliance","📊","Risk Management Policy","Organisation-wide identification, treatment and review of risk.",false],
-["Organisational compliance","🚩","Incident Management Policy","Incident identification, response, investigation, notification and learning.",true]
-];
-let privateDocuments=new Map();
+const AUDIT_CATALOGUE=window.FLORENCE_AUDIT_CATALOGUE;
+if(!AUDIT_CATALOGUE)throw new Error("Florence audit document catalogue did not load");
+const controlledDocuments=AUDIT_CATALOGUE.documents;
+let privateDocuments=new Map(),evidenceChecks=new Map(),pendingControlledUpload=null;
 const schemas={
 house:{title:"Add SIL support location",category:"SIL home",help:"Create the location where I-Care Connect delivers SIL supports. Housing, rent, tenancy and SDA management remain outside this workspace.",fields:[["name","Support location name / identifier"],["address","Support location address"],["emergency_contact","Property emergency contact","text",false],["bedrooms","Number of participant bedrooms","number",false],["support_model","Support model","select",["24-hour support","Sleepover","Active night","Drop-in / scheduled","Other"]],["emergency_plan","Emergency and continuity arrangements","textarea",false],["status","Status","select",["Active","Planned","Inactive"]]]},
 safeguarding:{title:"SIL safeguarding assessment",category:"House safeguarding",help:"Assess participant-specific, environmental, visitor and worker-practice risks. High risks require immediate action.",fields:[["house","SIL support location"],["assessment_date","Assessment date","date"],["risk_level","Overall risk","select",["Low","Medium","High"]],["participant_risks","Participant-specific safeguarding risks","textarea"],["environmental_risks","Location and environmental risks","textarea"],["visitor_risks","Visitor or third-party risks","textarea",false],["worker_practice_risks","Worker-practice risks","textarea",false],["controls","Controls and safeguarding actions","textarea"],["responsible_person","Responsible person"],["next_review","Next review date","date"]]},
@@ -251,44 +208,85 @@ $("#sil-house-list").innerHTML=recs.filter(r=>["SIL home","House safeguarding","
 $("#sil-participant-list").innerHTML=recs.filter(r=>["Participant service delivery","Participant profile","Participant instructions","Supported decision-making","Participant agreement","Participant rights"].includes(r.category)).map(recordCard).join("")||'<div class="sil-empty">Participant SIL records will appear here.</div>';
 $("#sil-shift-list").innerHTML=recs.filter(r=>["Shift handover","Supported decision-making","Visitors"].includes(r.category)).map(recordCard).join("")||'<div class="sil-empty">No SIL shift records.</div>';
 $("#sil-worker-list").innerHTML=recs.filter(r=>["Worker induction","Worker competency","Worker training","Practice observation"].includes(r.category)).map(recordCard).join("")||'<div class="sil-empty">No SIL workforce records.</div>';
-renderReadiness();renderProvider();renderTemplates();renderResources();renderEvidence();
+renderReadiness();renderProvider();renderTemplates();renderResources();renderAuditEvidenceMatrix();renderEvidence();
 }
 function renderProvider(){const p=state.provider||PROVIDER;$("#sil-provider-profile").innerHTML=`<div class="sil-provider-grid">${Object.entries(p).map(([k,v])=>`<div class="sil-provider-item"><small>${esc(k.replace(/([A-Z])/g," $1"))}</small><strong>${esc(v)}</strong></div>`).join("")}</div>`}
 async function loadPrivateDocuments(){
  const {data,error}=await db.from("compliance_documents")
-  .select("id,title,storage_path,original_filename,uploaded_at")
+  .select("id,title,storage_path,original_filename,uploaded_at,review_date,effective_date,version,lifecycle_status,catalogue_key,module,requirement_level,access_level")
   .eq("organisation_id",currentProfile.organisation_id)
   .eq("category","Controlled library")
-  .order("title");
+  .order("uploaded_at",{ascending:false});
  if(error)throw error;
- privateDocuments=new Map((data||[]).map(document=>[document.title,document]));
+ privateDocuments=new Map();
+ for(const document of data||[])if(!privateDocuments.has(document.title))privateDocuments.set(document.title,document);
 }
-function resourceCard([,icon,title,description]){
- const document=privateDocuments.get(title);
- const control=document
-  ?`<button type="button" class="secondary" data-open-private-document="${document.id}">Open private PDF</button>`
-  :`<button type="button" class="secondary" disabled>Private PDF pending</button>`;
- return`<article class="sil-resource-card"><span aria-hidden="true">${icon}</span><div><strong>${esc(title)}</strong><p>${esc(description)}</p></div>${control}</article>`;
+async function loadEvidenceChecks(){
+ if(currentProfile?.role!=="supervisor"){evidenceChecks=new Map();return}
+ const {data,error}=await db.from("audit_evidence_checks").select("evidence_key,status,notes,reviewed_at").eq("organisation_id",currentProfile.organisation_id);
+ if(error)throw error;
+ evidenceChecks=new Map((data||[]).map(check=>[check.evidence_key,check]));
 }
-function documentGroups(documents){return[...new Set(documents.map(document=>document[0]))].map(category=>`<section class="sil-document-group"><h4>${esc(category)}</h4><div class="stack">${documents.filter(document=>document[0]===category).map(resourceCard).join("")}</div></section>`).join("")}
+function controlledDocumentState(requirement){
+ const document=privateDocuments.get(requirement.title);
+ if(!document)return{label:"Missing",tone:"missing",document:null};
+ if(document.lifecycle_status!=="Approved")return{label:document.lifecycle_status==="Needs review"?"Needs management review":"Draft — needs approval",tone:"review",document};
+ const reviewDate=document.review_date?new Date(`${document.review_date}T00:00:00`):null;
+ if(!reviewDate||Number.isNaN(reviewDate.getTime()))return{label:"Approved — review date missing",tone:"review",document};
+ const days=Math.ceil((reviewDate-Date.now())/86400000);
+ if(days<0)return{label:"Expired",tone:"expired",document};
+ if(days<=60)return{label:`Review due in ${days} day${days===1?"":"s"}`,tone:"due",document};
+ return{label:"Current and approved",tone:"current",document};
+}
+function resourceCard(requirement){
+ const state=controlledDocumentState(requirement),document=state.document,supervisor=currentProfile?.role==="supervisor";
+ const controls=[];
+ if(document)controls.push(`<button type="button" class="secondary" data-open-private-document="${document.id}">Open private PDF</button>`);
+ if(supervisor)controls.push(`<button type="button" class="secondary" data-upload-controlled-document="${esc(requirement.key)}">${document?"Upload new version":"Upload PDF"}</button>`);
+ if(supervisor&&document&&document.lifecycle_status!=="Approved")controls.push(`<button type="button" class="primary" data-approve-controlled-document="${document.id}">Approve</button>`);
+ if(!document&&!supervisor)controls.push(`<button type="button" class="secondary" disabled>Private PDF pending</button>`);
+ return`<article class="sil-resource-card sil-document-${state.tone}"><span aria-hidden="true">${requirement.icon}</span><div><div class="sil-document-heading"><strong>${esc(requirement.title)}</strong><span class="badge">${esc(requirement.module)}</span><span class="badge">${esc(requirement.requirement)}</span><span class="badge sil-status-${state.tone}">${esc(state.label)}</span></div><p>${esc(requirement.description)}</p>${document?`<small>Version ${Number(document.version)||1}${document.review_date?` · review ${esc(document.review_date)}`:""}</small>`:""}</div><div class="sil-document-actions">${controls.join("")}</div></article>`;
+}
+function documentGroups(documents){return[...new Set(documents.map(document=>document.group))].map(category=>`<section class="sil-document-group"><h4>${esc(category)}</h4><div class="stack">${documents.filter(document=>document.group===category).map(resourceCard).join("")}</div></section>`).join("")}
 function renderLibraryStatus(){
- const count=privateDocuments.size,total=controlledDocuments.length,complete=count===total;
+ const states=controlledDocuments.map(controlledDocumentState),total=controlledDocuments.length,installed=states.filter(state=>state.document).length,current=states.filter(state=>state.tone==="current").length,attention=states.filter(state=>state.document&&state.tone!=="current").length,missing=total-installed,complete=current===total;
  const status=$("#sil-library-status");
- if(status)status.innerHTML=`<strong>${complete?"Private Florence library ready":`${count} of ${total} private PDFs available`}</strong><br>${complete?"These documents open from I-Care Connect’s private Supabase Storage. Florence does not use the Google Drive links.":"A supervisor must import the approved private-library ZIP before workers use these documents."}`;
+ if(status)status.innerHTML=`<strong>${complete?"Private Florence library ready":`${current} of ${total} requirements current and approved`}</strong><br>${installed} installed · ${attention} need review or approval · ${missing} missing. The catalogue covers ${AUDIT_CATALOGUE.sourceReferenceCount} source files; the duplicate WHS source is controlled as one approved policy. Florence uses private Supabase Storage, not Google Drive links.`;
  const migration=$("#sil-library-import-status");
- if(migration&&!migration.dataset.progress)migration.textContent=complete?"All 44 private PDF copies are installed.":`${count} of ${total} documents are installed.`;
+ if(migration&&!migration.dataset.progress)migration.textContent=complete?`All ${total} controlled requirements are current and approved.`:`${installed} of ${total} controlled requirements are installed; ${current} are current and approved.`;
 }
 function renderTemplates(){
  $("#sil-template-register").innerHTML=currentProfile?.role==="supervisor"?documentGroups(controlledDocuments):"";
  renderLibraryStatus();
 }
 function renderResources(){
- const workerDocuments=controlledDocuments.filter(document=>document[4]);
+ const workerDocuments=controlledDocuments.filter(document=>document.access==="worker");
  $("#sil-worker-resources").innerHTML=documentGroups(workerDocuments);
  const supervisor=currentProfile?.role==="supervisor";
  $("#sil-supervisor-resource-panel").classList.toggle("hidden",!supervisor);
  $("#sil-supervisor-resources").innerHTML=supervisor?documentGroups(controlledDocuments):"";
  renderLibraryStatus();
+}
+function renderAuditEvidenceMatrix(){
+ const target=$("#sil-audit-evidence-matrix");if(!target||currentProfile?.role!=="supervisor")return;
+ const required=AUDIT_CATALOGUE.evidence.filter(item=>item.requirement==="Required"),ready=required.filter(item=>evidenceChecks.get(item.key)?.status==="Ready").length;
+ const summary=$("#sil-audit-evidence-summary");
+ if(summary)summary.innerHTML=`<div><strong>${ready}</strong><span>of ${required.length} required evidence areas verified</span></div><div><strong>${required.length-ready}</strong><span>required areas need action</span></div><div><strong>${AUDIT_CATALOGUE.evidence.length-required.length}</strong><span>conditional areas to confirm</span></div>`;
+ target.innerHTML=AUDIT_CATALOGUE.evidence.map(item=>{
+  const check=evidenceChecks.get(item.key)||{status:"Not checked",notes:""};
+  return`<article class="sil-audit-evidence-card" data-evidence-card="${esc(item.key)}"><div><div class="sil-document-heading"><strong>${esc(item.title)}</strong><span class="badge">${esc(item.module)}</span><span class="badge">${esc(item.requirement)}</span></div><p>${esc(item.detail)}</p><small><strong>Florence location:</strong> ${esc(item.location)}</small></div><label>Status<select data-evidence-status><option${check.status==="Not checked"?" selected":""}>Not checked</option><option${check.status==="In progress"?" selected":""}>In progress</option><option${check.status==="Ready"?" selected":""}>Ready</option><option${check.status==="Not applicable"?" selected":""}>Not applicable</option></select></label><label>Audit note<textarea data-evidence-notes rows="2" placeholder="What was checked, what is missing, or why this does not apply">${esc(check.notes||"")}</textarea></label><button type="button" class="secondary" data-save-evidence-check="${esc(item.key)}">Save check</button></article>`;
+ }).join("");
+}
+async function saveEvidenceCheck(evidenceKey){
+ if(currentProfile?.role!=="supervisor")throw new Error("Only a supervisor can update audit checks");
+ const card=$(`[data-evidence-card="${evidenceKey}"]`),status=card?.querySelector("[data-evidence-status]")?.value,notes=card?.querySelector("[data-evidence-notes]")?.value?.trim()||null;
+ if(!card||!["Not checked","In progress","Ready","Not applicable"].includes(status))throw new Error("Choose a valid audit status");
+ const item=AUDIT_CATALOGUE.evidence.find(entry=>entry.key===evidenceKey);
+ if(!item)throw new Error("Audit evidence requirement not found");
+ if(item.requirement==="Required"&&status==="Not applicable")throw new Error("A required evidence area cannot be marked not applicable");
+ const {error}=await db.from("audit_evidence_checks").upsert({organisation_id:currentProfile.organisation_id,evidence_key:evidenceKey,status,notes,reviewed_by:currentProfile.id,reviewed_at:new Date().toISOString()},{onConflict:"organisation_id,evidence_key"});
+ if(error)throw error;
+ await loadEvidenceChecks();renderAuditEvidenceMatrix();toast("Audit evidence check saved")
 }
 async function openPrivateDocument(recordId){
  const openedWindow=window.open("about:blank","_blank");
@@ -311,6 +309,33 @@ async function sha256Hex(buffer){
  const digest=await crypto.subtle.digest("SHA-256",buffer);
  return [...new Uint8Array(digest)].map(value=>value.toString(16).padStart(2,"0")).join("");
 }
+async function uploadControlledDocument(requirement,file,reviewDate){
+ if(currentProfile?.role!=="supervisor")throw new Error("Only a supervisor can upload controlled documents");
+ if(!requirement||!controlledDocuments.some(document=>document.key===requirement.key))throw new Error("Controlled document requirement not found");
+ if(!file||!file.name.toLowerCase().endsWith(".pdf")||(file.type&&file.type!=="application/pdf"))throw new Error("Choose the approved PDF version of this document");
+ if(file.size>window.FLORENCE_CONFIG.maxDocumentBytes)throw new Error("The PDF exceeds Florence’s document size limit");
+ if(new TextDecoder().decode(await file.slice(0,5).arrayBuffer())!=="%PDF-")throw new Error("The selected file is not a valid PDF");
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(reviewDate||"")||new Date(`${reviewDate}T00:00:00`)<new Date(new Date().toISOString().slice(0,10)+"T00:00:00"))throw new Error("Enter a current or future review date in YYYY-MM-DD format");
+ const existing=privateDocuments.get(requirement.title),version=(Number(existing?.version)||0)+1,bucket=window.FLORENCE_CONFIG.storageBucket;
+ const storagePath=`${currentProfile.organisation_id}/controlled-library/${requirement.key}-v${version}-${Date.now()}.pdf`;
+ const {error:uploadError}=await db.storage.from(bucket).upload(storagePath,file,{contentType:"application/pdf",upsert:false});
+ if(uploadError)throw uploadError;
+ const payload={organisation_id:currentProfile.organisation_id,scope:"Organisation",subject_type:"organisation",subject_name:"I-Care Connect",category:"Controlled library",title:requirement.title,catalogue_key:requirement.key,module:requirement.module,requirement_level:requirement.requirement,access_level:requirement.access,lifecycle_status:"Draft",effective_date:new Date().toISOString().slice(0,10),review_date:reviewDate,storage_path:storagePath,original_filename:file.name,mime_type:"application/pdf",version,uploaded_by:currentProfile.id,uploaded_at:new Date().toISOString()};
+ const {error}=await db.from("compliance_documents").insert(payload);
+ if(error){await db.storage.from(bucket).remove([storagePath]).catch(()=>{});throw error}
+ await loadPrivateDocuments();renderTemplates();renderResources();toast("New controlled-document version uploaded for approval")
+}
+async function approveControlledDocument(documentId){
+ if(currentProfile?.role!=="supervisor")throw new Error("Only a supervisor can approve controlled documents");
+ const document=[...privateDocuments.values()].find(item=>item.id===documentId);
+ if(!document)throw new Error("Controlled document not found");
+ const entered=prompt("Confirm the next review date (YYYY-MM-DD)",document.review_date||"");
+ if(entered===null)return;
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(entered)||new Date(`${entered}T00:00:00`)<new Date(new Date().toISOString().slice(0,10)+"T00:00:00"))throw new Error("Enter a current or future review date in YYYY-MM-DD format");
+ const {error}=await db.rpc("approve_controlled_document",{p_document_id:documentId,p_review_date:entered,p_effective_date:document.effective_date||new Date().toISOString().slice(0,10)});
+ if(error)throw error;
+ await loadPrivateDocuments();renderTemplates();renderResources();toast("Controlled document approved")
+}
 async function importPrivateLibrary(file){
  if(currentProfile?.role!=="supervisor")throw new Error("Only a supervisor can install the controlled library");
  if(!file)throw new Error("Choose the Florence private-library ZIP");
@@ -324,33 +349,33 @@ async function importPrivateLibrary(file){
   const manifestFile=archive.file("manifest.json");
   if(!manifestFile)throw new Error("This ZIP does not contain Florence’s manifest.json");
   const manifest=JSON.parse(await manifestFile.async("text"));
-  if(manifest.format!=="florence-controlled-library"||manifest.version!==1||manifest.document_count!==44||!Array.isArray(manifest.documents)||manifest.documents.length!==44)throw new Error("This is not the approved 44-document Florence private-library ZIP");
-  const approvedTitles=new Set(controlledDocuments.map(document=>document[2]));
+  const approvedCounts=new Map([[1,44],[2,controlledDocuments.length]]),expectedCount=approvedCounts.get(manifest.version);
+  if(manifest.format!=="florence-controlled-library"||!expectedCount||manifest.document_count!==expectedCount||!Array.isArray(manifest.documents)||manifest.documents.length!==expectedCount)throw new Error("This is not an approved Florence controlled-library ZIP");
+  const requirementsByTitle=new Map(controlledDocuments.map(document=>[document.title,document]));
   const bucket=window.FLORENCE_CONFIG.storageBucket;
   for(let index=0;index<manifest.documents.length;index++){
    const document=manifest.documents[index];
-   if(!approvedTitles.has(document.title))throw new Error(`Unexpected document in ZIP: ${document.title}`);
+   const requirement=requirementsByTitle.get(document.title);
+   if(!requirement)throw new Error(`Unexpected document in ZIP: ${document.title}`);
    const entry=archive.file(document.filename);
    if(!entry)throw new Error(`Missing PDF in ZIP: ${document.filename}`);
    status.textContent=`Installing private PDF ${index+1} of ${manifest.documents.length}: ${document.title}`;
    const bytes=await entry.async("arraybuffer");
+   if(new TextDecoder().decode(bytes.slice(0,5))!=="%PDF-")throw new Error(`Invalid PDF content for ${document.title}`);
    if(document.sha256&&await sha256Hex(bytes)!==document.sha256)throw new Error(`Integrity check failed for ${document.title}`);
-   const storagePath=`${currentProfile.organisation_id}/controlled-library/${document.filename}`;
+   const existing=privateDocuments.get(document.title),version=(Number(existing?.version)||0)+1;
+   const storagePath=`${currentProfile.organisation_id}/controlled-library/${requirement.key}-v${version}-${Date.now()}.pdf`;
    const blob=new Blob([bytes],{type:"application/pdf"});
-   const {error:uploadError}=await db.storage.from(bucket).upload(storagePath,blob,{contentType:"application/pdf",upsert:true});
+   const {error:uploadError}=await db.storage.from(bucket).upload(storagePath,blob,{contentType:"application/pdf",upsert:false});
    if(uploadError)throw uploadError;
-   const payload={organisation_id:currentProfile.organisation_id,scope:"Organisation",subject_type:"organisation",subject_name:"I-Care Connect",category:"Controlled library",title:document.title,storage_path:storagePath,original_filename:document.filename,mime_type:"application/pdf",version:1,uploaded_by:currentProfile.id,uploaded_at:new Date().toISOString()};
-   const {data:existing,error:lookupError}=await db.from("compliance_documents").select("id").eq("organisation_id",currentProfile.organisation_id).eq("category","Controlled library").eq("title",document.title).maybeSingle();
-   if(lookupError)throw lookupError;
-   const result=existing
-    ?await db.from("compliance_documents").update(payload).eq("id",existing.id)
-    :await db.from("compliance_documents").insert(payload);
-   if(result.error)throw result.error;
+   const payload={organisation_id:currentProfile.organisation_id,scope:"Organisation",subject_type:"organisation",subject_name:"I-Care Connect",category:"Controlled library",title:document.title,catalogue_key:requirement.key,module:requirement.module,requirement_level:requirement.requirement,access_level:requirement.access,lifecycle_status:"Draft",storage_path:storagePath,original_filename:document.filename,mime_type:"application/pdf",version,uploaded_by:currentProfile.id,uploaded_at:new Date().toISOString()};
+   const result=await db.from("compliance_documents").insert(payload);
+   if(result.error){await db.storage.from(bucket).remove([storagePath]).catch(()=>{});throw result.error}
   }
   await loadPrivateDocuments();
   renderTemplates();renderResources();
-  status.textContent="Success — all 44 documents are private Florence PDF copies. Google Drive is no longer used by the app.";
-  toast("Private controlled library installed")
+  status.textContent=`Success — ${manifest.documents.length} private PDF copies were installed as drafts. A supervisor must verify control dates and approve each document before worker access.`;
+  toast("Private controlled documents installed for review")
  }finally{
   button.disabled=false;
   delete status.dataset.progress;
@@ -370,6 +395,12 @@ function exportFile(kind){
  void auditSilAccess("EXPORT","sil_records",null,{format:kind,record_count:rows.length});
  const link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download=name;link.click();URL.revokeObjectURL(link.href)
 }
+function exportAuditChecklist(){
+ const controlled=controlledDocuments.map(requirement=>{const state=controlledDocumentState(requirement),document=state.document;return{section:"Controlled document",module:requirement.module,requirement:requirement.requirement,title:requirement.title,status:state.label,version:document?.version||"",review_date:document?.review_date||"",location:"Private controlled library",notes:requirement.description}});
+ const evidence=AUDIT_CATALOGUE.evidence.map(item=>{const check=evidenceChecks.get(item.key)||{};return{section:"Live audit evidence",module:item.module,requirement:item.requirement,title:item.title,status:check.status||"Not checked",version:"",review_date:check.reviewed_at||"",location:item.location,notes:check.notes||item.detail}});
+ const rows=[...controlled,...evidence],keys=["section","module","requirement","title","status","version","review_date","location","notes"],csv=[keys.join(","),...rows.map(row=>keys.map(key=>'"'+String(row[key]??"").replaceAll('"','""')+'"').join(","))].join("\n");
+ const blob=new Blob([csv],{type:"text/csv"}),link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download=`Florence-Core-Module-5A-audit-checklist-${new Date().toISOString().slice(0,10)}.csv`;link.click();URL.revokeObjectURL(link.href);void auditSilAccess("EXPORT","audit_evidence_checks",null,{format:"csv",controlled_requirements:controlled.length,evidence_checks:evidence.length})
+}
 function activateTab(tab){
  const button=$(`[data-sil-tab="${tab}"]`);if(!button)return;
  activeTab=tab;$$('[data-sil-tab]').forEach(item=>item.classList.toggle("active",item===button));$$('.sil-panel').forEach(panel=>panel.classList.toggle("active",panel.id===`sil-${activeTab}-panel`));if(activeTab==="evidence")renderEvidence();window.scrollTo({top:0,behavior:"smooth"})
@@ -379,10 +410,19 @@ $$('[data-open-form]').forEach(button=>button.onclick=()=>openForm(button.datase
 $("#edit-provider").onclick=()=>{openForm("provider");setTimeout(()=>Object.entries(state.provider||PROVIDER).forEach(([key,value])=>{const input=$(`[name="${key}"]`);if(input)input.value=value}),0)};
 $("#sil-form").onsubmit=event=>void submit(event);
 $("#sil-dialog-close").onclick=closeForm;$("#sil-dialog-cancel").onclick=closeForm;
-$("#sil-refresh").onclick=async()=>{try{await loadSilState();await loadPrivateDocuments();render();toast("SIL workspace refreshed")}catch(error){toast(error.message||"Florence could not refresh SIL records")}};
+$("#sil-refresh").onclick=async()=>{try{await Promise.all([loadSilState(),loadPrivateDocuments(),loadEvidenceChecks()]);render();toast("SIL workspace refreshed")}catch(error){toast(error.message||"Florence could not refresh SIL records")}};
 $("#sil-import-library")?.addEventListener("click",()=>$("#sil-library-zip")?.click());
 $("#sil-library-zip")?.addEventListener("change",event=>{const file=event.target.files?.[0];if(file)void importPrivateLibrary(file).catch(error=>{const status=$("#sil-library-import-status");if(status)status.textContent=error.message||"The private library could not be installed";toast(error.message||"The private library could not be installed")})});
+$("#sil-controlled-document-file")?.addEventListener("change",event=>{
+ const file=event.target.files?.[0],requirement=controlledDocuments.find(document=>document.key===pendingControlledUpload);
+ pendingControlledUpload=null;event.target.value="";
+ if(!file||!requirement)return;
+ const reviewDate=prompt(`Next review date for ${requirement.title} (YYYY-MM-DD)`,new Date(Date.now()+31536000000).toISOString().slice(0,10));
+ if(reviewDate===null)return;
+ void uploadControlledDocument(requirement,file,reviewDate).catch(error=>toast(error.message||"The controlled document could not be uploaded"));
+});
 $("#sil-export-json").onclick=()=>exportFile("json");$("#sil-export-csv").onclick=()=>exportFile("csv");
+$("#sil-export-audit-checklist")?.addEventListener("click",exportAuditChecklist);
 ["#sil-filter-category","#sil-filter-status","#sil-filter-search"].forEach(selector=>$(selector).addEventListener(selector.includes("search")?"input":"change",renderEvidence));
 async function archiveSilRecord(recordId){
  if(currentProfile?.role!=="supervisor")throw new Error("Only a supervisor can archive SIL records");
@@ -397,6 +437,12 @@ document.addEventListener("click",event=>{
  }
  const privateButton=event.target.closest("[data-open-private-document]");
  if(privateButton){void openPrivateDocument(privateButton.dataset.openPrivateDocument);return}
+ const uploadButton=event.target.closest("[data-upload-controlled-document]");
+ if(uploadButton){pendingControlledUpload=uploadButton.dataset.uploadControlledDocument;$("#sil-controlled-document-file")?.click();return}
+ const approveButton=event.target.closest("[data-approve-controlled-document]");
+ if(approveButton){void approveControlledDocument(approveButton.dataset.approveControlledDocument).catch(error=>toast(error.message));return}
+ const evidenceButton=event.target.closest("[data-save-evidence-check]");
+ if(evidenceButton){void saveEvidenceCheck(evidenceButton.dataset.saveEvidenceCheck).catch(error=>toast(error.message));return}
  const archiveButton=event.target.closest("[data-archive-record]");
  if(archiveButton){event.stopPropagation();if(confirm("Archive this SIL record? It will remain in the secure audit history."))void archiveSilRecord(archiveButton.dataset.archiveRecord).catch(error=>toast(error.message));return}
 });
@@ -424,7 +470,7 @@ async function authorise(){
   $("#sil-library-import-panel")?.classList.toggle("hidden",!supervisor);
   $$('[data-open-form]').forEach(button=>button.classList.toggle("hidden",!supervisor&&!workerCreateRecordTypes.has(button.dataset.openForm)));
   try{localStorage.removeItem("florence-sil-v1")}catch(_ignored){}
-  await Promise.all([loadSilState(),loadPrivateDocuments()]);
+  await Promise.all([loadSilState(),loadPrivateDocuments(),loadEvidenceChecks()]);
   render();
   document.documentElement.classList.remove("sil-auth-pending");
   try{sessionStorage.removeItem("florence:return-to")}catch(_ignored){}

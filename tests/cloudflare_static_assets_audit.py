@@ -16,7 +16,7 @@ EXPECTED_ASSETS = {
     "invoicing-workspace.js", "invoice-menu-fix.js", "florence-readiness-controls.js",
     "remote-s8-verification.js", "core-ui-fixes-v2.js", "core-ui-fixes-v3.js",
     "set-password.html", "set-password.js",
-    "sil.html", "sil-record.html", "sil.css", "sil.js", "sil-record.js", "service-worker.js", "manifest.webmanifest",
+    "sil.html", "sil-record.html", "sil.css", "audit-document-catalogue.js", "sil.js", "sil-record.js", "service-worker.js", "manifest.webmanifest",
     "florence-icon.svg", "florence-icon-192.png", "florence-icon-512.png",
     "_headers", "robots.txt",
 }
