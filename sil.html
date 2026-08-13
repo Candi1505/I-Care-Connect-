@@ -179,10 +179,21 @@
   </form>
 </dialog>
 
+<dialog id="sil-participant-template-dialog">
+  <form id="sil-participant-template-form">
+    <div class="dialog-head"><div><p class="eyebrow">Participant document</p><h3 id="sil-participant-template-title">Use approved template</h3></div><button id="sil-participant-template-close" type="button" class="icon-btn dark" aria-label="Close participant template">×</button></div>
+    <p class="form-help">Florence keeps the approved master unchanged. Download a private working copy, complete or sign it using your device’s PDF tools, then upload the completed PDF here.</p>
+    <div class="fields"><label>Participant<select id="sil-participant-template-participant" required></select></label></div>
+    <p id="sil-participant-template-status" class="form-status hidden" role="status"></p>
+    <div class="dialog-actions"><button id="sil-participant-template-cancel" type="button" class="secondary">Cancel</button><button id="sil-participant-template-download" type="button" class="secondary">Download working copy</button><button id="sil-participant-template-upload" type="button" class="primary">Upload completed PDF</button></div>
+    <input id="sil-participant-template-file" type="file" accept="application/pdf,.pdf" hidden>
+  </form>
+</dialog>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.2"></script>
 <script src="config.js?v=20260807-evidence-page-2"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script src="audit-document-catalogue.js?v=20260813-audit-library-1"></script>
-<script src="sil.js?v=20260813-audit-library-1"></script>
+<script src="sil.js?v=20260813-participant-templates-1"></script>
 </body>
 </html>
