@@ -59,6 +59,7 @@ required_files = [
     "florence-controlled-library-access-upgrade.sql",
     "florence-controlled-library-upload-hotfix.sql",
     "florence-complete-audit-library-upgrade.sql",
+    "florence-complete-audit-library-security-hardening.sql",
     "florence-final-readiness-upgrade.sql",
     "florence-s8-dual-signoff-timeline-upgrade.sql",
     "florence-portal-complaints-upgrade.sql",
@@ -379,6 +380,18 @@ for marker in [
     "COMPLETE_AUDIT_LIBRARY_READY",
 ]:
     require(marker in complete_library, f"complete audit-library SQL contains {marker!r}")
+
+complete_library_hardening = text("florence-complete-audit-library-security-hardening.sql")
+for marker in [
+    "revoke all privileges on table public.audit_evidence_checks from public,anon",
+    "revoke all privileges on table public.controlled_document_approval_tickets",
+    "revoke all on function public.enforce_controlled_document_lifecycle()",
+    "coalesce((select auth.jwt())->>'aal','aal1')='aal2'",
+    "audit_evidence_checks_reviewed_by_idx",
+    "controlled_document_approval_tickets_document_idx",
+    "COMPLETE_AUDIT_LIBRARY_HARDENED",
+]:
+    require(marker in complete_library_hardening, f"audit-library hardening contains {marker!r}")
 
 # Privileged Edge Functions remain server-side behind origin, MFA and supervisor checks.
 for path in ["supabase/functions/staff-management/index.ts", "supabase/functions/xero-connect/index.ts"]:
