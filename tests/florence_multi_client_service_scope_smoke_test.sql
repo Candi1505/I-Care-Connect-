@@ -104,11 +104,18 @@ begin
  insert into auth.users(id,email,raw_user_meta_data) values
   (v_family_id,'family-'||v_family_id::text||'@example.test',jsonb_build_object('organisation_id',v_organisation_id,'full_name','Smoke Family')),
   (v_client_id,'client-'||v_client_id::text||'@example.test',jsonb_build_object('organisation_id',v_organisation_id,'full_name','Smoke Participant'));
- update public.profiles
- set participant_id=v_participant_id,
-     role=case when id=v_family_id then 'family'::public.app_role else 'client'::public.app_role end,
-     active=true
- where id in(v_family_id,v_client_id);
+ insert into public.profiles(
+  id,organisation_id,participant_id,full_name,email,role,active
+ ) values
+  (v_family_id,v_organisation_id,v_participant_id,'Smoke Family','family-'||v_family_id::text||'@example.test','family',true),
+  (v_client_id,v_organisation_id,v_participant_id,'Smoke Participant','client-'||v_client_id::text||'@example.test','client',true)
+ on conflict(id) do update
+ set organisation_id=excluded.organisation_id,
+     participant_id=excluded.participant_id,
+     full_name=excluded.full_name,
+     email=excluded.email,
+     role=excluded.role,
+     active=true;
 
  perform set_config('florence.test_family',v_family_id::text,true);
  perform set_config('florence.test_client',v_client_id::text,true);
