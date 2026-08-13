@@ -45,6 +45,7 @@ required_files = [
     "staff-management.js", "set-password.html", "set-password.js",
     "medication-prn-fix.js", "participant-edit-controls.js",
     "sil.html", "sil-record.html", "sil.css", "sil.js", "sil-record.js", "service-worker.js",
+    "audit-document-catalogue.js",
     "supabase/functions/staff-management/index.ts",
     "supabase/functions/xero-connect/index.ts",
     "supabase/functions/deputy-connect/index.ts",
@@ -57,6 +58,7 @@ required_files = [
     "florence-production-hardening-upgrade.sql",
     "florence-controlled-library-access-upgrade.sql",
     "florence-controlled-library-upload-hotfix.sql",
+    "florence-complete-audit-library-upgrade.sql",
     "florence-final-readiness-upgrade.sql",
     "florence-s8-dual-signoff-timeline-upgrade.sql",
     "florence-choice-evidence-timeline-fix.sql",
@@ -91,12 +93,13 @@ require("@supabase/supabase-js" not in set_password_html, "setup page does not c
 require('app.js?v=20260812-mobile-regressions-1' in index, "index loads current mobile-regression app asset")
 require('config.js?v=20260812-mobile-regressions-1' in index, "index loads the current runtime configuration")
 require('operations.js?v=20260812-mobile-regressions-1' in index, "index loads the current operations asset")
-require('sil.js?v=20260807-evidence-page-2' in sil_html, "SIL page loads current record-review asset")
-require('sil.css?v=20260807-evidence-page-2' in sil_html, "SIL page loads current record-review styles")
+require('audit-document-catalogue.js?v=20260813-audit-library-1' in sil_html, "SIL page loads the complete audit catalogue")
+require('sil.js?v=20260813-audit-library-1' in sil_html, "SIL page loads current audit-library asset")
+require('sil.css?v=20260813-audit-library-1' in sil_html, "SIL page loads current audit-library styles")
 require('sil-record.js?v=20260807-evidence-page-2' in sil_record_html, "evidence page loads its current secure viewer")
 require('set-password.js?v=20260802-2' in set_password_html, "setup page loads its controlled asset")
-require('florence-static-20260812-mobile-regressions-1' in service_worker, "service worker uses current cache namespace")
-for marker in ['config.js?v=20260812-mobile-regressions-1', 'app.js?v=20260812-mobile-regressions-1', 'medication-prn-fix.js?v=20260812-mobile-regressions-1', 'operations.js?v=20260812-mobile-regressions-1', 'portal-care-plan.js?v=20260812-mobile-regressions-1', 'roster-30-day.js?v=20260812-mobile-regressions-1', 'sil.css?v=20260807-evidence-page-2', 'sil.js?v=20260807-evidence-page-2', 'sil-record.js?v=20260807-evidence-page-2']:
+require('florence-static-20260813-audit-library-1' in service_worker, "service worker uses current cache namespace")
+for marker in ['config.js?v=20260812-mobile-regressions-1', 'app.js?v=20260812-mobile-regressions-1', 'medication-prn-fix.js?v=20260812-mobile-regressions-1', 'operations.js?v=20260812-mobile-regressions-1', 'portal-care-plan.js?v=20260812-mobile-regressions-1', 'roster-30-day.js?v=20260812-mobile-regressions-1', 'sil.css?v=20260813-audit-library-1', 'audit-document-catalogue.js?v=20260813-audit-library-1', 'sil.js?v=20260813-audit-library-1', 'sil-record.js?v=20260807-evidence-page-2']:
     require(marker in service_worker, f"service worker caches {marker}")
 
 require('id="weekly-family-update-list"' in index, "portal contains a visible weekly family update record list")
@@ -251,9 +254,25 @@ require("localStorage.getItem" not in sil, "SIL records are not read from localS
 require("localStorage.setItem" not in sil, "SIL records are not written to localStorage")
 require("data-delete" not in sil, "SIL records are archived rather than hard-deleted")
 require('workerCreateRecordTypes=new Set(["visitor","choice","handover"])' in sil, "worker SIL write scope is explicitly limited")
-controlled_match = re.search(r"const controlledDocuments=\[(.*?)\n\];\nlet privateDocuments", sil, re.S)
-controlled_count = len(re.findall(r'^\["', controlled_match.group(1), re.M)) if controlled_match else 0
-require(controlled_count == 44, f"controlled private library manifest has 44 documents (found {controlled_count})")
+catalogue = text("audit-document-catalogue.js")
+controlled_count = len(re.findall(r'^ \{key:"(?:core|sil)-', catalogue, re.M))
+evidence_count = len(re.findall(r'^ \{module:"(?:Core|Module 5A)",area:', catalogue, re.M))
+require(controlled_count == 97, f"controlled private library has 97 unique requirements representing 98 sources (found {controlled_count})")
+require(evidence_count == 29, f"audit evidence matrix has 29 live-evidence checks (found {evidence_count})")
+contains(
+    "audit-document-catalogue.js",
+    'sourceReferenceCount!==98',
+    'title:"SIL Tenancy, Housing and Support Arrangements Policy"',
+    'title:"SIL House Safeguarding Assessment"',
+    'title:"Feedback and Complaints Register"',
+    'title:"Current insurance certificates"',
+)
+contains(
+    "sil.js",
+    "approve_controlled_document",
+    'db.from("audit_evidence_checks")',
+    "Draft — needs approval",
+)
 
 choice_timeline = text("florence-choice-evidence-timeline-fix.sql")
 for marker in [
@@ -301,6 +320,18 @@ contains(
     "florence_storage_read",
     "coalesce(auth.jwt()->>'aal','aal1')='aal2'",
 )
+
+complete_library = text("florence-complete-audit-library-upgrade.sql")
+for marker in [
+    "create table if not exists public.audit_evidence_checks",
+    "create or replace function public.approve_controlled_document",
+    "public.controlled_document_approval_tickets",
+    "create or replace function public.enforce_controlled_document_lifecycle",
+    "lifecycle_status='Approved'",
+    "review_date>=current_date",
+    "COMPLETE_AUDIT_LIBRARY_READY",
+]:
+    require(marker in complete_library, f"complete audit-library SQL contains {marker!r}")
 
 # Privileged Edge Functions remain server-side behind origin, MFA and supervisor checks.
 for path in ["supabase/functions/staff-management/index.ts", "supabase/functions/xero-connect/index.ts"]:
