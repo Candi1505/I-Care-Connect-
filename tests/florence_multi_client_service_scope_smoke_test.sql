@@ -19,7 +19,7 @@ begin
   where table_schema='public' and table_name='participants'
     and column_name='service_scope_confirmed_at'
  ) then raise exception 'participants service-scope confirmation is missing'; end if;
- if not exists(
+ if to_regclass('public.invoice_items') is not null and not exists(
   select 1 from information_schema.columns
   where table_schema='public' and table_name='invoice_items'
     and column_name='service_type'

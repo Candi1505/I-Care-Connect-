@@ -13,7 +13,7 @@ EXPECTED_ASSETS = {
     "participant-file.js", "secure-document-careplan-fix.js",
     "medication-prn-fix.js", "regular-medication-tab.js", "roster-30-day.js",
     "deputy-integration.js", "deputy-permanent-token-ui-fix.js",
-    "invoicing-workspace.js", "invoice-menu-fix.js", "florence-readiness-controls.js",
+    "invoicing-workspace.js", "invoice-menu-fix.js", "florence-readiness-controls.js", "client-onboarding.js",
     "remote-s8-verification.js", "core-ui-fixes-v2.js", "core-ui-fixes-v3.js",
     "set-password.html", "set-password.js",
     "sil.html", "sil-record.html", "sil.css", "audit-document-catalogue.js", "sil.js", "sil-record.js", "service-worker.js", "manifest.webmanifest",
@@ -82,8 +82,8 @@ assert 'loadRuntime("invoice-menu-fix.js","20260804-pricing-1")' in regular_tab_
 assert 'regular-medication-tab.js?v=20260804-7' in config_js
 assert 'regular-medication-tab.js?v=20260804-7' in worker_js
 assert "INVOICE_UI" in worker_js
-assert "invoicing-workspace.js?v=20260804-pricing-1" in worker_js
-assert "invoicing-workspace.js?v=20260804-pricing-1" in config_js
+assert "invoicing-workspace.js?v=20260813-multi-client-1" in worker_js
+assert "invoicing-workspace.js?v=20260813-multi-client-1" in config_js
 assert "invoice-menu-fix.js?v=20260804-pricing-1" in config_js
 assert "participant-edit-controls.js" not in config_js
 assert "participant-file.js" not in config_js

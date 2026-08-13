@@ -321,23 +321,27 @@ $$;
 revoke all on function public.create_participant_with_services(jsonb,text[]) from public,anon;
 grant execute on function public.create_participant_with_services(jsonb,text[]) to authenticated,service_role;
 
-alter table public.invoice_items
- add column if not exists service_type text;
-
 do $$
 begin
- if not exists(
-  select 1 from pg_constraint
-  where conname='invoice_items_service_type_check'
-    and conrelid='public.invoice_items'::regclass
- ) then
-  alter table public.invoice_items
-   add constraint invoice_items_service_type_check check (
-    service_type is null or service_type in (
-     'Domestic assistance','Personal care','Community access','Social support',
-     'Sleepover','Transport','24-hour support','Medication support'
-    )
-   );
+ -- The core Florence schema can be installed without the optional invoicing
+ -- workspace. Add invoice enforcement whenever that later module is present.
+ if to_regclass('public.invoice_items') is not null then
+  execute 'alter table public.invoice_items add column if not exists service_type text';
+  if not exists(
+   select 1 from pg_constraint
+   where conname='invoice_items_service_type_check'
+     and conrelid=to_regclass('public.invoice_items')
+  ) then
+   execute $sql$
+    alter table public.invoice_items
+     add constraint invoice_items_service_type_check check (
+      service_type is null or service_type in (
+       'Domestic assistance','Personal care','Community access','Social support',
+       'Sleepover','Transport','24-hour support','Medication support'
+      )
+     )
+   $sql$;
+  end if;
  end if;
 end;
 $$;
@@ -437,16 +441,25 @@ create trigger progress_notes_service_scope_enforcement
 before insert or update of participant_id,category on public.progress_notes
 for each row execute function public.enforce_participant_service_scope();
 
-drop trigger if exists invoice_items_service_scope_enforcement on public.invoice_items;
-create trigger invoice_items_service_scope_enforcement
-before insert or update of invoice_id,shift_id,service_type,service_date on public.invoice_items
-for each row execute function public.enforce_participant_service_scope();
+do $$
+begin
+ if to_regclass('public.invoice_items') is not null then
+  execute 'drop trigger if exists invoice_items_service_scope_enforcement on public.invoice_items';
+  execute $sql$
+   create trigger invoice_items_service_scope_enforcement
+   before insert or update of invoice_id,shift_id,service_type,service_date on public.invoice_items
+   for each row execute function public.enforce_participant_service_scope()
+  $sql$;
+  execute $sql$
+   comment on column public.invoice_items.service_type is
+    'Florence service category used to validate the invoice line against the participant approved scope.'
+  $sql$;
+ end if;
+end;
+$$;
 
 comment on table public.participant_service_scopes is
  'Supervisor-confirmed services that may be rostered, documented and invoiced for each participant.';
 comment on column public.participants.service_scope_confirmed_at is
  'When set, Florence enforces participant_service_scopes. Null marks an existing participant awaiting service-scope review.';
-comment on column public.invoice_items.service_type is
- 'Florence service category used to validate the invoice line against the participant approved scope.';
-
 commit;
