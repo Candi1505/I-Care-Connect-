@@ -99,12 +99,12 @@ require('app.js?v=20260813-multi-client-1' in index, "index loads current multi-
 require('config.js?v=20260813-multi-client-1' in index, "index loads the current runtime configuration")
 require('operations.js?v=20260813-multi-client-1' in index, "index loads the current operations asset")
 require('audit-document-catalogue.js?v=20260813-audit-library-1' in sil_html, "SIL page loads the complete audit catalogue")
-require('sil.js?v=20260813-audit-library-1' in sil_html, "SIL page loads current audit-library asset")
+require('sil.js?v=20260813-participant-templates-1' in sil_html, "SIL page loads current participant-template asset")
 require('sil.css?v=20260813-audit-library-1' in sil_html, "SIL page loads current audit-library styles")
 require('sil-record.js?v=20260807-evidence-page-2' in sil_record_html, "evidence page loads its current secure viewer")
 require('set-password.js?v=20260802-2' in set_password_html, "setup page loads its controlled asset")
-require('florence-static-20260813-multi-client-1' in service_worker, "service worker uses current cache namespace")
-for marker in ['styles.css?v=20260813-multi-client-1', 'config.js?v=20260813-multi-client-1', 'app.js?v=20260813-multi-client-1', 'operations.js?v=20260813-multi-client-1', 'medication-prn-fix.js?v=20260812-mobile-regressions-1', 'portal-care-plan.js?v=20260812-mobile-regressions-1', 'portal-complaints.js?v=20260813-portal-complaints-1', 'client-onboarding.js?v=20260813-multi-client-1', 'roster-30-day.js?v=20260812-mobile-regressions-1', 'sil.css?v=20260813-audit-library-1', 'audit-document-catalogue.js?v=20260813-audit-library-1', 'sil.js?v=20260813-audit-library-1', 'sil-record.js?v=20260807-evidence-page-2']:
+require('florence-static-20260813-participant-templates-1' in service_worker, "service worker uses current cache namespace")
+for marker in ['styles.css?v=20260813-multi-client-1', 'config.js?v=20260813-multi-client-1', 'app.js?v=20260813-multi-client-1', 'operations.js?v=20260813-multi-client-1', 'medication-prn-fix.js?v=20260812-mobile-regressions-1', 'portal-care-plan.js?v=20260812-mobile-regressions-1', 'portal-complaints.js?v=20260813-portal-complaints-1', 'client-onboarding.js?v=20260813-multi-client-1', 'roster-30-day.js?v=20260812-mobile-regressions-1', 'sil.css?v=20260813-audit-library-1', 'audit-document-catalogue.js?v=20260813-audit-library-1', 'sil.js?v=20260813-participant-templates-1', 'sil-record.js?v=20260807-evidence-page-2']:
     require(marker in service_worker, f"service worker caches {marker}")
 
 require('id="weekly-family-update-list"' in index, "portal contains a visible weekly family update record list")
