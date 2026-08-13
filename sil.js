@@ -254,6 +254,8 @@ function renderLibraryStatus(){
  if(status)status.innerHTML=`<strong>${complete?"Private Florence library ready":`${current} of ${total} requirements current and approved`}</strong><br>${installed} installed · ${attention} need review or approval · ${missing} missing. The catalogue covers ${AUDIT_CATALOGUE.sourceReferenceCount} source files; the duplicate WHS source is controlled as one approved policy. Florence uses private Supabase Storage, not Google Drive links.`;
  const migration=$("#sil-library-import-status");
  if(migration&&!migration.dataset.progress)migration.textContent=complete?`All ${total} controlled requirements are current and approved.`:`${installed} of ${total} controlled requirements are installed; ${current} are current and approved.`;
+ const approveAll=$("#sil-approve-all-documents"),draftCount=states.filter(state=>state.document&&state.document.lifecycle_status!=="Approved").length;
+ if(approveAll){approveAll.classList.toggle("hidden",currentProfile?.role!=="supervisor"||draftCount===0);approveAll.textContent=draftCount?`Review and approve all ${draftCount} drafts`:"All documents approved"}
 }
 function renderTemplates(){
  $("#sil-template-register").innerHTML=currentProfile?.role==="supervisor"?documentGroups(controlledDocuments):"";
@@ -336,6 +338,31 @@ async function approveControlledDocument(documentId){
  if(error)throw error;
  await loadPrivateDocuments();renderTemplates();renderResources();toast("Controlled document approved")
 }
+async function approveAllControlledDocuments(){
+ if(currentProfile?.role!=="supervisor")throw new Error("Only a supervisor can approve controlled documents");
+ const drafts=[...privateDocuments.values()].filter(document=>document.lifecycle_status!=="Approved");
+ if(!drafts.length){toast("All controlled documents are already approved");return}
+ const suggested=new Date();suggested.setFullYear(suggested.getFullYear()+1);
+ const reviewDate=prompt(`Confirm the next review date for all ${drafts.length} documents (YYYY-MM-DD)`,suggested.toISOString().slice(0,10));
+ if(reviewDate===null)return;
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(reviewDate)||new Date(`${reviewDate}T00:00:00`)<new Date(new Date().toISOString().slice(0,10)+"T00:00:00"))throw new Error("Enter a current or future review date in YYYY-MM-DD format");
+ if(!confirm(`I confirm I have reviewed these ${drafts.length} controlled documents, they accurately reflect I-Care Connect's current practices, and I approve them with a next review date of ${reviewDate}.`))return;
+ const button=$("#sil-approve-all-documents"),status=$("#sil-bulk-approval-status");
+ button.disabled=true;status.classList.remove("hidden");
+ let approved=0;
+ try{
+  for(const document of drafts){
+   status.textContent=`Approving ${approved+1} of ${drafts.length}: ${document.title}`;
+   const {error}=await db.rpc("approve_controlled_document",{p_document_id:document.id,p_review_date:reviewDate,p_effective_date:document.effective_date||new Date().toISOString().slice(0,10)});
+   if(error)throw new Error(`${approved} documents were approved before Florence stopped at ${document.title}: ${error.message}`);
+   approved++;
+  }
+  status.textContent=`Success — ${approved} controlled documents approved. Each document has its own supervisor approval record.`;
+  toast(`${approved} controlled documents approved`)
+ }finally{
+  await loadPrivateDocuments();renderTemplates();renderResources();button.disabled=false
+ }
+}
 async function importPrivateLibrary(file){
  if(currentProfile?.role!=="supervisor")throw new Error("Only a supervisor can install the controlled library");
  if(!file)throw new Error("Choose the Florence private-library ZIP");
@@ -413,6 +440,7 @@ $("#sil-dialog-close").onclick=closeForm;$("#sil-dialog-cancel").onclick=closeFo
 $("#sil-refresh").onclick=async()=>{try{await Promise.all([loadSilState(),loadPrivateDocuments(),loadEvidenceChecks()]);render();toast("SIL workspace refreshed")}catch(error){toast(error.message||"Florence could not refresh SIL records")}};
 $("#sil-import-library")?.addEventListener("click",()=>$("#sil-library-zip")?.click());
 $("#sil-library-zip")?.addEventListener("change",event=>{const file=event.target.files?.[0];if(file)void importPrivateLibrary(file).catch(error=>{const status=$("#sil-library-import-status");if(status)status.textContent=error.message||"The private library could not be installed";toast(error.message||"The private library could not be installed")})});
+$("#sil-approve-all-documents")?.addEventListener("click",()=>void approveAllControlledDocuments().catch(error=>{const status=$("#sil-bulk-approval-status");if(status){status.classList.remove("hidden");status.textContent=error.message}toast(error.message)}));
 $("#sil-controlled-document-file")?.addEventListener("change",event=>{
  const file=event.target.files?.[0],requirement=controlledDocuments.find(document=>document.key===pendingControlledUpload);
  pendingControlledUpload=null;event.target.value="";
