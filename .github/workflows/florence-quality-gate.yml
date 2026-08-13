@@ -110,6 +110,8 @@ jobs:
           grep -q 'REMOVED' /tmp/florence-demo-cleanup.txt
           psql -v ON_ERROR_STOP=1 -f florence-s8-dual-signoff-timeline-upgrade.sql | tee /tmp/florence-s8-timeline.txt
           grep -q 'S8_DUAL_SIGNOFF_TIMELINE_READY' /tmp/florence-s8-timeline.txt
+          psql -v ON_ERROR_STOP=1 -f florence-portal-complaints-upgrade.sql | tee /tmp/florence-portal-complaints.txt
+          grep -q 'PORTAL_COMPLAINTS_READY' /tmp/florence-portal-complaints.txt
 
       - name: Reproduce and repair the live missing SIL table condition
         run: |
@@ -128,3 +130,6 @@ jobs:
 
       - name: Exercise S8 dual PIN signing and participant timeline
         run: psql -v ON_ERROR_STOP=1 -f tests/florence_s8_timeline_smoke_test.sql
+
+      - name: Exercise family and participant portal complaints
+        run: psql -v ON_ERROR_STOP=1 -f tests/florence_portal_complaints_smoke_test.sql

@@ -11,9 +11,10 @@ This release adds software controls that support I-Care Connect's audit evidence
 3. Copy and run `florence-audit-readiness-upgrade.sql`.
 4. Copy and run `florence-operational-controls-upgrade.sql`.
 5. After the backup and Edge Function hold is cleared, run `florence-complete-audit-library-upgrade.sql`.
-6. Redeploy `supabase/functions/staff-management` so family and participant invitations are available.
-7. Sign out of Florence and sign in again.
-8. Open each new workspace and complete the verification checklist below, including the full in-app audit evidence matrix.
+6. Run `florence-portal-complaints-upgrade.sql` before deploying the Complaints tab.
+7. Redeploy `supabase/functions/staff-management` so family and participant invitations are available.
+8. Sign out of Florence and sign in again.
+9. Open each new workspace and complete the verification checklist below, including the full in-app audit evidence matrix.
 
 The migration is non-destructive and does not delete existing Florence records.
 
@@ -23,7 +24,7 @@ The migration is non-destructive and does not delete existing Florence records.
 - Supervisor can see Safety, Workforce, Outcomes and Governance.
 - Support worker can report incidents and medication errors, clock in/out, submit leave, availability and expenses, and record goals.
 - Participant/family accounts cannot see internal safety, workforce, governance or finance areas.
-- Participant/family portal can submit **Complaint or feedback**.
+- Participant and family portals can submit a complaint from the dedicated **Complaints** tab and see only their own private complaint conversation.
 - Supervisor can invite a family representative or participant and link the account to the correct participant.
 - Support workers can open the controlled position descriptions in the SIL library.
 
@@ -40,7 +41,9 @@ The migration is non-destructive and does not delete existing Florence records.
 - Submit a test incident and confirm a supervisor notification appears.
 - Close it with a review and corrective action.
 - Submit a portal complaint and confirm it appears in the complaints register.
-- Record and resolve the test complaint.
+- Confirm every active supervisor receives the new-complaint notification.
+- Reply as a supervisor, move the complaint through **Acknowledged**, **In review** and **Resolved**, and confirm the complainant can see each reply.
+- Reply again from the complainant account after resolution and confirm Florence requests further review.
 
 ### Medication
 - Confirm allergies remain visible in participant records.

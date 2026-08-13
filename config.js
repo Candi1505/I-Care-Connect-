@@ -117,6 +117,7 @@ window.FLORENCE_CONFIG = {
     "setup-code-display.js?v=20260802-1",
     "portal-participant-label.js?v=20260802-2",
     "portal-care-plan.js?v=20260812-mobile-regressions-1",
+    "portal-complaints.js?v=20260813-portal-complaints-1",
     "secure-document-careplan-fix.js?v=20260809-mobile-main-stability-1",
     "medication-prn-fix.js?v=20260812-mobile-regressions-1",
     "regular-medication-tab.js?v=20260804-7",

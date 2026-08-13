@@ -9,7 +9,7 @@ EXPECTED_ASSETS = {
     "index.html", "styles.css", "config.js", "app.js", "operations.js",
     "staff-management.js", "setup-code-display.js", "portal-participant-label.js",
     "live-refresh-controls.js", "notification-navigation.js",
-    "push-notifications.js", "portal-care-plan.js", "participant-edit-controls.js",
+    "push-notifications.js", "portal-care-plan.js", "portal-complaints.js", "participant-edit-controls.js",
     "participant-file.js", "secure-document-careplan-fix.js",
     "medication-prn-fix.js", "regular-medication-tab.js", "roster-30-day.js",
     "deputy-integration.js", "deputy-permanent-token-ui-fix.js",
