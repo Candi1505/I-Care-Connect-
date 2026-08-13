@@ -578,7 +578,7 @@ function renderWeeklyFamilyUpdates(){
 }
 function renderPortal(){
  renderWeeklyFamilyUpdates();
- const threads=state.portalThreads.filter(canSeePortalThread).filter(t=>portalFilter==="archived"?t.status==="Closed":t.status!=="Closed");
+ const threads=state.portalThreads.filter(canSeePortalThread).filter(t=>t.thread_type!=="Complaint or feedback").filter(t=>portalFilter==="archived"?t.status==="Closed":t.status!=="Closed");
  $("#portal-thread-list").innerHTML=threads.map(t=>`<button class="thread-button ${activePortalThread===t.id?"active":""}" data-thread="${t.id}"><strong>${esc(t.subject)}</strong><span>${esc(t.participant?.full_name)} · ${esc(t.thread_type)}</span><small>${esc(t.status)} · ${fmt(t.updated_at)}</small></button>`).join("")||empty(portalFilter==="archived"?"No archived conversations.":"No active portal conversations.");
  const thread=threads.find(t=>t.id===activePortalThread);
  if(!thread){$("#portal-thread-title").textContent="Select a conversation";$("#portal-messages").innerHTML=empty("Choose a message or request.");$("#portal-reply-form").classList.add("hidden");return}
@@ -747,9 +747,9 @@ $("#add-timeline-event").onclick=()=>form("Add client timeline event",[
 
 $("#new-portal-item").onclick=()=>form("New portal message or request",[
  ...(isPortalUser()?[]:[field("participant_id","Participant","select",state.participants.map(p=>({value:p.id,label:p.full_name})))]),
- field("thread_type","Type","select",["Message","Request","Complaint or feedback","Information update","Appointment request","Roster request","General question"]),
+ field("thread_type","Type","select",["Message","Request","Information update","Appointment request","Roster request","General question"]),
  field("subject","Subject"),field("message","Message or request","textarea")
-],async v=>{const participantId=isPortalUser()?profile.participant_id:v.participant_id;const {data:thread,error}=await db.from("portal_threads").insert({organisation_id:profile.organisation_id,participant_id:participantId,thread_type:v.thread_type,subject:v.subject,status:"Open",created_by:profile.id,updated_at:new Date().toISOString()}).select().single();if(error)throw error;const {error:msgErr}=await db.from("portal_messages").insert({organisation_id:profile.organisation_id,thread_id:thread.id,sender_id:profile.id,message:v.message});if(msgErr)throw msgErr;if(v.thread_type==="Complaint or feedback"){const {error:complaintError}=await db.from("complaints").insert({organisation_id:profile.organisation_id,participant_id:participantId,submitted_by:profile.id,complainant_name:profile.full_name,complainant_contact:profile.email||null,channel:"Portal",subject:v.subject,details:v.message,status:"Received"});if(complaintError)throw complaintError}activePortalThread=thread.id;await refreshAll();toast(v.thread_type==="Complaint or feedback"?"Complaint received securely":"Portal item created")});
+],async v=>{const participantId=isPortalUser()?profile.participant_id:v.participant_id;const {data:thread,error}=await db.from("portal_threads").insert({organisation_id:profile.organisation_id,participant_id:participantId,thread_type:v.thread_type,subject:v.subject,status:"Open",created_by:profile.id,updated_at:new Date().toISOString()}).select().single();if(error)throw error;const {error:msgErr}=await db.from("portal_messages").insert({organisation_id:profile.organisation_id,thread_id:thread.id,sender_id:profile.id,message:v.message});if(msgErr)throw msgErr;activePortalThread=thread.id;await refreshAll();toast("Portal item created")});
 
 $("#portal-reply-form").onsubmit=async e=>{e.preventDefault();try{const text=$("#portal-reply-text").value.trim();if(!text||!activePortalThread)return;const {error}=await db.from("portal_messages").insert({organisation_id:profile.organisation_id,thread_id:activePortalThread,sender_id:profile.id,message:text});if(error)throw error;await db.from("portal_threads").update({updated_at:new Date().toISOString()}).eq("id",activePortalThread);$("#portal-reply-text").value="";await refreshAll();toast("Reply sent")}catch(err){toast(err.message)}};
 

@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260812-mobile-regressions-1">
+  <link rel="stylesheet" href="styles.css?v=20260813-portal-complaints-1">
 </head>
 <body>
 <div id="toast" class="toast"></div>
@@ -142,38 +142,75 @@
         </div>
         <button type="button" id="new-portal-item" class="primary">+ New message or request</button>
       </div>
-      <div class="segmented">
-        <button class="active" data-portal-filter="active">Active</button>
-        <button data-portal-filter="archived">Archived</button>
+      <div id="portal-section-tabs" class="segmented portal-section-tabs" role="tablist" aria-label="Portal sections">
+        <button type="button" class="active" role="tab" aria-selected="true" aria-controls="portal-conversations-section" data-portal-section="conversations">Messages &amp; updates</button>
+        <button type="button" class="hidden" role="tab" aria-selected="false" aria-controls="portal-complaints-section" data-portal-section="complaints">Complaints <span id="portal-complaint-count" class="nav-count">0</span></button>
       </div>
 
-      <article class="panel weekly-family-updates-panel">
-        <div class="panel-head">
-          <div><p class="eyebrow">Shared care record</p><h3>Weekly family updates</h3><p>Care, activities, goals and follow-up shared with participants and their approved family contacts.</p></div>
-          <span id="weekly-family-update-count" class="badge good">0 updates</span>
+      <div id="portal-conversations-section">
+        <div class="segmented">
+          <button class="active" data-portal-filter="active">Active</button>
+          <button data-portal-filter="archived">Archived</button>
         </div>
-        <div id="weekly-family-update-list" class="stack"></div>
-      </article>
 
-      <div class="grid two portal-layout">
-        <article class="panel">
+        <article class="panel weekly-family-updates-panel">
           <div class="panel-head">
-            <div><p class="eyebrow">Conversations</p><h3>Messages and requests</h3></div>
+            <div><p class="eyebrow">Shared care record</p><h3>Weekly family updates</h3><p>Care, activities, goals and follow-up shared with participants and their approved family contacts.</p></div>
+            <span id="weekly-family-update-count" class="badge good">0 updates</span>
           </div>
-          <div id="portal-thread-list" class="stack"></div>
+          <div id="weekly-family-update-list" class="stack"></div>
         </article>
 
-        <article class="panel">
-          <div class="panel-head">
-            <div><p class="eyebrow">Conversation</p><h3 id="portal-thread-title">Select a conversation</h3></div>
-          </div>
-          <div id="portal-messages" class="portal-messages"></div>
-          <form id="portal-reply-form" class="portal-reply hidden">
-            <textarea id="portal-reply-text" placeholder="Write a reply…" required></textarea>
-            <button class="primary">Send reply</button>
-          </form>
-        </article>
+        <div class="grid two portal-layout">
+          <article class="panel">
+            <div class="panel-head">
+              <div><p class="eyebrow">Conversations</p><h3>Messages and requests</h3></div>
+            </div>
+            <div id="portal-thread-list" class="stack"></div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-head">
+              <div><p class="eyebrow">Conversation</p><h3 id="portal-thread-title">Select a conversation</h3></div>
+            </div>
+            <div id="portal-messages" class="portal-messages"></div>
+            <form id="portal-reply-form" class="portal-reply hidden">
+              <textarea id="portal-reply-text" placeholder="Write a reply…" required></textarea>
+              <button class="primary">Send reply</button>
+            </form>
+          </article>
+        </div>
       </div>
+
+      <section id="portal-complaints-section" class="hidden">
+        <article class="notice portal-complaint-notice">
+          <strong>You have the right to make a complaint</strong>
+          <p>Your complaint goes directly to an I-Care Connect supervisor. You can follow its status and keep the whole conversation here. If someone is in immediate danger, call 000.</p>
+          <button type="button" id="new-portal-complaint" class="primary">+ Make a complaint</button>
+        </article>
+        <div class="grid two portal-layout">
+          <article class="panel">
+            <div class="panel-head"><div><p class="eyebrow">Private complaint record</p><h3 id="portal-complaint-list-title">Your complaints</h3></div></div>
+            <div id="portal-complaint-list" class="stack"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-head"><div><p class="eyebrow">Review and reply</p><h3 id="portal-complaint-title">Select a complaint</h3></div></div>
+            <div id="portal-complaint-detail"></div>
+            <div id="portal-complaint-messages" class="portal-messages"></div>
+            <form id="portal-complaint-reply-form" class="portal-reply hidden">
+              <textarea id="portal-complaint-reply-text" placeholder="Write a reply or add more information…" required></textarea>
+              <label id="portal-complaint-status-wrap" class="hidden">Update complaint status
+                <select id="portal-complaint-status">
+                  <option>Acknowledged</option>
+                  <option>In review</option>
+                  <option>Resolved</option>
+                </select>
+              </label>
+              <button class="primary">Send reply</button>
+            </form>
+          </article>
+        </div>
+      </section>
     </section>
 
     <section id="medications-view" class="view">
@@ -353,9 +390,9 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.2"></script>
-<script src="config.js?v=20260812-mobile-regressions-1"></script>
-<script src="app.js?v=20260812-mobile-regressions-1"></script>
-<script src="operations.js?v=20260812-mobile-regressions-1"></script>
+<script src="config.js?v=20260813-portal-complaints-1"></script>
+<script src="app.js?v=20260813-portal-complaints-1"></script>
+<script src="operations.js?v=20260813-portal-complaints-1"></script>
 <script src="staff-management.js?v=20260801-1"></script>
 <script>
 if("serviceWorker" in navigator){

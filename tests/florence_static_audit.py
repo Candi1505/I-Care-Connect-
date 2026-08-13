@@ -43,7 +43,7 @@ class IdParser(HTMLParser):
 required_files = [
     "index.html", "styles.css", "config.js", "app.js", "operations.js",
     "staff-management.js", "set-password.html", "set-password.js",
-    "medication-prn-fix.js", "participant-edit-controls.js",
+    "medication-prn-fix.js", "participant-edit-controls.js", "portal-complaints.js",
     "sil.html", "sil-record.html", "sil.css", "sil.js", "sil-record.js", "service-worker.js",
     "audit-document-catalogue.js",
     "supabase/functions/staff-management/index.ts",
@@ -61,6 +61,7 @@ required_files = [
     "florence-complete-audit-library-upgrade.sql",
     "florence-final-readiness-upgrade.sql",
     "florence-s8-dual-signoff-timeline-upgrade.sql",
+    "florence-portal-complaints-upgrade.sql",
     "florence-choice-evidence-timeline-fix.sql",
 ]
 for path in required_files:
@@ -85,21 +86,22 @@ headers = text("_headers")
 config = text("config.js")
 app_js = text("app.js")
 readiness_controls = text("florence-readiness-controls.js")
+portal_complaints = text("portal-complaints.js")
 
 require("@supabase/supabase-js@2.106.2" in index, "index pins Supabase JS 2.106.2")
 require("@supabase/supabase-js@2.106.2" in sil_html, "sil.html pins Supabase JS 2.106.2")
 require("@supabase/supabase-js@2.106.2" in sil_record_html, "evidence page pins Supabase JS 2.106.2")
 require("@supabase/supabase-js" not in set_password_html, "setup page does not create a browser Supabase session")
-require('app.js?v=20260812-mobile-regressions-1' in index, "index loads current mobile-regression app asset")
-require('config.js?v=20260812-mobile-regressions-1' in index, "index loads the current runtime configuration")
-require('operations.js?v=20260812-mobile-regressions-1' in index, "index loads the current operations asset")
+require('app.js?v=20260813-portal-complaints-1' in index, "index loads current portal-complaints app asset")
+require('config.js?v=20260813-portal-complaints-1' in index, "index loads the current runtime configuration")
+require('operations.js?v=20260813-portal-complaints-1' in index, "index loads the current operations asset")
 require('audit-document-catalogue.js?v=20260813-audit-library-1' in sil_html, "SIL page loads the complete audit catalogue")
 require('sil.js?v=20260813-audit-library-1' in sil_html, "SIL page loads current audit-library asset")
 require('sil.css?v=20260813-audit-library-1' in sil_html, "SIL page loads current audit-library styles")
 require('sil-record.js?v=20260807-evidence-page-2' in sil_record_html, "evidence page loads its current secure viewer")
 require('set-password.js?v=20260802-2' in set_password_html, "setup page loads its controlled asset")
-require('florence-static-20260813-audit-library-1' in service_worker, "service worker uses current cache namespace")
-for marker in ['config.js?v=20260812-mobile-regressions-1', 'app.js?v=20260812-mobile-regressions-1', 'medication-prn-fix.js?v=20260812-mobile-regressions-1', 'operations.js?v=20260812-mobile-regressions-1', 'portal-care-plan.js?v=20260812-mobile-regressions-1', 'roster-30-day.js?v=20260812-mobile-regressions-1', 'sil.css?v=20260813-audit-library-1', 'audit-document-catalogue.js?v=20260813-audit-library-1', 'sil.js?v=20260813-audit-library-1', 'sil-record.js?v=20260807-evidence-page-2']:
+require('florence-static-20260813-portal-complaints-1' in service_worker, "service worker uses current cache namespace")
+for marker in ['styles.css?v=20260813-portal-complaints-1', 'config.js?v=20260813-portal-complaints-1', 'app.js?v=20260813-portal-complaints-1', 'operations.js?v=20260813-portal-complaints-1', 'medication-prn-fix.js?v=20260812-mobile-regressions-1', 'portal-care-plan.js?v=20260812-mobile-regressions-1', 'portal-complaints.js?v=20260813-portal-complaints-1', 'roster-30-day.js?v=20260812-mobile-regressions-1', 'sil.css?v=20260813-audit-library-1', 'audit-document-catalogue.js?v=20260813-audit-library-1', 'sil.js?v=20260813-audit-library-1', 'sil-record.js?v=20260807-evidence-page-2']:
     require(marker in service_worker, f"service worker caches {marker}")
 
 require('id="weekly-family-update-list"' in index, "portal contains a visible weekly family update record list")
@@ -108,6 +110,19 @@ require('function renderWeeklyFamilyUpdates()' in app_js, "main portal renders s
 require('data-review-weekly-update' in app_js, "supervisor can review a weekly family update")
 require('weekly_family_updates:"weeklyFamilyUpdates"' in app_js, "weekly family updates are included in encrypted organisation archives")
 require('data-weekly-thread' in app_js, "weekly update can open its linked family conversation")
+require('id="portal-complaints-section"' in index and 'data-portal-section="complaints"' in index, "family and participant portal has a dedicated Complaints tab")
+require('id="portal-complaint-reply-form"' in index and 'id="portal-complaint-status"' in index, "complaints tab includes reply and supervisor review controls")
+require('portal-complaints.js?v=20260813-portal-complaints-1' in config, "runtime loads the controlled portal complaints module")
+contains(
+    "portal-complaints.js",
+    'db.rpc("submit_portal_complaint"',
+    'db.rpc("reply_to_portal_complaint"',
+    'item.channel==="Portal"||item.portal_thread_id',
+    'isPortalComplainant()||isSupervisor()',
+)
+require('If someone is in immediate danger, call 000.' in index, "complaints tab distinguishes the portal workflow from an emergency response")
+require('t.thread_type!=="Complaint or feedback"' in app_js, "formal complaint conversations are kept out of the general message list")
+require('"Complaint or feedback","Information update"' not in app_js, "generic message form no longer creates a non-atomic complaint")
 require('medication-administration-actions' in app_js, "medication administration actions have responsive layout hooks")
 require('Edit medication' in readiness_controls, "medication maintenance action uses a clear label")
 
@@ -133,7 +148,7 @@ require('/sil-record\n  Cache-Control: no-store, max-age=0' in headers, "canonic
 browser_paths = [
     "index.html", "app.js", "operations.js", "staff-management.js",
     "set-password.html", "set-password.js", "medication-prn-fix.js",
-    "participant-edit-controls.js", "sil.html", "sil.js", "sil-record.html", "sil-record.js", "config.js",
+    "participant-edit-controls.js", "portal-complaints.js", "sil.html", "sil.js", "sil-record.html", "sil-record.js", "config.js",
 ]
 for path in browser_paths:
     source = text(path)
@@ -281,6 +296,24 @@ for marker in [
     "set search_path=public,pg_temp",
 ]:
     require(marker in choice_timeline, f"choice timeline SQL contains {marker!r}")
+
+portal_complaints_sql = text("florence-portal-complaints-upgrade.sql")
+for marker in [
+    "alter type public.portal_thread_type add value if not exists 'Complaint or feedback'",
+    "portal_thread_id uuid",
+    "create or replace function public.submit_portal_complaint",
+    "create or replace function public.reply_to_portal_complaint",
+    "create trigger complaints_notify",
+    "perform public.require_verified_mfa()",
+    "thread_record.created_by=(select auth.uid())",
+    "thread_record.thread_type<>'Complaint or feedback'",
+    "Supervisor replied to your complaint",
+    "Further review requested",
+    "PORTAL_COMPLAINTS_READY",
+]:
+    require(marker in portal_complaints_sql, f"portal complaints SQL contains {marker!r}")
+quality_gate = text(".github/workflows/florence-quality-gate.yml")
+require('florence-portal-complaints-upgrade.sql' in quality_gate and 'florence_portal_complaints_smoke_test.sql' in quality_gate, "quality gate applies and exercises the portal complaints migration")
 
 # Database hardening, RLS, cleanup and verification.
 final_sql = text("florence-final-readiness-upgrade.sql")
