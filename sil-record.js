@@ -1,12 +1,13 @@
 (()=>{
 "use strict";
 const $=selector=>document.querySelector(selector);
+const DOMESTIC_TASK_LABELS={"kitchen_benches":"Kitchen — benches and surfaces","kitchen_sink":"Kitchen — sink and taps","kitchen_cooktop":"Kitchen — cooktop and splashback","kitchen_appliances":"Kitchen — appliance exteriors","kitchen_microwave":"Kitchen — microwave","kitchen_fridge":"Kitchen — fridge spills and expired food","kitchen_cupboards":"Kitchen — cupboard fronts and touchpoints","kitchen_dishes":"Kitchen — dishes or dishwasher","kitchen_floor_dry":"Kitchen — swept or vacuumed","kitchen_floor_mop":"Kitchen — hard floor mopped","kitchen_bins":"Kitchen — bins","bathroom_toilet":"Bathroom — toilet","bathroom_basin":"Bathroom — basin and taps","bathroom_shower":"Bathroom — shower or bath","bathroom_mirror":"Bathroom — mirrors","bathroom_floor":"Bathroom — floor","bathroom_bins":"Bathroom — bins","bathroom_supplies":"Bathroom — agreed supplies","living_dust":"Shared areas — dusted","living_touchpoints":"Shared areas — touchpoints","living_tidy":"Shared areas — tidied","living_vacuum":"Shared areas — carpets and rugs","living_mop":"Shared areas — hard floors","living_windows":"Shared areas — windows and internal glass","living_entry":"Shared areas — entry","bedroom_consent":"Private space — consent confirmed","bedroom_linen":"Private space — linen","bedroom_dust":"Private space — dusted","bedroom_floor":"Private space — floor","bedroom_bin":"Private space — bin","laundry_wash":"Laundry — washed","laundry_dry":"Laundry — dried","laundry_fold":"Laundry — folded","laundry_putaway":"Laundry — put away","laundry_area":"Laundry — area cleaned","laundry_lint":"Laundry — lint filter","safety_chemicals":"Safety — chemicals stored","safety_equipment":"Safety — equipment stored","safety_hazards":"Safety — hazards checked","safety_maintenance":"Safety — maintenance checked","safety_walkthrough":"Safety — final walk-through"};
 const FIELD_LABELS={
  participant:"Participant",worker:"Worker",date:"Date and time",house:"SIL home",
  category:"Choice category",options:"Options discussed",decision:"Decision being made",
  choice:"Participant's own words and choice",support:"Decision-making support provided",
  risk:"Risks discussed and safeguards used",outcome:"Outcome",preference_change:"Preference change",
- plan_update:"Support-plan update",declaration:"Worker declaration"
+ plan_update:"Support-plan update",declaration:"Worker declaration",tasks:"Completed duties",task_count:"Duties completed",shift_date:"Date completed",participant_preferences:"Participant choices and preferences followed",not_completed_reason:"Not required or not completed",follow_up_required:"Follow-up required",pin_verified:"Signing PIN verified",signed_at:"Signed at"
 };
 function formatDate(value){
  if(!value)return"Not recorded";
@@ -41,7 +42,11 @@ function renderRecord(record,participantName){
  for(const [key,value] of entries){
   const term=document.createElement("dt"),description=document.createElement("dd");
   term.textContent=labelFor(key);
-  description.textContent=Array.isArray(value)?value.join(", "):typeof value==="object"?JSON.stringify(value,null,2):String(value);
+  if(key==="tasks"&&value&&typeof value==="object"){
+   const completed=Object.keys(value).filter(task=>value[task]===true);
+   description.textContent=completed.map(task=>`✓ ${DOMESTIC_TASK_LABELS[task]||labelFor(task)}`).join("\n");
+   description.classList.add("sil-task-evidence");
+  }else description.textContent=Array.isArray(value)?value.join(", "):typeof value==="object"?JSON.stringify(value,null,2):String(value);
   fields.append(term,description)
  }
  if(!entries.length){const term=document.createElement("dt"),description=document.createElement("dd");term.textContent="Record";description.textContent="No form fields were stored.";fields.append(term,description)}
