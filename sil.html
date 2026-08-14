@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css?v=20260723-15">
-<link rel="stylesheet" href="sil.css?v=20260813-audit-library-1">
+<link rel="stylesheet" href="sil.css?v=20260814-domestic-duty-1">
   <style>html.sil-auth-pending body{visibility:hidden}</style>
 </head>
 <body>
@@ -68,6 +68,7 @@
     <div class="quick-grid sil-quick-grid">
       <button data-open-form="house"><span>🏡</span><strong>Add SIL home</strong><small>Property, residents and safeguarding</small></button>
       <button data-open-form="handover"><span>🔄</span><strong>Shift handover</strong><small>Outgoing and incoming worker record</small></button>
+      <button data-open-form="domesticChecklist"><span>🧹</span><strong>Domestic duties</strong><small>Thorough shift cleaning checklist</small></button>
       <button data-open-form="choice"><span>💬</span><strong>Participant choice</strong><small>Supported decision-making evidence</small></button>
       <button data-open-form="meeting"><span>🤝</span><strong>House meeting</strong><small>Consultation and agreed actions</small></button>
       <button data-open-form="visitor"><span>🚪</span><strong>Visitor or contractor</strong><small>Safeguarding and transparency log</small></button>
@@ -105,8 +106,8 @@
   </section>
 
   <section id="sil-shift-panel" class="sil-panel">
-    <div class="page-head"><div><p class="eyebrow">Daily practice evidence</p><h2>Shift and household records</h2><p>Handover, participant choices, visitors and follow-up actions.</p></div><button class="primary" data-open-form="handover">+ Shift handover</button></div>
-    <div class="sil-action-grid"><button class="secondary" data-open-form="choice">Record participant choice</button><button class="secondary" data-open-form="visitor">Visitor / contractor log</button></div>
+    <div class="page-head"><div><p class="eyebrow">Daily practice evidence</p><h2>Shift and household records</h2><p>Handover, participant choices, domestic duties, visitors and follow-up actions.</p></div><button class="primary" data-open-form="domesticChecklist">+ Domestic duties</button></div>
+    <div class="sil-action-grid"><button class="secondary" data-open-form="domesticChecklist">Domestic duties checklist</button><button class="secondary" data-open-form="choice">Record participant choice</button><button class="secondary" data-open-form="visitor">Visitor / contractor log</button><button class="secondary" data-open-form="handover">Shift handover</button></div>
     <div id="sil-shift-list" class="stack"></div>
   </section>
 
@@ -194,6 +195,6 @@
 <script src="config.js?v=20260807-evidence-page-2"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script src="audit-document-catalogue.js?v=20260813-audit-library-1"></script>
-<script src="sil.js?v=20260813-participant-templates-1"></script>
+<script src="sil.js?v=20260814-domestic-duty-1"></script>
 </body>
 </html>
