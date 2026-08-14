@@ -45,6 +45,11 @@
 !florence-icon-192.png
 !florence-icon-512.png
 
+# Compiled Florence redesign
+!favicon.svg
+!assets/
+!assets/**
+
 # Cloudflare security and crawler controls
 !_headers
 !robots.txt
