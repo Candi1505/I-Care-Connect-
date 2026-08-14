@@ -73,7 +73,7 @@ begin
  ) values(
   '20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000002',
   'choice','Supported decision-making','Worker choice smoke test',
-  '{"participant":"Retained Test Participant","choice":"Test choice"}'::jsonb,
+  '{"participant":"Retained Test Participant","choice":"Test choice","declaration":"Yes"}'::jsonb,
   'Complete',auth.uid(),auth.uid()
  );
 
