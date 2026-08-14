@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: JavaScript syntax checks
         run: |
@@ -87,7 +87,7 @@ jobs:
       PGPASSWORD: postgres
       PGDATABASE: florence_test
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Confirm PostgreSQL client
         run: psql --version
