@@ -1,6 +1,13 @@
 -- Florence domestic duties tick-and-flick checklist.
 -- PIN-signed, participant-scoped and linked to the worker's accepted shift.
 
+alter table public.sil_records drop constraint if exists sil_records_type_check;
+alter table public.sil_records add constraint sil_records_type_check check(record_type=any(array[
+ 'house','safeguarding','meeting','houseRules','visitor','supportPlan','emergencyPlan','riskAssessment','intake',
+ 'communication','instructions','choice','agreementExplanation','serviceAgreement','rights','privateSpace','handover',
+ 'induction','competency','training','observation','domesticChecklist'
+]));
+
 create or replace function public.validate_sil_record()
 returns trigger language plpgsql security definer set search_path to 'public','pg_temp'
 as $validator$
