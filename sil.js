@@ -3,10 +3,65 @@
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 document.documentElement.classList.add("sil-auth-pending");
 let db=null,currentProfile=null;
-let directory={participants:[],staff:[]};
-const participantRecordTypes=new Set(["visitor","supportPlan","emergencyPlan","riskAssessment","intake","communication","instructions","choice","agreementExplanation","serviceAgreement","rights","privateSpace","handover"]);
+let directory={participants:[],staff:[],shifts:[]};
+const DOMESTIC_TASKS=[
+ ["Kitchen",[
+  ["kitchen_benches","Benches and accessible surfaces wiped"],
+  ["kitchen_sink","Sink and taps cleaned"],
+  ["kitchen_cooktop","Cooktop and splashback cleaned"],
+  ["kitchen_appliances","Appliance exteriors wiped"],
+  ["kitchen_microwave","Microwave cleaned inside and out"],
+  ["kitchen_fridge","Fridge spills and expired food checked"],
+  ["kitchen_cupboards","Cupboard fronts and high-touch surfaces wiped"],
+  ["kitchen_dishes","Dishes washed or dishwasher managed"],
+  ["kitchen_floor_dry","Floor swept or vacuumed"],
+  ["kitchen_floor_mop","Hard floor mopped"],
+  ["kitchen_bins","Bins emptied and liners replaced"]
+ ]],
+ ["Bathroom and toilet",[
+  ["bathroom_toilet","Toilet cleaned and disinfected"],
+  ["bathroom_basin","Basin and taps cleaned"],
+  ["bathroom_shower","Shower or bath cleaned"],
+  ["bathroom_mirror","Mirrors cleaned"],
+  ["bathroom_floor","Floor vacuumed or mopped"],
+  ["bathroom_bins","Bins emptied"],
+  ["bathroom_supplies","Agreed toiletries and supplies replenished"]
+ ]],
+ ["Living and shared areas",[
+  ["living_dust","Accessible surfaces dusted"],
+  ["living_touchpoints","High-touch points wiped"],
+  ["living_tidy","Area tidied while respecting personal possessions"],
+  ["living_vacuum","Carpets and rugs vacuumed"],
+  ["living_mop","Hard floors mopped"],
+  ["living_windows","Accessible windows and internal glass cleaned as scheduled"],
+  ["living_entry","Entry and door area cleaned"]
+ ]],
+ ["Bedroom or private space — only with participant consent",[
+  ["bedroom_consent","Participant consent or agreed access confirmed"],
+  ["bedroom_linen","Bed linen changed as agreed"],
+  ["bedroom_dust","Accessible surfaces dusted"],
+  ["bedroom_floor","Floor vacuumed or mopped"],
+  ["bedroom_bin","Bin emptied"]
+ ]],
+ ["Laundry",[
+  ["laundry_wash","Washing completed as agreed"],
+  ["laundry_dry","Drying completed as agreed"],
+  ["laundry_fold","Clothing and linen folded"],
+  ["laundry_putaway","Items put away as agreed"],
+  ["laundry_area","Laundry area cleaned"],
+  ["laundry_lint","Dryer lint filter checked and cleaned"]
+ ]],
+ ["Safety and final check",[
+  ["safety_chemicals","Cleaning chemicals safely stored"],
+  ["safety_equipment","Equipment cleaned and stored"],
+  ["safety_hazards","Slip, trip and other hazards checked"],
+  ["safety_maintenance","Maintenance issues checked and recorded below"],
+  ["safety_walkthrough","Final walk-through completed"]
+ ]]
+];
+const participantRecordTypes=new Set(["visitor","supportPlan","emergencyPlan","riskAssessment","intake","communication","instructions","choice","agreementExplanation","serviceAgreement","rights","privateSpace","handover","domesticChecklist"]);
 const workerRecordTypes=new Set(["induction","competency","training","observation"]);
-const workerCreateRecordTypes=new Set(["visitor","choice","handover"]);
+const workerCreateRecordTypes=new Set(["visitor","choice","handover","domesticChecklist"]);
 function redirectThroughFlorence(reason=""){
  try{sessionStorage.setItem("florence:return-to","sil")}catch(_ignored){}
  const target=new URL("index.html",location.href);
@@ -52,6 +107,7 @@ agreementExplanation:{title:"SIL agreement explanation record",category:"Partici
 serviceAgreement:{title:"SIL service agreement register",category:"Participant agreement",help:"This register does not replace the signed agreement. Attach the executed agreement in Florence’s Compliance Centre.",fields:[["participant","Participant"],["commencement","Commencement date","date"],["review_date","Review date","date"],["signed_status","Status","select",["Draft","Provided for review","Signed","Expired / replaced"]],["support_scope","Agreed SIL support scope","textarea"],["fees_reference","Pricing / schedule reference","textarea",false],["termination_terms","Termination / change arrangements confirmed","textarea",false],["document_location","Signed document location or reference","text",false]]},
 rights:{title:"Welcome & rights acknowledgement",category:"Participant rights",help:"Record provision of rights information in a form the participant can understand.",fields:[["participant","Participant"],["date","Date provided","date"],["format","Format / communication method"],["topics","Rights explained","textarea"],["advocacy","Advocacy and complaint options explained","textarea"],["questions","Questions / concerns raised","textarea",false],["acknowledgement","Acknowledgement status","select",["Signed","Verbal acknowledgement","Further support required"]]]},
 privateSpace:{title:"Visitor & private-space preferences",category:"Participant rights",help:"A participant’s SIL home is their home. Preferences support privacy and safeguarding; they are not provider permission conditions.",fields:[["participant","Participant"],["house","SIL support location"],["visitor_preferences","Visitor preferences","textarea"],["private_space","Private-space and room-access preferences","textarea"],["keys_possessions","Keys and possessions arrangements","textarea",false],["relationships","Relationship and privacy supports","textarea",false],["review_date","Review date","date"]]},
+domesticChecklist:{title:"Domestic duties checklist",category:"Domestic duties",help:"Tick each duty actually completed during this accepted shift. Leave uncompleted or not-required duties unticked and explain them below. Only enter a private space with the participant’s consent or agreed access.",fields:[["participant","Participant"],["shift","Accepted shift","shift"],["shift_date","Date completed","date"],["duties","Domestic duties completed","checklist"],["participant_preferences","Participant choices, routines and preferences followed","textarea",false],["not_completed_reason","Duties not required or not completed — and why","textarea",false],["follow_up_required","Maintenance, hazards, low supplies or other follow-up","textarea",false],["declaration_confirmed","I confirm this checklist is true and only includes duties I completed","checkbox"],["pin","Your six-digit signing PIN","password"]]},
 handover:{title:"SIL shift handover",category:"Shift handover",help:"Complete at the end of every shift. Record facts and direct observations, not assumptions.",fields:[["participant","Participant"],["house","SIL home"],["shift_date","Shift date","date"],["shift_start","Shift start","time",false],["shift_end","Shift end","time",false],["outgoing_worker","Outgoing worker"],["incoming_worker","Incoming worker"],["wellbeing","Participant wellbeing and significant observations","textarea"],["daily_support","Meals, personal care, activities and choices","textarea",false],["medication","Medication matters","textarea",false],["incidents","Incidents, behaviours or safeguarding concerns","textarea",false],["appointments","Appointments / upcoming activities","textarea",false],["household","Household, maintenance and visitor matters","textarea",false],["actions","Outstanding actions","textarea",false],["incoming_acknowledged","Incoming worker acknowledgement","select",["Acknowledged","Awaiting acknowledgement"]]]},
 induction:{title:"SIL worker house induction",category:"Worker induction",help:"Must be completed before the worker’s first shift at the property and repeated after material changes.",fields:[["worker","Worker"],["house","SIL home"],["date","Induction date","date"],["participants_reviewed","Participant profiles and instructions reviewed","select",["Yes","Partly — follow-up required","No"]],["emergency_reviewed","Emergency and continuity arrangements reviewed","select",["Yes","No"]],["safeguarding_reviewed","Safeguarding and house risks reviewed","select",["Yes","No"]],["medication_reviewed","Medication arrangements reviewed","select",["Yes","Not applicable","No"]],["house_practice","House routines, privacy and visitor rights reviewed","select",["Yes","No"]],["gaps","Gaps / supervised practice required","textarea",false],["supervisor","Supervisor / Team Leader"]]},
  competency:{title:"SIL worker competency",category:"Worker competency",help:"Assess knowledge and observed practice before unsupervised work. A worker who is not yet competent must not work unsupervised until remedial action and reassessment are complete.",fields:[["worker","Worker"],["assessment_date","Assessment date","date"],["assessor","Assessor"],["method","Assessment method","select",["Observed practice","Knowledge questions","Scenario assessment","Document review","Combined assessment"]],["evidence_areas","Competency evidence","section"],["decision_communication","Supported decision-making, communication, participant rights and active support evidence","textarea"],["safety_practice","Safeguarding, trauma-informed care, cultural safety and de-escalation evidence","textarea"],["participant_instructions","Participant instructions, behaviour-support scope, medication and emergency evidence","textarea"],["records_handover","Objective records, incidents, handover and escalation evidence","textarea"],["outcome","Overall outcome","select",["Competent","Competent with conditions","Not yet competent"]],["conditions","Conditions, supervision or remedial training","textarea",false],["unsupervised","Unsupervised SIL shifts","select",["Approved","Not approved until reassessed"]],["reassessment_date","Reassessment date","date",false],["refresher_due","Refresher due","date"]]},
@@ -68,17 +124,18 @@ function staffName(staffId){return directory.staff.find(item=>item.id===staffId)
 function rowToRecord(row){return{id:row.id,type:row.record_type,category:row.category,title:row.title,createdAt:row.created_at,updatedAt:row.updated_at,fields:row.fields||{},status:row.status,participant_id:row.participant_id,staff_id:row.staff_id}}
 async function loadSilState(){
  const org=currentProfile.organisation_id;
- const [recordsResult,providerResult,participantsResult,staffResult]=await Promise.all([
+ const [recordsResult,providerResult,participantsResult,staffResult,shiftsResult]=await Promise.all([
   db.from("sil_records").select("*").eq("organisation_id",org).is("archived_at",null).order("created_at",{ascending:false}),
   db.from("sil_provider_profiles").select("profile").eq("organisation_id",org).maybeSingle(),
   db.from("participants").select("id,full_name,preferred_name").eq("organisation_id",org).order("full_name"),
-  db.from("profiles").select("id,full_name,role,active").eq("organisation_id",org).eq("active",true).in("role",["staff","supervisor"]).order("full_name")
+  db.from("profiles").select("id,full_name,role,active").eq("organisation_id",org).eq("active",true).in("role",["staff","supervisor"]).order("full_name"),
+  db.from("shifts").select("id,participant_id,assigned_staff_id,starts_at,ends_at,shift_type,status,response").eq("organisation_id",org).eq("assigned_staff_id",currentProfile.id).eq("status","Published").eq("response","Accepted").gte("ends_at",new Date(Date.now()-86400000).toISOString()).order("starts_at")
  ]);
- const failed=[recordsResult,providerResult,participantsResult,staffResult].find(result=>result.error);
+ const failed=[recordsResult,providerResult,participantsResult,staffResult,shiftsResult].find(result=>result.error);
  if(failed)throw failed.error;
  state.records=(recordsResult.data||[]).map(rowToRecord);
  state.provider={...PROVIDER,...(providerResult.data?.profile||{})};
- directory={participants:participantsResult.data||[],staff:staffResult.data||[]};
+ directory={participants:participantsResult.data||[],staff:staffResult.data||[],shifts:shiftsResult.data||[]};
 }
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
 function toast(t){const e=$("#sil-toast");e.textContent=t;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),2400)}
@@ -110,6 +167,11 @@ function fieldHtml(f,recordType){
   const options=directory.participants.map(item=>`<option value="${item.id}">${esc(item.preferred_name||item.full_name)}</option>`).join("");
   return`<label>${label}${hint}<select name="${name}"${req}><option value="">Select participant…</option>${options}</select></label>`
  }
+ if(type==="shift"){
+  const options=directory.shifts.map(item=>`<option value="${item.id}" data-participant="${item.participant_id}">${esc(shiftLabel(item))}</option>`).join("");
+  return`<label>${label}${hint}<select name="${name}"${req}><option value="">Select accepted shift…</option>${options}</select></label>`
+ }
+ if(type==="checklist")return`<div class="domestic-checklist">${DOMESTIC_TASKS.map(([section,tasks])=>`<fieldset><legend>${esc(section)}</legend>${tasks.map(([key,text])=>`<label class="sil-checkbox domestic-task"><input name="task_${key}" type="checkbox" value="true"><span>${esc(text)}</span></label>`).join("")}</fieldset>`).join("")}</div>`;
  if(name==="worker"){
   if(!workerRecordTypes.has(recordType))return`<label>${label}<input name="${name}" value="${esc(currentProfile?.full_name||"Signed-in worker")}" readonly required></label>`;
   const options=directory.staff.map(item=>`<option value="${item.id}">${esc(item.full_name)}</option>`).join("");
@@ -119,6 +181,18 @@ function fieldHtml(f,recordType){
  if(type==="select")return`<label>${label}${hint}<select name="${name}"${req}><option value="">Select…</option>${(Array.isArray(opts)?opts:[]).map(option=>{const value=typeof option==="string"?option:option.value,labelText=typeof option==="string"?option:option.label;return`<option value="${esc(value)}">${esc(labelText)}</option>`}).join("")}</select></label>`;
  if(type==="checkbox")return`<label class="sil-checkbox"><input name="${name}" type="checkbox" value="Yes"${req}><span>${esc(label)}</span></label>`;
  return`<label>${label}${hint}<input name="${name}" type="${type}"${req}></label>`
+}
+function shiftLabel(shift){
+ const start=new Date(shift.starts_at),end=new Date(shift.ends_at);
+ const day=new Intl.DateTimeFormat("en-AU",{weekday:"short",day:"numeric",month:"short"}).format(start);
+ const time=new Intl.DateTimeFormat("en-AU",{hour:"numeric",minute:"2-digit"}).format(start);
+ return `${participantName(shift.participant_id)} · ${day} ${time} · ${shift.shift_type||"Shift"}`
+}
+function filterDomesticShifts(){
+ const participant=$("#sil-dialog-fields [name=participant]")?.value||"";
+ const select=$("#sil-dialog-fields [name=shift]");if(!select)return;
+ [...select.options].forEach((option,index)=>{if(index)option.hidden=Boolean(participant)&&option.dataset.participant!==participant});
+ if(select.selectedOptions[0]?.hidden)select.value=""
 }
 function todayValue(){return new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10)}
 function localDateTimeValue(){return new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16)}
@@ -132,6 +206,10 @@ function openForm(type){
  const params=new URL(location.href).searchParams,participant=params.get("participant");
  const participantSelect=$("#sil-dialog-fields [name=participant]");
  if(participant&&participantSelect&&directory.participants.some(item=>item.id===participant))participantSelect.value=participant;
+ if(type==="domesticChecklist"){
+  participantSelect?.addEventListener("change",filterDomesticShifts);
+  filterDomesticShifts();
+ }
  schema.fields.forEach(([name,,type])=>{
   const input=$("#sil-dialog-fields [name='"+name+"']");
   if(!input||input.value)return;
@@ -155,7 +233,21 @@ async function submit(event){
  submitButton.disabled=true;submitButton.textContent="Saving securely…";
  try{
   const values=Object.fromEntries(new FormData(formElement));
-  if(type==="provider"){
+  if(type==="domesticChecklist"){
+   const participantId=String(values.participant||""),shiftId=String(values.shift||"");
+   const tasks={};
+   DOMESTIC_TASKS.flatMap(([,items])=>items).forEach(([key])=>{if(values["task_"+key]==="true")tasks[key]=true});
+   if(!participantId)throw new Error("Choose the participant this checklist belongs to");
+   if(!shiftId)throw new Error("Choose your accepted shift");
+   if(!Object.keys(tasks).length)throw new Error("Tick at least one duty you completed");
+   const {error}=await db.rpc("record_domestic_checklist",{
+    p_participant_id:participantId,p_shift_id:shiftId,p_shift_date:values.shift_date,
+    p_tasks:tasks,p_participant_preferences:values.participant_preferences||"",
+    p_not_completed_reason:values.not_completed_reason||"",p_follow_up_required:values.follow_up_required||"",
+    p_pin:values.pin||"",p_declaration_confirmed:values.declaration_confirmed==="Yes"
+   });
+   if(error)throw error;
+  }else if(type==="provider"){
    const {error}=await db.from("sil_provider_profiles").upsert({organisation_id:currentProfile.organisation_id,profile:{...state.provider,...values},updated_by:currentProfile.id},{onConflict:"organisation_id"});
    if(error)throw error;
   }else{
@@ -207,7 +299,7 @@ const outstanding=recs.filter(r=>statusOf(r)!=="Complete");$("#sil-outstanding")
 const counts={};recs.forEach(r=>counts[r.category]=(counts[r.category]||0)+1);$("#sil-category-summary").innerHTML=Object.entries(counts).map(([k,v])=>`<article class="record"><div class="record-top"><div><h3>${esc(k)}</h3><p>${v} record${v===1?"":"s"}</p></div></div></article>`).join("")||'<div class="sil-empty">No records have been entered.</div>';
 $("#sil-house-list").innerHTML=recs.filter(r=>["SIL home","House safeguarding","Consultation","House governance","Visitors"].includes(r.category)).map(recordCard).join("")||'<div class="sil-empty">Add the first SIL support location to begin the service file.</div>';
 $("#sil-participant-list").innerHTML=recs.filter(r=>["Participant service delivery","Participant profile","Participant instructions","Supported decision-making","Participant agreement","Participant rights"].includes(r.category)).map(recordCard).join("")||'<div class="sil-empty">Participant SIL records will appear here.</div>';
-$("#sil-shift-list").innerHTML=recs.filter(r=>["Shift handover","Supported decision-making","Visitors"].includes(r.category)).map(recordCard).join("")||'<div class="sil-empty">No SIL shift records.</div>';
+$("#sil-shift-list").innerHTML=recs.filter(r=>["Shift handover","Supported decision-making","Visitors","Domestic duties"].includes(r.category)).map(recordCard).join("")||'<div class="sil-empty">No SIL shift records.</div>';
 $("#sil-worker-list").innerHTML=recs.filter(r=>["Worker induction","Worker competency","Worker training","Practice observation"].includes(r.category)).map(recordCard).join("")||'<div class="sil-empty">No SIL workforce records.</div>';
 renderReadiness();renderProvider();renderTemplates();renderResources();renderAuditEvidenceMatrix();renderEvidence();
 }
