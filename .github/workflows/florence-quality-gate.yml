@@ -27,6 +27,7 @@ jobs:
           node --check staff-management.js
           node --check set-password.js
           node --check sil.js
+          node --check sil-record.js
           node --check service-worker.js
 
       - name: Florence security and readiness audit
@@ -43,6 +44,7 @@ jobs:
           grep -q 'set search_path=public,extensions,pg_temp' florence-pgcrypto-pin-signing-hotfix.sql
           grep -q 'PIN_SIGNING_CRYPTO_READY' florence-pgcrypto-pin-signing-hotfix.sql
           grep -q 'S8_DUAL_SIGNOFF_TIMELINE_READY' florence-s8-dual-signoff-timeline-upgrade.sql
+          grep -q 'DOMESTIC_DUTY_CHECKLIST_READY' florence-domestic-duty-checklist-upgrade.sql
           test -f SECURITY.md
           test -f docs/security/FLORENCE_SECURITY_ASSURANCE_PACK.md
           test -f docs/security/FLORENCE_IMMEDIATE_ACTION_PLAN.md
@@ -126,6 +128,8 @@ jobs:
           grep -q 'SIL_SCHEMA_READY_CACHE_RELOAD_SENT' /tmp/florence-sil-repair.txt
           psql -v ON_ERROR_STOP=1 -f florence-sil-schema-cache-repair.sql | tee /tmp/florence-sil-repair-repeat.txt
           grep -q 'SIL_SCHEMA_READY_CACHE_RELOAD_SENT' /tmp/florence-sil-repair-repeat.txt
+          psql -v ON_ERROR_STOP=1 -f florence-domestic-duty-checklist-upgrade.sql | tee /tmp/florence-domestic-duty.txt
+          grep -q 'DOMESTIC_DUTY_CHECKLIST_READY' /tmp/florence-domestic-duty.txt
 
       - name: Exercise controlled-document approval and audit evidence controls
         run: psql -v ON_ERROR_STOP=1 -f tests/florence_complete_audit_library_smoke_test.sql
@@ -135,6 +139,9 @@ jobs:
 
       - name: Exercise Supabase pgcrypto PIN signing
         run: psql -v ON_ERROR_STOP=1 -f tests/florence_pin_crypto_smoke_test.sql
+
+      - name: Exercise domestic duties checklist PIN signing
+        run: psql -v ON_ERROR_STOP=1 -f tests/florence_domestic_duty_checklist_smoke_test.sql
 
       - name: Exercise S8 dual PIN signing and participant timeline
         run: psql -v ON_ERROR_STOP=1 -f tests/florence_s8_timeline_smoke_test.sql
