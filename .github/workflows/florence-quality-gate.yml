@@ -128,7 +128,7 @@ jobs:
           grep -q 'SIL_SCHEMA_READY_CACHE_RELOAD_SENT' /tmp/florence-sil-repair.txt
           psql -v ON_ERROR_STOP=1 -f florence-sil-schema-cache-repair.sql | tee /tmp/florence-sil-repair-repeat.txt
           grep -q 'SIL_SCHEMA_READY_CACHE_RELOAD_SENT' /tmp/florence-sil-repair-repeat.txt
-          psql -v ON_ERROR_STOP=1 -f florence-domestic-duty-checklist-upgrade.sql | tee /tmp/florence-domestic-duty.txt
+          psql -v ON_ERROR_STOP=1 -f florence-domestic-duty-checklist-upgrade.sql 2>&1 | tee /tmp/florence-domestic-duty.txt
           grep -q 'DOMESTIC_DUTY_CHECKLIST_READY' /tmp/florence-domestic-duty.txt
 
       - name: Exercise controlled-document approval and audit evidence controls
