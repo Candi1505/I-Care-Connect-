@@ -47,6 +47,9 @@
 
 # Compiled Florence redesign
 !favicon.svg
+!florence-theme.css
+!florence-theme.js
+!icare-connect-logo.png
 !assets/
 !assets/**
 
