@@ -18,8 +18,10 @@ EXPECTED_ASSETS = {
     "set-password.html", "set-password.js",
     "sil.html", "sil-record.html", "sil.css", "audit-document-catalogue.js", "sil.js", "sil-record.js", "service-worker.js", "manifest.webmanifest",
     "florence-icon.svg", "florence-icon-192.png", "florence-icon-512.png",
+    "favicon.svg", "florence-theme.css", "florence-theme.js", "icare-connect-logo.png",
     "_headers", "robots.txt",
 }
+EXPECTED_ASSET_PATTERNS = {"assets/", "assets/**"}
 
 config = json.loads((ROOT / "wrangler.jsonc").read_text(encoding="utf-8"))
 assert config.get("name") == "i-care-connect"
@@ -31,7 +33,7 @@ assert config.get("assets", {}).get("not_found_handling") == "none"
 ignore_lines = [line.strip() for line in (ROOT / ".assetsignore").read_text(encoding="utf-8").splitlines() if line.strip() and not line.lstrip().startswith("#")]
 assert ignore_lines and ignore_lines[0] == "*"
 allowed = {line[1:] for line in ignore_lines if line.startswith("!")}
-assert allowed == EXPECTED_ASSETS, f"Cloudflare asset allowlist mismatch: {sorted(allowed ^ EXPECTED_ASSETS)}"
+assert allowed == EXPECTED_ASSETS | EXPECTED_ASSET_PATTERNS, f"Cloudflare asset allowlist mismatch: {sorted(allowed ^ (EXPECTED_ASSETS | EXPECTED_ASSET_PATTERNS))}"
 for relative_path in sorted(EXPECTED_ASSETS):
     assert (ROOT / relative_path).is_file(), f"Allowed Cloudflare asset is missing: {relative_path}"
 assert not any(path.endswith((".sql", ".md", ".docx", ".pdf", ".zip")) for path in allowed)
