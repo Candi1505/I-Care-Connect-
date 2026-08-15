@@ -15,9 +15,12 @@
   --flo-teal: #2f777b;
   --flo-teal-soft: #eaf5f4;
   --flo-teal-border: #afd9d6;
-  --flo-mar: #5d6fa3;\n  --flo-safety: #a3424d;
-  --flo-mar-soft: #eef0f7;\n  --flo-safety-soft: #f8edef;
-  --flo-mar-border: #c7cde0;\n  --flo-safety-border: #dfbcc1;
+  --flo-mar: #5d6fa3;
+  --flo-safety: #a3424d;
+  --flo-mar-soft: #eef0f7;
+  --flo-safety-soft: #f8edef;
+  --flo-mar-border: #c7cde0;
+  --flo-safety-border: #dfbcc1;
   --flo-pink: #9f3f77;
   --flo-pink-soft: #f9edf4;
   --flo-pink-border: #e8bed7;
