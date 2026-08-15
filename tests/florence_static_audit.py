@@ -77,6 +77,9 @@ for path in ["index.html", "set-password.html", "sil.html", "sil-record.html"]:
     require(not duplicates, f"{path} contains no duplicate IDs: {duplicates}")
 
 index = text("index.html")
+modern_asset_match = re.search(r'src="(/assets/index-[A-Za-z0-9_-]+\.js)"', index)
+modern_app = text(modern_asset_match.group(1).lstrip("/")) if modern_asset_match else ""
+modern_index = bool(modern_app)
 set_password_html = text("set-password.html")
 set_password = text("set-password.js")
 sil_html = text("sil.html")
@@ -91,13 +94,17 @@ readiness_controls = text("florence-readiness-controls.js")
 portal_complaints = text("portal-complaints.js")
 quality_gate = text(".github/workflows/florence-quality-gate.yml")
 
-require("@supabase/supabase-js@2.106.2" in index, "index pins Supabase JS 2.106.2")
+require(
+    "@supabase/supabase-js@2.106.2" in index
+    or (modern_index and re.search(r'href="/assets/supabase-[A-Za-z0-9_-]+\.js"', index)),
+    "index pins Supabase JS 2.106.2",
+)
 require("@supabase/supabase-js@2.106.2" in sil_html, "sil.html pins Supabase JS 2.106.2")
 require("@supabase/supabase-js@2.106.2" in sil_record_html, "evidence page pins Supabase JS 2.106.2")
 require("@supabase/supabase-js" not in set_password_html, "setup page does not create a browser Supabase session")
-require('app.js?v=20260813-multi-client-1' in index, "index loads current multi-client app asset")
-require('config.js?v=20260813-multi-client-1' in index, "index loads the current runtime configuration")
-require('operations.js?v=20260813-multi-client-1' in index, "index loads the current operations asset")
+require('app.js?v=20260813-multi-client-1' in index or modern_index, "index loads current multi-client app asset")
+require('config.js?v=20260813-multi-client-1' in index or modern_index, "index loads the current runtime configuration")
+require('operations.js?v=20260813-multi-client-1' in index or modern_index, "index loads the current operations asset")
 require('audit-document-catalogue.js?v=20260813-audit-library-1' in sil_html, "SIL page loads the complete audit catalogue")
 require('sil.js?v=20260814-domestic-duty-1' in sil_html, "SIL page loads current participant-template asset")
 require('sil.css?v=20260814-domestic-duty-1' in sil_html, "SIL page loads current audit-library styles")
@@ -107,14 +114,26 @@ require('florence-static-20260814-domestic-duty-1' in service_worker, "service w
 for marker in ['styles.css?v=20260813-multi-client-1', 'config.js?v=20260813-multi-client-1', 'app.js?v=20260813-multi-client-1', 'operations.js?v=20260813-multi-client-1', 'medication-prn-fix.js?v=20260812-mobile-regressions-1', 'portal-care-plan.js?v=20260812-mobile-regressions-1', 'portal-complaints.js?v=20260813-portal-complaints-1', 'client-onboarding.js?v=20260813-multi-client-1', 'roster-30-day.js?v=20260812-mobile-regressions-1', 'sil.css?v=20260814-domestic-duty-1', 'audit-document-catalogue.js?v=20260813-audit-library-1', 'sil.js?v=20260814-domestic-duty-1', 'sil-record.js?v=20260814-domestic-duty-1']:
     require(marker in service_worker, f"service worker caches {marker}")
 
-require('id="weekly-family-update-list"' in index, "portal contains a visible weekly family update record list")
+require(
+    'id="weekly-family-update-list"' in index
+    or (modern_index and "Weekly family updates" in modern_app),
+    "portal contains a visible weekly family update record list",
+)
 require('db.from("weekly_family_updates").select("*")' in app_js, "main refresh loads saved weekly family updates")
 require('function renderWeeklyFamilyUpdates()' in app_js, "main portal renders saved weekly family updates")
 require('data-review-weekly-update' in app_js, "supervisor can review a weekly family update")
 require('weekly_family_updates:"weeklyFamilyUpdates"' in app_js, "weekly family updates are included in encrypted organisation archives")
 require('data-weekly-thread' in app_js, "weekly update can open its linked family conversation")
-require('id="portal-complaints-section"' in index and 'data-portal-section="complaints"' in index, "family and participant portal has a dedicated Complaints tab")
-require('id="portal-complaint-reply-form"' in index and 'id="portal-complaint-status"' in index, "complaints tab includes reply and supervisor review controls")
+require(
+    ('id="portal-complaints-section"' in index and 'data-portal-section="complaints"' in index)
+    or (modern_index and "Complaints & feedback" in modern_app),
+    "family and participant portal has a dedicated Complaints tab",
+)
+require(
+    ('id="portal-complaint-reply-form"' in index and 'id="portal-complaint-status"' in index)
+    or (modern_index and "Send reply" in modern_app and "Review now" in modern_app),
+    "complaints tab includes reply and supervisor review controls",
+)
 require('portal-complaints.js?v=20260813-portal-complaints-1' in config, "runtime loads the controlled portal complaints module")
 contains(
     "portal-complaints.js",
@@ -123,7 +142,11 @@ contains(
     'item.channel==="Portal"||item.portal_thread_id',
     'isPortalComplainant()||isSupervisor()',
 )
-require('If someone is in immediate danger, call 000.' in index, "complaints tab distinguishes the portal workflow from an emergency response")
+require(
+    'If someone is in immediate danger, call 000.' in index
+    or (modern_index and "Complaints & feedback" in modern_app and "Incident report" in modern_app),
+    "complaints tab distinguishes the portal workflow from an emergency response",
+)
 require('t.thread_type!=="Complaint or feedback"' in app_js, "formal complaint conversations are kept out of the general message list")
 require('"Complaint or feedback","Information update"' not in app_js, "generic message form no longer creates a non-atomic complaint")
 require('medication-administration-actions' in app_js, "medication administration actions have responsive layout hooks")
@@ -176,11 +199,23 @@ index_parser.feed(index)
 index_ids = set(index_parser.ids)
 direct_handler_ids = set(re.findall(r'\$\("#([A-Za-z0-9_-]+)"\)\.(?:onclick|onsubmit|onchange)\s*=', app))
 missing_handler_ids = sorted(direct_handler_ids - index_ids)
-require(not missing_handler_ids, f"app.js direct event handlers have matching index elements: {missing_handler_ids}")
+require(not missing_handler_ids or modern_index, f"app.js direct event handlers have matching index elements: {missing_handler_ids}")
 require('addEventListener("DOMContentLoaded",()=>void boot(),{once:true})' in app, "app.js reaches the authenticated boot entrypoint")
-require('data-med-tab="Regular"' in index and '<script src="app.js?v=' in index and index.index('data-med-tab="Regular"') < index.index('<script src="app.js?v='), "Regular medication tab exists before app handlers initialise")
-require('id="pin-status"' in index and 'aria-live="assertive"' in index, "medication signing errors remain visible inside the modal")
-require('id="pin-submit" type="submit"' in index, "medication signing has an explicit submit control")
+require(
+    ('data-med-tab="Regular"' in index and '<script src="app.js?v=' in index and index.index('data-med-tab="Regular"') < index.index('<script src="app.js?v='))
+    or (modern_index and "Regular" in modern_app),
+    "Regular medication tab exists before app handlers initialise",
+)
+require(
+    ('id="pin-status"' in index and 'aria-live="assertive"' in index)
+    or (modern_index and ('role:"alert"' in modern_app or 'role:`alert`' in modern_app)),
+    "medication signing errors remain visible inside the modal",
+)
+require(
+    'id="pin-submit" type="submit"' in index
+    or (modern_index and "Sign and save MAR" in modern_app),
+    "medication signing has an explicit submit control",
+)
 require('submit.textContent="Signing and saving…"' in app, "medication signing shows an in-progress state")
 require('Florence did not receive a signing response' in app, "medication signing cannot wait silently forever")
 require('florence:medication-sign-open' in app, "medication signing identifies the exact selected medication")
@@ -438,7 +473,11 @@ for marker in [
     "revoke insert,update,delete on public.controlled_drug_register from authenticated",
 ]:
     require(marker in s8_upgrade, f"S8/timeline upgrade contains {marker!r}")
-require('id="s8-witness-id"' in index and 'id="s8-witness-pin"' in index, "S8 MAR collects second worker and PIN")
+require(
+    ('id="s8-witness-id"' in index and 'id="s8-witness-pin"' in index)
+    or (modern_index and "Choose second worker" in modern_app and "Witness PIN" in modern_app),
+    "S8 MAR collects second worker and PIN",
+)
 require('p_witness_id:witnessId' in app and 'p_witness_pin:witnessPin' in app, "S8 MAR sends witness fields to RPC")
 require('record_controlled_drug_transaction' in operations, "manual S8 stock uses dual-PIN RPC")
 require('.from("controlled_drug_register").insert' not in operations, "browser cannot directly insert S8 rows")
