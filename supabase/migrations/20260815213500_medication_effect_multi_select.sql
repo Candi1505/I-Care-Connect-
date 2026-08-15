@@ -155,7 +155,7 @@ begin
     organisation_id, participant_id, event_type, severity, occurred_at, title,
     description, action_taken, follow_up, created_by
   ) values (
-    v_profile.organisation_id, p_participant_id, 'Medication effect', p_severity,
+    v_profile.organisation_id, p_participant_id, 'Medication', p_severity,
     p_occurred_at, coalesce(v_medication.medication_name, v_effect_summary),
     concat_ws(' · ', v_effect_summary,
       nullif(btrim(coalesce(p_other_effect_details,'')),''),
