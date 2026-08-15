@@ -9,13 +9,17 @@
     portal: "portal",
     more: "more",
     "client timeline": "notes",
+    "progress note": "notes",
     "progress notes": "notes",
+    medication: "mar",
+    incident: "safety",
     "incidents & complaints": "safety",
     "compliance centre": "compliance",
     "domestic duties": "people",
     "sil delivery": "sil",
     "timesheets & deputy": "roster",
     "transport & mileage": "roster",
+    "participant goal": "portal",
     "goals & funding": "portal",
     "backup & auditor export": "compliance",
     workers: "people",
@@ -88,11 +92,18 @@
     });
 
     document.querySelectorAll(".quick-grid button").forEach(button => {
-      button.dataset.florenceTone = toneFor(text(button));
+      if (!button.dataset.florenceTone) {
+        button.dataset.florenceTone = toneFor(text(button));
+      }
     });
   }
 
   function decorateTools() {
+    if (document.querySelector(".tool-groups")) {
+      document.querySelectorAll(".flo-tool-heading").forEach(heading => heading.remove());
+      return;
+    }
+
     const grid = document.querySelector(".tool-grid");
     if (!grid || text(document.querySelector(".module-head h1")) !== "all florence tools") return;
 
