@@ -79,6 +79,7 @@ declare
     'Other medication effect'
   ]::text[];
 begin
+  perform public.require_verified_mfa();
   select * into v_profile from public.profiles where id = auth.uid() and active;
   if v_profile.id is null or v_profile.role::text not in ('staff','support_worker','supervisor') then
     raise exception 'Active worker access is required';
@@ -155,7 +156,7 @@ begin
     organisation_id, participant_id, event_type, severity, occurred_at, title,
     description, action_taken, follow_up, created_by
   ) values (
-    v_profile.organisation_id, p_participant_id, 'Medication', p_severity,
+    v_profile.organisation_id, p_participant_id, 'Medication', p_severity::public.timeline_severity,
     p_occurred_at, coalesce(v_medication.medication_name, v_effect_summary),
     concat_ws(' · ', v_effect_summary,
       nullif(btrim(coalesce(p_other_effect_details,'')),''),
@@ -187,9 +188,11 @@ begin
     and p.active
     and p.role::text='supervisor';
 
-  perform public.record_access_event(
-    'INSERT', 'medication_effect_reports', v_id::text,
-    jsonb_build_object(
+  insert into public.audit_events(
+    organisation_id, actor_id, table_name, record_id, action, after_data
+  ) values (
+    v_profile.organisation_id, v_profile.id, 'medication_effect_reports',
+    v_id::text, 'INSERT', jsonb_build_object(
       'participant_id', p_participant_id,
       'medication_id', p_medication_id,
       'effect_types', v_effect_types,
