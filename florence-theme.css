@@ -9,24 +9,33 @@
   --flo-purple: #51356d;
   --flo-purple-soft: #f3eef7;
   --flo-purple-border: #d9c8e7;
-  --flo-people: #745f8d;
-  --flo-people-soft: #f2eef5;
-  --flo-people-border: #d4c9dd;
-  --flo-teal: #2f777b;
-  --flo-teal-soft: #eaf5f4;
-  --flo-teal-border: #afd9d6;
-  --flo-mar: #5d6fa3;
-  --flo-safety: #a3424d;
-  --flo-mar-soft: #eef0f7;
-  --flo-safety-soft: #f8edef;
-  --flo-mar-border: #c7cde0;
-  --flo-safety-border: #dfbcc1;
-  --flo-pink: #9f3f77;
-  --flo-pink-soft: #f9edf4;
-  --flo-pink-border: #e8bed7;
-  --flo-blue: #45698f;
-  --flo-blue-soft: #eef3f9;
-  --flo-blue-border: #bdd0e5;
+  --flo-people: #b85b32;
+  --flo-people-soft: #f9eee9;
+  --flo-people-border: #e3bba9;
+  --flo-teal: #20776f;
+  --flo-teal-soft: #e8f4f1;
+  --flo-teal-border: #a9d5ce;
+  --flo-mar: #3e67a7;
+  --flo-mar-soft: #ebf0f8;
+  --flo-mar-border: #b5c6e1;
+  --flo-safety: #a63e4a;
+  --flo-safety-soft: #f8ecee;
+  --flo-safety-border: #e1b7bd;
+  --flo-pink: #a33f7a;
+  --flo-pink-soft: #f8ecf3;
+  --flo-pink-border: #e1bed2;
+  --flo-notes: #6b3f8a;
+  --flo-notes-soft: #f3edf7;
+  --flo-notes-border: #d6c3e0;
+  --flo-compliance: #4d6b58;
+  --flo-compliance-soft: #eef3ee;
+  --flo-compliance-border: #c0d0c3;
+  --flo-sil: #405b85;
+  --flo-sil-soft: #edf0f6;
+  --flo-sil-border: #bcc7da;
+  --flo-more: #3f6177;
+  --flo-more-soft: #eef2f4;
+  --flo-more-border: #c0cdd3;
   --section: var(--flo-purple);
   --section-soft: var(--flo-purple-soft);
   --section-border: var(--flo-purple-border);
@@ -87,18 +96,28 @@ body[data-florence-view="portal"] {
   --section-border: var(--flo-pink-border);
 }
 
-body[data-florence-view="more"],
-body[data-florence-view="compliance"] {
-  --section: var(--flo-blue);
-  --section-soft: var(--flo-blue-soft);
-  --section-border: var(--flo-blue-border);
+body[data-florence-view="more"] {
+  --section: var(--flo-more);
+  --section-soft: var(--flo-more-soft);
+  --section-border: var(--flo-more-border);
 }
 
-body[data-florence-view="notes"],
+body[data-florence-view="compliance"] {
+  --section: var(--flo-compliance);
+  --section-soft: var(--flo-compliance-soft);
+  --section-border: var(--flo-compliance-border);
+}
+
+body[data-florence-view="notes"] {
+  --section: var(--flo-notes);
+  --section-soft: var(--flo-notes-soft);
+  --section-border: var(--flo-notes-border);
+}
+
 body[data-florence-view="sil"] {
-  --section: var(--flo-purple);
-  --section-soft: var(--flo-purple-soft);
-  --section-border: var(--flo-purple-border);
+  --section: var(--flo-sil);
+  --section-soft: var(--flo-sil-soft);
+  --section-border: var(--flo-sil-border);
 }
 
 .auth-shell {
@@ -216,21 +235,31 @@ body[data-florence-view="sil"] {
 
 .side-nav button[data-florence-tone="more"],
 .side-section button[data-florence-tone="more"],
-.bottom-nav button[data-florence-tone="more"],
+.bottom-nav button[data-florence-tone="more"] {
+  --nav-tone: var(--flo-more);
+  --nav-soft: var(--flo-more-soft);
+  --nav-border: var(--flo-more-border);
+}
+
 .side-nav button[data-florence-tone="compliance"],
 .side-section button[data-florence-tone="compliance"] {
-  --nav-tone: var(--flo-blue);
-  --nav-soft: var(--flo-blue-soft);
-  --nav-border: var(--flo-blue-border);
+  --nav-tone: var(--flo-compliance);
+  --nav-soft: var(--flo-compliance-soft);
+  --nav-border: var(--flo-compliance-border);
 }
 
 .side-nav button[data-florence-tone="notes"],
-.side-section button[data-florence-tone="notes"],
+.side-section button[data-florence-tone="notes"] {
+  --nav-tone: var(--flo-notes);
+  --nav-soft: var(--flo-notes-soft);
+  --nav-border: var(--flo-notes-border);
+}
+
 .side-nav button[data-florence-tone="sil"],
 .side-section button[data-florence-tone="sil"] {
-  --nav-tone: var(--flo-purple);
-  --nav-soft: var(--flo-purple-soft);
-  --nav-border: var(--flo-purple-border);
+  --nav-tone: var(--flo-sil);
+  --nav-soft: var(--flo-sil-soft);
+  --nav-border: var(--flo-sil-border);
 }
 
 .side-nav button[data-florence-tone],
@@ -359,16 +388,31 @@ body[data-florence-view="sil"] {
   --card-border: var(--flo-pink-border) !important;
 }
 
-[data-florence-tone="compliance"],
-[data-florence-tone="more"] {
-  --card-tone: var(--flo-blue) !important;
-  --card-soft: var(--flo-blue-soft) !important;
-  --card-border: var(--flo-blue-border) !important;
+[data-florence-tone="compliance"] {
+  --card-tone: var(--flo-compliance) !important;
+  --card-soft: var(--flo-compliance-soft) !important;
+  --card-border: var(--flo-compliance-border) !important;
 }
 
-[data-florence-tone="home"],
-[data-florence-tone="notes"],
+[data-florence-tone="more"] {
+  --card-tone: var(--flo-more) !important;
+  --card-soft: var(--flo-more-soft) !important;
+  --card-border: var(--flo-more-border) !important;
+}
+
+[data-florence-tone="notes"] {
+  --card-tone: var(--flo-notes) !important;
+  --card-soft: var(--flo-notes-soft) !important;
+  --card-border: var(--flo-notes-border) !important;
+}
+
 [data-florence-tone="sil"] {
+  --card-tone: var(--flo-sil) !important;
+  --card-soft: var(--flo-sil-soft) !important;
+  --card-border: var(--flo-sil-border) !important;
+}
+
+[data-florence-tone="home"] {
   --card-tone: var(--flo-purple) !important;
   --card-soft: var(--flo-purple-soft) !important;
   --card-border: var(--flo-purple-border) !important;
@@ -378,7 +422,12 @@ body[data-florence-view="sil"] {
 .quick-grid button[data-florence-tone],
 .tool-grid button[data-florence-tone] {
   border-color: var(--card-border) !important;
-  background: linear-gradient(135deg, var(--card-soft), #fff 56%) !important;
+  background: linear-gradient(135deg, var(--card-soft), #fff 58%) !important;
+}
+
+.tool-grid button[data-florence-tone] {
+  box-shadow: inset 6px 0 0 color-mix(in srgb, var(--card-tone) 84%, transparent),
+    0 10px 28px color-mix(in srgb, var(--card-tone) 10%, transparent) !important;
 }
 
 .stat-grid .stat[data-florence-tone] > span,
@@ -446,9 +495,9 @@ body[data-florence-view="sil"] {
 }
 
 .flo-tool-heading span {
-  color: var(--flo-blue);
-  background: var(--flo-blue-soft);
-  border: 1px solid var(--flo-blue-border);
+  color: var(--flo-more);
+  background: var(--flo-more-soft);
+  border: 1px solid var(--flo-more-border);
   border-radius: 999px;
   padding: 5px 9px;
   font-size: 8px;
