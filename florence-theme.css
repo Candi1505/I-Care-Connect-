@@ -9,15 +9,15 @@
   --flo-purple: #51356d;
   --flo-purple-soft: #f3eef7;
   --flo-purple-border: #d9c8e7;
-  --flo-ochre: #93651f;
-  --flo-ochre-soft: #fbf4e6;
-  --flo-ochre-border: #e8d19b;
+  --flo-people: #745f8d;
+  --flo-people-soft: #f2eef5;
+  --flo-people-border: #d4c9dd;
   --flo-teal: #2f777b;
   --flo-teal-soft: #eaf5f4;
   --flo-teal-border: #afd9d6;
-  --flo-coral: #b95755;
-  --flo-coral-soft: #fbefed;
-  --flo-coral-border: #edc2bd;
+  --flo-mar: #5d6fa3;\n  --flo-safety: #a3424d;
+  --flo-mar-soft: #eef0f7;\n  --flo-safety-soft: #f8edef;
+  --flo-mar-border: #c7cde0;\n  --flo-safety-border: #dfbcc1;
   --flo-pink: #9f3f77;
   --flo-pink-soft: #f9edf4;
   --flo-pink-border: #e8bed7;
@@ -55,9 +55,9 @@ body::before {
 }
 
 body[data-florence-view="people"] {
-  --section: var(--flo-ochre);
-  --section-soft: var(--flo-ochre-soft);
-  --section-border: var(--flo-ochre-border);
+  --section: var(--flo-people);
+  --section-soft: var(--flo-people-soft);
+  --section-border: var(--flo-people-border);
 }
 
 body[data-florence-view="roster"] {
@@ -66,11 +66,16 @@ body[data-florence-view="roster"] {
   --section-border: var(--flo-teal-border);
 }
 
-body[data-florence-view="mar"],
+body[data-florence-view="mar"] {
+  --section: var(--flo-mar);
+  --section-soft: var(--flo-mar-soft);
+  --section-border: var(--flo-mar-border);
+}
+
 body[data-florence-view="safety"] {
-  --section: var(--flo-coral);
-  --section-soft: var(--flo-coral-soft);
-  --section-border: var(--flo-coral-border);
+  --section: var(--flo-safety);
+  --section-soft: var(--flo-safety-soft);
+  --section-border: var(--flo-safety-border);
 }
 
 body[data-florence-view="portal"] {
@@ -170,9 +175,9 @@ body[data-florence-view="sil"] {
 .side-nav button[data-florence-tone="people"],
 .side-section button[data-florence-tone="people"],
 .bottom-nav button[data-florence-tone="people"] {
-  --nav-tone: var(--flo-ochre);
-  --nav-soft: var(--flo-ochre-soft);
-  --nav-border: var(--flo-ochre-border);
+  --nav-tone: var(--flo-people);
+  --nav-soft: var(--flo-people-soft);
+  --nav-border: var(--flo-people-border);
 }
 
 .side-nav button[data-florence-tone="roster"],
@@ -185,12 +190,17 @@ body[data-florence-view="sil"] {
 
 .side-nav button[data-florence-tone="mar"],
 .side-section button[data-florence-tone="mar"],
-.bottom-nav button[data-florence-tone="mar"],
+.bottom-nav button[data-florence-tone="mar"] {
+  --nav-tone: var(--flo-mar);
+  --nav-soft: var(--flo-mar-soft);
+  --nav-border: var(--flo-mar-border);
+}
+
 .side-nav button[data-florence-tone="safety"],
 .side-section button[data-florence-tone="safety"] {
-  --nav-tone: var(--flo-coral);
-  --nav-soft: var(--flo-coral-soft);
-  --nav-border: var(--flo-coral-border);
+  --nav-tone: var(--flo-safety);
+  --nav-soft: var(--flo-safety-soft);
+  --nav-border: var(--flo-safety-border);
 }
 
 .side-nav button[data-florence-tone="portal"],
@@ -317,9 +327,9 @@ body[data-florence-view="sil"] {
 }
 
 [data-florence-tone="people"] {
-  --card-tone: var(--flo-ochre) !important;
-  --card-soft: var(--flo-ochre-soft) !important;
-  --card-border: var(--flo-ochre-border) !important;
+  --card-tone: var(--flo-people) !important;
+  --card-soft: var(--flo-people-soft) !important;
+  --card-border: var(--flo-people-border) !important;
 }
 
 [data-florence-tone="roster"] {
@@ -328,11 +338,16 @@ body[data-florence-view="sil"] {
   --card-border: var(--flo-teal-border) !important;
 }
 
-[data-florence-tone="mar"],
+[data-florence-tone="mar"] {
+  --card-tone: var(--flo-mar) !important;
+  --card-soft: var(--flo-mar-soft) !important;
+  --card-border: var(--flo-mar-border) !important;
+}
+
 [data-florence-tone="safety"] {
-  --card-tone: var(--flo-coral) !important;
-  --card-soft: var(--flo-coral-soft) !important;
-  --card-border: var(--flo-coral-border) !important;
+  --card-tone: var(--flo-safety) !important;
+  --card-soft: var(--flo-safety-soft) !important;
+  --card-border: var(--flo-safety-border) !important;
 }
 
 [data-florence-tone="portal"] {
@@ -371,11 +386,11 @@ body[data-florence-view="sil"] {
 }
 
 .medication-panel {
-  --section: var(--flo-coral);
-  --section-soft: var(--flo-coral-soft);
-  --section-border: var(--flo-coral-border);
-  border-color: var(--flo-coral-border) !important;
-  background: linear-gradient(135deg, var(--flo-coral-soft), #fff 48%) !important;
+  --section: var(--flo-mar);
+  --section-soft: var(--flo-mar-soft);
+  --section-border: var(--flo-mar-border);
+  border-color: var(--flo-mar-border) !important;
+  background: linear-gradient(135deg, var(--flo-mar-soft), #fff 48%) !important;
 }
 
 .dashboard-grid > .panel:first-child {
