@@ -52,6 +52,10 @@
 !icare-connect-logo.png
 !assets/
 !assets/**
+!first-aid/
+!first-aid/**
+!florence-mobile-hotfix.css
+!florence-mobile-hotfix.js
 
 # Cloudflare security and crawler controls
 !_headers

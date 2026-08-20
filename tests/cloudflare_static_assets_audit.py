@@ -19,9 +19,15 @@ EXPECTED_ASSETS = {
     "sil.html", "sil-record.html", "sil.css", "audit-document-catalogue.js", "sil.js", "sil-record.js", "service-worker.js", "manifest.webmanifest",
     "florence-icon.svg", "florence-icon-192.png", "florence-icon-512.png",
     "favicon.svg", "florence-theme.css", "florence-theme.js", "icare-connect-logo.png",
+    "florence-mobile-hotfix.css", "florence-mobile-hotfix.js",
     "_headers", "robots.txt",
 }
-EXPECTED_ASSET_PATTERNS = {"assets/", "assets/**"}
+EXPECTED_ASSET_PATTERNS = {"assets/", "assets/**", "first-aid/", "first-aid/**"}
+EXPECTED_FIRST_AID_IMAGES = {
+    "first-aid/cpr-recovery.webp",
+    "first-aid/choking-bleeding-burns.webp",
+    "first-aid/seizure-allergy-fall.webp",
+}
 
 config = json.loads((ROOT / "wrangler.jsonc").read_text(encoding="utf-8"))
 assert config.get("name") == "i-care-connect"
@@ -36,6 +42,8 @@ allowed = {line[1:] for line in ignore_lines if line.startswith("!")}
 assert allowed == EXPECTED_ASSETS | EXPECTED_ASSET_PATTERNS, f"Cloudflare asset allowlist mismatch: {sorted(allowed ^ (EXPECTED_ASSETS | EXPECTED_ASSET_PATTERNS))}"
 for relative_path in sorted(EXPECTED_ASSETS):
     assert (ROOT / relative_path).is_file(), f"Allowed Cloudflare asset is missing: {relative_path}"
+for relative_path in sorted(EXPECTED_FIRST_AID_IMAGES):
+    assert (ROOT / relative_path).is_file(), f"First-aid illustration is missing: {relative_path}"
 assert not any(path.endswith((".sql", ".md", ".docx", ".pdf", ".zip")) for path in allowed)
 
 # Follow every local runtime reference starting at the public entrypoints. This

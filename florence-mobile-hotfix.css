@@ -1,0 +1,56 @@
+/* Florence mobile reliability fixes — 20 August 2026. */
+@media (max-width: 760px) {
+  .sidebar {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sidebar.open {
+    overflow-y: auto;
+  }
+
+  .scrim {
+    touch-action: none;
+  }
+
+  html.florence-drawer-open,
+  body.florence-drawer-open {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  body.florence-drawer-open {
+    position: fixed;
+    left: 0;
+    right: 0;
+    width: 100%;
+  }
+}
+
+.receipt-draft-status {
+  color: #285d67;
+  background: #edf9f9;
+  border: 1px solid #b9e3e4;
+  border-radius: 12px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.first-aid-image-fallback {
+  color: #4f425e;
+  background: #eef4f6;
+  border: 1px solid #d9dfe6;
+  border-radius: 22px;
+  padding: 22px;
+  font-size: 14px;
+  line-height: 1.55;
+}

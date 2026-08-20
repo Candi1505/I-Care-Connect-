@@ -110,7 +110,7 @@ require('sil.js?v=20260814-domestic-duty-1' in sil_html, "SIL page loads current
 require('sil.css?v=20260814-domestic-duty-1' in sil_html, "SIL page loads current audit-library styles")
 require('sil-record.js?v=20260814-domestic-duty-1' in sil_record_html, "evidence page loads its current secure viewer")
 require('set-password.js?v=20260802-2' in set_password_html, "setup page loads its controlled asset")
-require('florence-static-20260814-domestic-duty-1' in service_worker, "service worker uses current cache namespace")
+require('florence-static-20260820-mobile-hotfix-1' in service_worker, "service worker uses current cache namespace")
 for marker in ['styles.css?v=20260813-multi-client-1', 'config.js?v=20260813-multi-client-1', 'app.js?v=20260813-multi-client-1', 'operations.js?v=20260813-multi-client-1', 'medication-prn-fix.js?v=20260812-mobile-regressions-1', 'portal-care-plan.js?v=20260812-mobile-regressions-1', 'portal-complaints.js?v=20260813-portal-complaints-1', 'client-onboarding.js?v=20260813-multi-client-1', 'roster-30-day.js?v=20260812-mobile-regressions-1', 'sil.css?v=20260814-domestic-duty-1', 'audit-document-catalogue.js?v=20260813-audit-library-1', 'sil.js?v=20260814-domestic-duty-1', 'sil-record.js?v=20260814-domestic-duty-1']:
     require(marker in service_worker, f"service worker caches {marker}")
 
