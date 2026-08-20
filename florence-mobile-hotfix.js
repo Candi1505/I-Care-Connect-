@@ -20,7 +20,23 @@
     if (!form) return null;
     const title = form.closest(".record-modal")?.querySelector("h2")?.textContent?.trim();
     const kind = expenditureTitles.get(title);
-    return kind ? { form, kind } : null;
+    if (!kind) return null;
+    configureCurrencyInputs(form);
+    return { form, kind };
+  }
+
+  function configureCurrencyInputs(form) {
+    const currencyFields = [
+      ["amount", "0.01"],
+      ["cash_balance_after", "0"],
+    ];
+    for (const [name, minimum] of currencyFields) {
+      const input = form.elements.namedItem(name);
+      if (!(input instanceof HTMLInputElement)) continue;
+      input.step = "0.01";
+      input.min = minimum;
+      input.inputMode = "decimal";
+    }
   }
 
   function loadDraft() {
