@@ -69,6 +69,7 @@ required_files = [
     "florence-skin-rash-monitoring.css",
     "supabase/migrations/20260821060000_add_skin_rash_monitoring.sql",
     "supabase/migrations/20260821061500_index_skin_report_worker_reviews.sql",
+    "supabase/migrations/20260821070000_fix_skin_report_timeline_severity.sql",
 ]
 for path in required_files:
     require((ROOT / path).exists(), f"required file exists: {path}")
@@ -94,6 +95,7 @@ service_worker = text("service-worker.js")
 mobile_hotfix = text("florence-mobile-hotfix.js")
 skin_monitoring = text("florence-skin-rash-monitoring.js")
 skin_monitoring_sql = text("supabase/migrations/20260821060000_add_skin_rash_monitoring.sql")
+skin_monitoring_timeline_fix_sql = text("supabase/migrations/20260821070000_fix_skin_report_timeline_severity.sql")
 headers = text("_headers")
 config = text("config.js")
 app_js = text("app.js")
@@ -159,6 +161,22 @@ for marker in [
     "Skin/rash monitoring — ",
 ]:
     require(marker in skin_monitoring_sql, f"skin monitoring migration contains {marker!r}")
+require(
+    "v_timeline_severity public.timeline_severity;" in skin_monitoring_sql,
+    "initial skin monitoring migration declares timeline severity with the enum type",
+)
+require(
+    ")::public.timeline_severity;" in skin_monitoring_sql,
+    "initial skin monitoring migration explicitly casts the timeline severity enum",
+)
+require(
+    "v_timeline_severity public.timeline_severity;" in skin_monitoring_timeline_fix_sql,
+    "skin monitoring hotfix corrects the live function timeline severity type",
+)
+require(
+    ")::public.timeline_severity;" in skin_monitoring_timeline_fix_sql,
+    "skin monitoring hotfix explicitly casts the live timeline severity enum",
+)
 for marker in ['styles.css?v=20260813-multi-client-1', 'config.js?v=20260813-multi-client-1', 'app.js?v=20260813-multi-client-1', 'operations.js?v=20260813-multi-client-1', 'medication-prn-fix.js?v=20260812-mobile-regressions-1', 'portal-care-plan.js?v=20260812-mobile-regressions-1', 'portal-complaints.js?v=20260813-portal-complaints-1', 'client-onboarding.js?v=20260813-multi-client-1', 'roster-30-day.js?v=20260812-mobile-regressions-1', 'sil.css?v=20260814-domestic-duty-1', 'audit-document-catalogue.js?v=20260813-audit-library-1', 'sil.js?v=20260814-domestic-duty-1', 'sil-record.js?v=20260814-domestic-duty-1']:
     require(marker in service_worker, f"service worker caches {marker}")
 
