@@ -65,6 +65,10 @@ required_files = [
     "florence-portal-complaints-upgrade.sql",
     "florence-multi-client-service-scope.sql",
     "florence-choice-evidence-timeline-fix.sql",
+    "florence-skin-rash-monitoring.js",
+    "florence-skin-rash-monitoring.css",
+    "supabase/migrations/20260821060000_add_skin_rash_monitoring.sql",
+    "supabase/migrations/20260821061500_index_skin_report_worker_reviews.sql",
 ]
 for path in required_files:
     require((ROOT / path).exists(), f"required file exists: {path}")
@@ -88,6 +92,8 @@ sil_record_html = text("sil-record.html")
 sil_record_js = text("sil-record.js")
 service_worker = text("service-worker.js")
 mobile_hotfix = text("florence-mobile-hotfix.js")
+skin_monitoring = text("florence-skin-rash-monitoring.js")
+skin_monitoring_sql = text("supabase/migrations/20260821060000_add_skin_rash_monitoring.sql")
 headers = text("_headers")
 config = text("config.js")
 app_js = text("app.js")
@@ -111,14 +117,48 @@ require('sil.js?v=20260814-domestic-duty-1' in sil_html, "SIL page loads current
 require('sil.css?v=20260814-domestic-duty-1' in sil_html, "SIL page loads current audit-library styles")
 require('sil-record.js?v=20260814-domestic-duty-1' in sil_record_html, "evidence page loads its current secure viewer")
 require('set-password.js?v=20260802-2' in set_password_html, "setup page loads its controlled asset")
-require('florence-static-20260820-mobile-hotfix-2' in service_worker, "service worker uses current cache namespace")
+require('florence-static-20260821-skin-monitoring-1' in service_worker, "service worker uses current cache namespace")
 require('florence-mobile-hotfix.js?v=20260820-2' in index, "index loads the current mobile reliability fix")
 require('florence-mobile-hotfix.js?v=20260820-2' in service_worker, "service worker caches the current mobile reliability fix")
+require('florence-skin-rash-monitoring.js?v=20260821-1' in index, "index loads skin and rash monitoring")
+require('florence-skin-rash-monitoring.css?v=20260821-1' in index, "index loads skin and rash monitoring styles")
+require('florence-skin-rash-monitoring.js?v=20260821-1' in service_worker, "service worker caches skin and rash monitoring")
+require('florence-skin-rash-monitoring.css?v=20260821-1' in service_worker, "service worker caches skin and rash monitoring styles")
 require('["Community support expenditure", "community"]' in mobile_hotfix, "community expenditure form is covered by mobile reliability fixes")
 require('["SIL expenditure", "sil"]' in mobile_hotfix, "SIL expenditure form is covered by mobile reliability fixes")
 require('input.step = "0.01"' in mobile_hotfix, "expenditure currency fields accept dollars and cents")
 require('["amount", "0.01"]' in mobile_hotfix, "expenditure amount must be at least one cent")
 require('["cash_balance_after", "0"]' in mobile_hotfix, "remaining cash balance accepts zero dollars and cents")
+for marker in [
+    "Skin monitoring record — not an incident report.",
+    "Under abdominal skin fold",
+    "Groin — left",
+    "Other body area",
+    "Completed as part of regular routine",
+    "Prompted and responded",
+    "OTC antifungal cream or Combine",
+    "photo_consent",
+    "capture=\"environment\"",
+    "skin_observation_reports",
+    "record_skin_observation",
+    "skin-rash-photos",
+    "Sign and save report",
+]:
+    require(marker in skin_monitoring, f"skin monitoring runtime contains {marker!r}")
+for marker in [
+    "create table if not exists public.skin_observation_reports",
+    "alter table public.skin_observation_reports enable row level security",
+    "grant select on public.skin_observation_reports to authenticated",
+    "create or replace function public.record_skin_observation",
+    "revoke all on function public.record_skin_observation",
+    "public.can_access_participant",
+    "skin_rash_photos_insert",
+    "skin_rash_photos_read",
+    "photo_consent",
+    "pin_verified",
+    "Skin/rash monitoring — ",
+]:
+    require(marker in skin_monitoring_sql, f"skin monitoring migration contains {marker!r}")
 for marker in ['styles.css?v=20260813-multi-client-1', 'config.js?v=20260813-multi-client-1', 'app.js?v=20260813-multi-client-1', 'operations.js?v=20260813-multi-client-1', 'medication-prn-fix.js?v=20260812-mobile-regressions-1', 'portal-care-plan.js?v=20260812-mobile-regressions-1', 'portal-complaints.js?v=20260813-portal-complaints-1', 'client-onboarding.js?v=20260813-multi-client-1', 'roster-30-day.js?v=20260812-mobile-regressions-1', 'sil.css?v=20260814-domestic-duty-1', 'audit-document-catalogue.js?v=20260813-audit-library-1', 'sil.js?v=20260814-domestic-duty-1', 'sil-record.js?v=20260814-domestic-duty-1']:
     require(marker in service_worker, f"service worker caches {marker}")
 
@@ -183,6 +223,7 @@ browser_paths = [
     "index.html", "app.js", "operations.js", "staff-management.js",
     "set-password.html", "set-password.js", "medication-prn-fix.js",
     "participant-edit-controls.js", "portal-complaints.js", "client-onboarding.js", "sil.html", "sil.js", "sil-record.html", "sil-record.js", "config.js",
+    "florence-skin-rash-monitoring.js",
 ]
 for path in browser_paths:
     source = text(path)
