@@ -5,6 +5,7 @@
   const DB_NAME = "florence-temporary-drafts";
   const STORE_NAME = "receipt-files";
   const MAX_DRAFT_AGE = 2 * 60 * 60 * 1000;
+  const NO_ROSTER_SHIFT_ID = "00000000-0000-0000-0000-000000000000";
   const expenditureTitles = new Map([
     ["Community support expenditure", "community"],
     ["SIL expenditure", "sil"],
@@ -36,6 +37,31 @@
       input.step = "0.01";
       input.min = minimum;
       input.inputMode = "decimal";
+    }
+  }
+
+  function configureDomesticChecklist() {
+    const forms = document.querySelectorAll("form.record-form");
+    for (const form of forms) {
+      const title = form.closest(".record-modal")?.querySelector("h2")?.textContent?.trim();
+      if (title !== "Domestic duties checklist") continue;
+      const shiftSelect = form.elements.namedItem("shift_id");
+      if (!(shiftSelect instanceof HTMLSelectElement)) continue;
+
+      shiftSelect.required = false;
+      const firstOption = shiftSelect.options[0];
+      if (firstOption) {
+        firstOption.value = NO_ROSTER_SHIFT_ID;
+        firstOption.textContent = "No roster shift — supervisor record";
+      }
+
+      const label = shiftSelect.closest("label");
+      if (label && !label.querySelector(".domestic-shift-help")) {
+        const help = document.createElement("small");
+        help.className = "domestic-shift-help";
+        help.textContent = "Workers choose an accepted domestic shift. Supervisors can save a verified checklist when no roster shift exists.";
+        shiftSelect.insertAdjacentElement("afterend", help);
+      }
     }
   }
 
@@ -245,6 +271,7 @@
 
   const observer = new MutationObserver(() => {
     syncDrawerLock();
+    configureDomesticChecklist();
     document.querySelectorAll("img.first-aid-illustration").forEach(installImageFallback);
     const current = getExpenditureForm();
     if (current && !current.form.dataset.draftRestored) {
@@ -315,6 +342,7 @@
   document.addEventListener("DOMContentLoaded", () => {
     observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["class"] });
     syncDrawerLock();
+    configureDomesticChecklist();
     document.querySelectorAll("img.first-aid-illustration").forEach(installImageFallback);
     window.setTimeout(reopenDraftIfNeeded, 900);
   });

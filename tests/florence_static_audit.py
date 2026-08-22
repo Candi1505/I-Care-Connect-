@@ -70,6 +70,7 @@ required_files = [
     "supabase/migrations/20260821060000_add_skin_rash_monitoring.sql",
     "supabase/migrations/20260821061500_index_skin_report_worker_reviews.sql",
     "supabase/migrations/20260821070000_fix_skin_report_timeline_severity.sql",
+    "supabase/migrations/20260823001000_fix_handover_acknowledgement_and_unrostered_domestic.sql",
 ]
 for path in required_files:
     require((ROOT / path).exists(), f"required file exists: {path}")
@@ -96,6 +97,7 @@ mobile_hotfix = text("florence-mobile-hotfix.js")
 skin_monitoring = text("florence-skin-rash-monitoring.js")
 skin_monitoring_sql = text("supabase/migrations/20260821060000_add_skin_rash_monitoring.sql")
 skin_monitoring_timeline_fix_sql = text("supabase/migrations/20260821070000_fix_skin_report_timeline_severity.sql")
+handover_domestic_fix_sql = text("supabase/migrations/20260823001000_fix_handover_acknowledgement_and_unrostered_domestic.sql")
 headers = text("_headers")
 config = text("config.js")
 app_js = text("app.js")
@@ -119,9 +121,9 @@ require('sil.js?v=20260814-domestic-duty-1' in sil_html, "SIL page loads current
 require('sil.css?v=20260814-domestic-duty-1' in sil_html, "SIL page loads current audit-library styles")
 require('sil-record.js?v=20260814-domestic-duty-1' in sil_record_html, "evidence page loads its current secure viewer")
 require('set-password.js?v=20260802-2' in set_password_html, "setup page loads its controlled asset")
-require('florence-static-20260821-skin-monitoring-1' in service_worker, "service worker uses current cache namespace")
-require('florence-mobile-hotfix.js?v=20260820-2' in index, "index loads the current mobile reliability fix")
-require('florence-mobile-hotfix.js?v=20260820-2' in service_worker, "service worker caches the current mobile reliability fix")
+require('florence-static-20260823-handover-domestic-1' in service_worker, "service worker uses current cache namespace")
+require('florence-mobile-hotfix.js?v=20260823-1' in index, "index loads the current mobile reliability fix")
+require('florence-mobile-hotfix.js?v=20260823-1' in service_worker, "service worker caches the current mobile reliability fix")
 require('florence-skin-rash-monitoring.js?v=20260821-1' in index, "index loads skin and rash monitoring")
 require('florence-skin-rash-monitoring.css?v=20260821-1' in index, "index loads skin and rash monitoring styles")
 require('florence-skin-rash-monitoring.js?v=20260821-1' in service_worker, "service worker caches skin and rash monitoring")
@@ -131,6 +133,13 @@ require('["SIL expenditure", "sil"]' in mobile_hotfix, "SIL expenditure form is 
 require('input.step = "0.01"' in mobile_hotfix, "expenditure currency fields accept dollars and cents")
 require('["amount", "0.01"]' in mobile_hotfix, "expenditure amount must be at least one cent")
 require('["cash_balance_after", "0"]' in mobile_hotfix, "remaining cash balance accepts zero dollars and cents")
+require('NO_ROSTER_SHIFT_ID = "00000000-0000-0000-0000-000000000000"' in mobile_hotfix, "domestic checklist has an explicit supervisor no-shift sentinel")
+require('shiftSelect.required = false' in mobile_hotfix, "supervisor domestic checklist can continue without a roster shift")
+require('No roster shift — supervisor record' in mobile_hotfix, "domestic checklist explains the supervisor no-shift option")
+require("'ACKNOWLEDGE'" in handover_domestic_fix_sql, "handover acknowledgement is a supported audit action")
+require("p_shift_id is null or p_shift_id = v_no_shift_id" in handover_domestic_fix_sql, "domestic checklist handles a missing supervisor roster shift")
+require("if not public.is_supervisor()" in handover_domestic_fix_sql, "unrostered domestic checklists remain supervisor-only")
+require("'unrostered_supervisor_record', v_linked_shift_id is null" in handover_domestic_fix_sql, "unrostered domestic checklist is identified in the audit metadata")
 for marker in [
     "Skin monitoring record — not an incident report.",
     "Under abdominal skin fold",
