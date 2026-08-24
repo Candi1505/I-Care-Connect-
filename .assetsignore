@@ -64,6 +64,8 @@
 !worker-document-readiness.js
 !florence-vehicle-refusal-support.css
 !florence-vehicle-refusal-support.js
+!florence-timesheet-recovery.css
+!florence-timesheet-recovery.js
 
 # Cloudflare security and crawler controls
 !_headers
