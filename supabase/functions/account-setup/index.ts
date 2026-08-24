@@ -12,13 +12,15 @@ Deno.serve(async req=>{
  try{
   if(req.method!=="POST")return json({error:"POST required"},405);
   const body=await req.json().catch(()=>({}));
-  const email=normaliseEmail(body.email),code=String(body.code||"").replace(/\D/g,""),password=String(body.password||"");
+  const email=normaliseEmail(body.email),code=String(body.code||"").replace(/\D/g,""),password=String(body.password||""),accessAcknowledgementConfirmed=body.access_acknowledgement_confirmed===true;
   if(!/^\S+@\S+\.\S+$/.test(email))throw new Error("Enter the email address used for your Florence account");
   if(!/^\d{8}$/.test(code))throw new Error("Enter the eight-digit setup code supplied by your supervisor");
   if(password.length<10)throw new Error("Use a password with at least ten characters");
   const admin=db();
-  const {data:profile,error:profileError}=await admin.from("profiles").select("id,organisation_id,active").eq("email",email).maybeSingle();
-  if(profileError||!profile?.active)throw new Error("The account or setup code is not valid");
+  const {data:profile,error:profileError}=await admin.from("profiles").select("id,organisation_id,role,active").eq("email",email).maybeSingle();
+  const portalRole=["family","client"].includes(String(profile?.role||""));
+  if(profileError||!profile||(!profile.active&&!portalRole))throw new Error("The account or setup code is not valid");
+  if(portalRole&&!accessAcknowledgementConfirmed)throw new Error("Accept the confidentiality acknowledgement before continuing");
   const {data:record,error:recordError}=await admin.from("account_setup_codes").select("id,code_hash,expires_at,failed_attempts,max_attempts,used_at").eq("user_id",profile.id).eq("email",email).is("used_at",null).order("created_at",{ascending:false}).limit(1).maybeSingle();
   if(recordError||!record)throw new Error("The account or setup code is not valid");
   if(new Date(record.expires_at).getTime()<=Date.now())throw new Error("This setup code has expired. Ask your supervisor for a new code");
@@ -29,8 +31,11 @@ Deno.serve(async req=>{
   }
   const {error:authError}=await admin.auth.admin.updateUserById(profile.id,{password,email_confirm:true});if(authError)throw new Error("Florence could not save the password");
   const now=new Date().toISOString();
+  if(portalRole){
+   const {error:activationError}=await admin.from("profiles").update({active:true,portal_access_acknowledged_at:now,portal_access_acknowledgement_version:"2026-08-24"}).eq("id",profile.id);if(activationError)throw new Error("Florence could not activate the portal account");
+  }
   await admin.from("account_setup_codes").update({used_at:now}).eq("id",record.id);
-  await admin.from("audit_events").insert({organisation_id:profile.organisation_id,actor_id:profile.id,table_name:"profiles",record_id:profile.id,action:"UPDATE",after_data:{event:"password_created_with_setup_code"}});
+  await admin.from("audit_events").insert({organisation_id:profile.organisation_id,actor_id:profile.id,table_name:"profiles",record_id:profile.id,action:"UPDATE",after_data:{event:portalRole?"password_created_and_portal_access_acknowledged":"password_created_with_setup_code",portal_access_acknowledgement_version:portalRole?"2026-08-24":null}});
   return json({success:true});
  }catch(error){return json({error:error instanceof Error?error.message:String(error)},400)}
 });

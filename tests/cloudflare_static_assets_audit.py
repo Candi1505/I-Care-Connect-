@@ -21,6 +21,7 @@ EXPECTED_ASSETS = {
     "favicon.svg", "florence-theme.css", "florence-theme.js", "icare-connect-logo.png",
     "florence-mobile-hotfix.css", "florence-mobile-hotfix.js",
     "florence-skin-rash-monitoring.css", "florence-skin-rash-monitoring.js",
+    "portal-access-invite.css", "portal-access-invite.js",
     "_headers", "robots.txt",
 }
 EXPECTED_ASSET_PATTERNS = {"assets/", "assets/**", "first-aid/", "first-aid/**"}

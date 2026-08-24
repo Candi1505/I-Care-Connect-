@@ -67,10 +67,14 @@ required_files = [
     "florence-choice-evidence-timeline-fix.sql",
     "florence-skin-rash-monitoring.js",
     "florence-skin-rash-monitoring.css",
+    "portal-access-invite.js",
+    "portal-access-invite.css",
     "supabase/migrations/20260821060000_add_skin_rash_monitoring.sql",
     "supabase/migrations/20260821061500_index_skin_report_worker_reviews.sql",
     "supabase/migrations/20260821070000_fix_skin_report_timeline_severity.sql",
     "supabase/migrations/20260823001000_fix_handover_acknowledgement_and_unrostered_domestic.sql",
+    "supabase/migrations/20260824090000_add_portal_access_acknowledgement.sql",
+    "supabase/migrations/20260824093000_protect_portal_access_evidence.sql",
 ]
 for path in required_files:
     require((ROOT / path).exists(), f"required file exists: {path}")
@@ -95,6 +99,9 @@ sil_record_js = text("sil-record.js")
 service_worker = text("service-worker.js")
 mobile_hotfix = text("florence-mobile-hotfix.js")
 skin_monitoring = text("florence-skin-rash-monitoring.js")
+portal_access_invite = text("portal-access-invite.js")
+portal_access_sql = text("supabase/migrations/20260824090000_add_portal_access_acknowledgement.sql")
+portal_access_protection_sql = text("supabase/migrations/20260824093000_protect_portal_access_evidence.sql")
 skin_monitoring_sql = text("supabase/migrations/20260821060000_add_skin_rash_monitoring.sql")
 skin_monitoring_timeline_fix_sql = text("supabase/migrations/20260821070000_fix_skin_report_timeline_severity.sql")
 handover_domestic_fix_sql = text("supabase/migrations/20260823001000_fix_handover_acknowledgement_and_unrostered_domestic.sql")
@@ -120,14 +127,45 @@ require('audit-document-catalogue.js?v=20260813-audit-library-1' in sil_html, "S
 require('sil.js?v=20260814-domestic-duty-1' in sil_html, "SIL page loads current participant-template asset")
 require('sil.css?v=20260814-domestic-duty-1' in sil_html, "SIL page loads current audit-library styles")
 require('sil-record.js?v=20260814-domestic-duty-1' in sil_record_html, "evidence page loads its current secure viewer")
-require('set-password.js?v=20260802-2' in set_password_html, "setup page loads its controlled asset")
-require('florence-static-20260823-handover-domestic-1' in service_worker, "service worker uses current cache namespace")
+require('set-password.js?v=20260824-1' in set_password_html, "setup page loads its controlled asset")
+require('florence-static-20260824-portal-access-1' in service_worker, "service worker uses current cache namespace")
 require('florence-mobile-hotfix.js?v=20260823-1' in index, "index loads the current mobile reliability fix")
 require('florence-mobile-hotfix.js?v=20260823-1' in service_worker, "service worker caches the current mobile reliability fix")
 require('florence-skin-rash-monitoring.js?v=20260821-1' in index, "index loads skin and rash monitoring")
 require('florence-skin-rash-monitoring.css?v=20260821-1' in index, "index loads skin and rash monitoring styles")
 require('florence-skin-rash-monitoring.js?v=20260821-1' in service_worker, "service worker caches skin and rash monitoring")
 require('florence-skin-rash-monitoring.css?v=20260821-1' in service_worker, "service worker caches skin and rash monitoring styles")
+require('portal-access-invite.js?v=20260824-1' in index, "index loads portal access invitations")
+require('portal-access-invite.css?v=20260824-1' in index, "index loads portal access invitation styles")
+require('portal-access-invite.js?v=20260824-1' in service_worker, "service worker caches portal access invitations")
+require('portal-access-invite.css?v=20260824-1' in service_worker, "service worker caches portal access invitation styles")
+for marker in [
+    "Add portal access",
+    "Participant portal — for Ash",
+    "Family portal — for Ash’s mum or representative",
+    "/functions/v1/account-setup-admin",
+    "authorisation_confirmed",
+    "relationship",
+    "set-password.html#setup=",
+    "Copy secure link",
+    "Share securely",
+    "expires in",
+]:
+    require(marker in portal_access_invite, f"portal invitation runtime contains {marker!r}")
+for marker in [
+    "portal_relationship text",
+    "portal_access_acknowledged_at timestamptz",
+    "portal_access_acknowledgement_version text",
+]:
+    require(marker in portal_access_sql, f"portal access migration contains {marker!r}")
+for marker in [
+    "create or replace function public.protect_portal_access_evidence()",
+    "security invoker",
+    "current_user not in ('postgres', 'service_role', 'supabase_admin')",
+    "before update of portal_relationship, portal_access_acknowledged_at, portal_access_acknowledgement_version",
+    "revoke all on function public.protect_portal_access_evidence() from public, anon, authenticated",
+]:
+    require(marker in portal_access_protection_sql, f"portal access protection contains {marker!r}")
 require('["Community support expenditure", "community"]' in mobile_hotfix, "community expenditure form is covered by mobile reliability fixes")
 require('["SIL expenditure", "sil"]' in mobile_hotfix, "SIL expenditure form is covered by mobile reliability fixes")
 require('input.step = "0.01"' in mobile_hotfix, "expenditure currency fields accept dollars and cents")
@@ -251,6 +289,7 @@ browser_paths = [
     "set-password.html", "set-password.js", "medication-prn-fix.js",
     "participant-edit-controls.js", "portal-complaints.js", "client-onboarding.js", "sil.html", "sil.js", "sil-record.html", "sil-record.js", "config.js",
     "florence-skin-rash-monitoring.js",
+    "portal-access-invite.js",
 ]
 for path in browser_paths:
     source = text(path)
@@ -351,13 +390,22 @@ contains(
 contains(
     "set-password.js",
     '/functions/v1/account-setup',
-    'body:JSON.stringify({email,code,password})',
+    'body:JSON.stringify({email,code,password,access_acknowledgement_confirmed:accessAcknowledgementConfirmed})',
     'credentials:"omit"',
     'cache:"no-store"',
 )
 require('minlength="10"' in set_password_html, "setup requires at least ten password characters")
 require('pattern="[0-9]{8}"' in set_password_html, "setup requires an eight-digit one-time code")
 require('autocomplete="one-time-code"' in set_password_html, "setup code input uses one-time-code semantics")
+require('id="access-acknowledgement"' in set_password_html, "account setup requires a confidentiality acknowledgement")
+require('consumeSetupLink()' in set_password, "account setup consumes the private one-time link fragment")
+require('history.replaceState(null,"",`${location.pathname}${location.search}`)' in set_password, "account setup removes the secret fragment from browser history")
+account_setup_admin = text("supabase/functions/account-setup-admin/index.ts")
+account_setup = text("supabase/functions/account-setup/index.ts")
+require('authorisation_confirmed!==true' in account_setup_admin, "portal invitations require supervisor authorisation confirmation")
+require('portal_activation_required' in account_setup_admin, "portal invitations audit pending activation")
+require('portal_access_acknowledged_at:now' in account_setup, "portal setup records the account holder acknowledgement")
+require('password_created_and_portal_access_acknowledged' in account_setup, "portal setup creates acknowledgement audit evidence")
 require("window.supabase" not in set_password, "setup page does not restore a browser auth session")
 
 # Server-controlled time clock.

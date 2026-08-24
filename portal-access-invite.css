@@ -1,0 +1,24 @@
+body.portal-access-modal-open{overflow:hidden}
+.portal-access-invite-panel{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:20px;padding:20px 22px;background:linear-gradient(135deg,#f2fbf7,#f8f4ff);border:1px solid rgba(51,153,130,.22)}
+.portal-access-invite-panel h2{margin:.2rem 0 .35rem}
+.portal-access-invite-panel p{margin:0;max-width:720px}
+.portal-access-invite-panel>button{flex:0 0 auto;min-height:48px}
+.portal-access-modal{position:fixed;inset:0;z-index:100100;display:grid;place-items:center;padding:20px}
+.portal-access-backdrop{position:absolute;inset:0;background:rgba(15,21,32,.7);backdrop-filter:blur(5px)}
+.portal-access-card{position:relative;width:min(100%,520px);max-height:calc(100dvh - 32px);overflow:auto;padding:26px;border-radius:24px;background:#fff;box-shadow:0 28px 90px rgba(0,0,0,.38)}
+.portal-access-card h2{margin:.2rem 0 .5rem}
+.portal-access-card form{display:grid;gap:14px;margin-top:20px}
+.portal-access-card label{display:grid;gap:7px;font-weight:750;color:#152033}
+.portal-access-card input,.portal-access-card select,.portal-access-card textarea{width:100%;padding:13px 14px;border:1px solid #cfd8d5;border-radius:13px;background:#fffdf7;color:#152033;font:inherit}
+.portal-access-card textarea{min-height:96px;resize:vertical}
+.portal-access-close{position:absolute;right:16px;top:13px;width:42px;height:42px;border:0;background:transparent;color:#4b5563;font-size:2rem;line-height:1}
+.portal-access-confirm{grid-template-columns:25px 1fr!important;align-items:start;gap:11px!important;padding:14px;border:1px solid rgba(51,153,130,.3);border-radius:14px;background:#f2fbf7}
+.portal-access-confirm input{width:23px;height:23px;margin:0;accent-color:#258c79}
+.portal-access-confirm span{font-size:.94rem;line-height:1.42}
+.portal-access-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:4px}
+.portal-access-actions button{min-height:48px}
+.portal-access-privacy{margin:0;padding:12px 14px;border-radius:13px;background:#f6f4fb;color:#4b465e;font-size:.88rem;line-height:1.5}
+.portal-access-link-card textarea{font-size:.82rem;line-height:1.4;word-break:break-all}
+.portal-access-copy-fallback{position:fixed;left:-9999px;top:0}
+.portal-access-card .notice.error{border-color:#efb7a8;background:#fff3ef;color:#8f2f20}
+@media(max-width:640px){.portal-access-invite-panel{align-items:stretch;flex-direction:column}.portal-access-invite-panel>button{width:100%}.portal-access-modal{padding:10px}.portal-access-card{padding:22px 18px;border-radius:20px;max-height:calc(100dvh - 20px)}.portal-access-actions{grid-template-columns:1fr}}

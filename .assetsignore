@@ -58,6 +58,8 @@
 !florence-mobile-hotfix.js
 !florence-skin-rash-monitoring.css
 !florence-skin-rash-monitoring.js
+!portal-access-invite.css
+!portal-access-invite.js
 
 # Cloudflare security and crawler controls
 !_headers
