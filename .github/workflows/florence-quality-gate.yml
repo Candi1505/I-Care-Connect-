@@ -27,6 +27,7 @@ jobs:
           node --check staff-management.js
           node --check set-password.js
           node --check portal-access-invite.js
+          node --check worker-document-readiness.js
           node --check sil.js
           node --check sil-record.js
           node --check service-worker.js
@@ -122,6 +123,7 @@ jobs:
           grep -q 'COMPLETE_AUDIT_LIBRARY_HARDENED' /tmp/florence-audit-library-hardening.txt
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/20260824090000_add_portal_access_acknowledgement.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/20260824093000_protect_portal_access_evidence.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/20260824120500_require_worker_document_readiness.sql
 
       - name: Reproduce and repair the live missing SIL table condition
         run: |
@@ -136,6 +138,9 @@ jobs:
 
       - name: Exercise controlled-document approval and audit evidence controls
         run: psql -v ON_ERROR_STOP=1 -f tests/florence_complete_audit_library_smoke_test.sql
+
+      - name: Exercise mandatory worker reading and clock-in gate
+        run: psql -v ON_ERROR_STOP=1 -f tests/florence_worker_document_readiness_smoke_test.sql
 
       - name: Exercise cleanup, server time clock and role RLS boundaries
         run: psql -v ON_ERROR_STOP=1 -f tests/florence_database_smoke_test.sql
