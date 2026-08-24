@@ -68,6 +68,11 @@ required_files = [
     "florence-skin-rash-monitoring.js",
     "florence-skin-rash-monitoring.css",
     "portal-access-invite.js",
+    "florence-timesheet-recovery.js",
+    "florence-timesheet-recovery.css",
+    "supabase/migrations/20260824150000_add_stale_timesheet_recovery.sql",
+    "supabase/migrations/20260824151000_limit_timesheet_recovery_to_stale_records.sql",
+    "tests/florence_timesheet_recovery_smoke_test.sql",
     "portal-access-invite.css",
     "worker-document-readiness.js",
     "worker-document-readiness.css",
@@ -154,7 +159,7 @@ require('sil.js?v=20260824-supervisor-domestic-1' in sil_html, "SIL page loads c
 require('sil.css?v=20260814-domestic-duty-1' in sil_html, "SIL page loads current audit-library styles")
 require('sil-record.js?v=20260814-domestic-duty-1' in sil_record_html, "evidence page loads its current secure viewer")
 require('set-password.js?v=20260824-1' in set_password_html, "setup page loads its controlled asset")
-require('florence-static-20260824-ash-cleaning-fix-1' in service_worker, "service worker uses current cache namespace")
+require('florence-static-20260824-full-audit-1' in service_worker, "service worker uses current cache namespace")
 require('florence-mobile-hotfix.js?v=20260824-2' in index, "index loads the current mobile reliability fix")
 require('florence-mobile-hotfix.js?v=20260824-2' in service_worker, "service worker caches the current mobile reliability fix")
 require('florence-skin-rash-monitoring.js?v=20260821-1' in index, "index loads skin and rash monitoring")
@@ -175,6 +180,16 @@ require('florence-vehicle-refusal-support.js?v=20260824-1' in sil_html, "SIL loa
 require('florence-vehicle-refusal-support.css?v=20260824-1' in sil_html, "SIL loads vehicle refusal support styles")
 require('florence-vehicle-refusal-support.js?v=20260824-1' in service_worker, "service worker caches vehicle refusal support")
 require('florence-vehicle-refusal-support.css?v=20260824-1' in service_worker, "service worker caches vehicle refusal support styles")
+require('florence-timesheet-recovery.js?v=20260824-1' in index, "main app loads supervisor stale-timesheet recovery")
+require('florence-timesheet-recovery.css?v=20260824-1' in index, "main app loads stale-timesheet recovery styles")
+require('florence-timesheet-recovery.js?v=20260824-1' in service_worker, "service worker caches stale-timesheet recovery")
+require('florence-timesheet-recovery.css?v=20260824-1' in service_worker, "service worker caches stale-timesheet recovery styles")
+require(
+    "20260824150000_add_stale_timesheet_recovery.sql" in quality_gate
+    and "20260824151000_limit_timesheet_recovery_to_stale_records.sql" in quality_gate
+    and "florence_timesheet_recovery_smoke_test.sql" in quality_gate,
+    "quality gate applies and exercises stale-timesheet recovery",
+)
 for marker in [
     "Community access & vehicle refusal",
     "Evelyn must never be left unattended in the vehicle.",

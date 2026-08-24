@@ -24,6 +24,7 @@ EXPECTED_ASSETS = {
     "portal-access-invite.css", "portal-access-invite.js",
     "worker-document-readiness.css", "worker-document-readiness.js",
     "florence-vehicle-refusal-support.css", "florence-vehicle-refusal-support.js",
+    "florence-timesheet-recovery.css", "florence-timesheet-recovery.js",
     "_headers", "robots.txt",
 }
 EXPECTED_ASSET_PATTERNS = {"assets/", "assets/**", "first-aid/", "first-aid/**"}

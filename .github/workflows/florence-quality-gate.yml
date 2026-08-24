@@ -21,17 +21,9 @@ jobs:
       - name: JavaScript syntax checks
         run: |
           set -euo pipefail
-          node --check config.js
-          node --check app.js
-          node --check operations.js
-          node --check staff-management.js
-          node --check set-password.js
-          node --check portal-access-invite.js
-          node --check worker-document-readiness.js
-          node --check florence-vehicle-refusal-support.js
-          node --check sil.js
-          node --check sil-record.js
-          node --check service-worker.js
+          while IFS= read -r file; do
+            node --check "$file"
+          done < <(find . -maxdepth 1 -type f -name '*.js' -print | sort)
 
       - name: Florence security and readiness audit
         run: python tests/florence_static_audit.py
@@ -141,6 +133,8 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/20260824142000_fix_worker_service_scope_helper_bootstrap.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/20260824143000_ensure_vehicle_refusal_timeline_link.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/20260824144000_ensure_vehicle_refusal_audit_action.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/20260824150000_add_stale_timesheet_recovery.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/20260824151000_limit_timesheet_recovery_to_stale_records.sql
 
       - name: Exercise controlled-document approval and audit evidence controls
         run: psql -v ON_ERROR_STOP=1 -f tests/florence_complete_audit_library_smoke_test.sql
@@ -159,6 +153,9 @@ jobs:
 
       - name: Exercise community access and vehicle refusal PIN signing
         run: psql -v ON_ERROR_STOP=1 -f tests/florence_vehicle_refusal_support_smoke_test.sql
+
+      - name: Exercise supervisor stale clock-in recovery
+        run: psql -v ON_ERROR_STOP=1 -f tests/florence_timesheet_recovery_smoke_test.sql
 
       - name: Exercise S8 dual PIN signing and participant timeline
         run: psql -v ON_ERROR_STOP=1 -f tests/florence_s8_timeline_smoke_test.sql

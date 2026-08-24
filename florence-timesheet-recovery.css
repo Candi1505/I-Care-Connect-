@@ -1,0 +1,83 @@
+.timesheet-recovery-banner {
+  position: fixed;
+  z-index: 2147483000;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: min(34rem, calc(100vw - 2rem));
+  padding: 1rem;
+  border: 1px solid #e7b58f;
+  border-radius: 1.25rem;
+  background: #fff8f1;
+  box-shadow: 0 18px 50px rgba(25, 29, 28, .22);
+  color: #202928;
+}
+.timesheet-recovery-banner div { display: grid; gap: .2rem; }
+.timesheet-recovery-banner span { color: #596866; font-size: .9rem; }
+.timesheet-recovery-banner button,
+.timesheet-recovery-card button { min-height: 2.75rem; }
+.timesheet-recovery-modal {
+  position: fixed;
+  z-index: 2147483001;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+}
+.timesheet-recovery-backdrop { position: absolute; inset: 0; background: rgba(16, 25, 28, .64); }
+.timesheet-recovery-card {
+  position: relative;
+  width: min(42rem, 100%);
+  max-height: calc(100dvh - 2rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 1.5rem;
+  border-radius: 1.5rem;
+  background: #fff;
+  color: #202928;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .35);
+}
+.timesheet-recovery-card header { padding-right: 2.5rem; }
+.timesheet-recovery-card h2 { margin: .2rem 0 .5rem; }
+.timesheet-recovery-close { position: absolute; top: 1rem; right: 1rem; width: 2.75rem; border-radius: 50%; }
+.timesheet-recovery-list { display: grid; gap: .75rem; margin-top: 1.25rem; }
+.timesheet-recovery-list article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid #eed0b7;
+  border-radius: 1rem;
+  background: #fffaf5;
+}
+.timesheet-recovery-list article div { display: grid; gap: .2rem; }
+.timesheet-recovery-list span,
+.timesheet-recovery-list small { color: #5f6f6c; }
+#timesheet-recovery-form { display: grid; gap: 1rem; margin-top: 1.25rem; }
+#timesheet-recovery-form label { display: grid; gap: .4rem; font-weight: 700; }
+#timesheet-recovery-form input,
+#timesheet-recovery-form textarea {
+  width: 100%;
+  min-height: 3rem;
+  padding: .75rem;
+  border: 1px solid #cbd6d3;
+  border-radius: .8rem;
+  background: #fffdf9;
+  color: #202928;
+  font: inherit;
+}
+#timesheet-recovery-form textarea { min-height: 7rem; resize: vertical; }
+.timesheet-recovery-actions { display: flex; justify-content: flex-end; gap: .75rem; }
+.timesheet-recovery-card .notice.error { color: #8c2e20; background: #fff1ed; }
+.timesheet-recovery-modal .hidden { display: none !important; }
+body.timesheet-recovery-modal-open { overflow: hidden !important; }
+@media (max-width: 620px) {
+  .timesheet-recovery-banner { left: 1rem; right: 1rem; align-items: stretch; flex-direction: column; }
+  .timesheet-recovery-card { padding: 1.25rem; border-radius: 1.25rem; }
+  .timesheet-recovery-list article { align-items: stretch; flex-direction: column; }
+  .timesheet-recovery-actions { flex-direction: column-reverse; }
+  .timesheet-recovery-actions button { width: 100%; }
+}
