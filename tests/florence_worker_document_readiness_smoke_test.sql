@@ -17,7 +17,8 @@ select set_config(
 insert into public.compliance_documents (
  id, organisation_id, scope, subject_name, category, title, storage_path,
  original_filename, mime_type, review_date, version, uploaded_by,
- module, requirement_level, access_level, lifecycle_status, approved_by, approved_at
+ catalogue_key, module, requirement_level, access_level, lifecycle_status,
+ approved_by, approved_at
 ) values
 (
  '61000000-0000-0000-0000-000000000001',
@@ -25,7 +26,8 @@ insert into public.compliance_documents (
  'Organisation', 'I-Care Connect Test', 'Controlled library',
  'SIL Staff Handbook', '__smoke__/required-worker-policy.pdf',
  'required-worker-policy.pdf', 'application/pdf', current_date + 365, 1,
- '00000000-0000-0000-0000-000000000001', 'Core', 'Required', 'worker',
+ '00000000-0000-0000-0000-000000000001', '__smoke-worker-reading__',
+ 'Core', 'Required', 'worker',
  'Draft', null, null
 ),
 (
@@ -34,7 +36,8 @@ insert into public.compliance_documents (
  'Organisation', 'I-Care Connect Test', 'Controlled library',
  'Supervisor Governance Policy', '__smoke__/supervisor-governance-policy.pdf',
  'supervisor-governance-policy.pdf', 'application/pdf', current_date + 365, 1,
- '00000000-0000-0000-0000-000000000001', 'Core', 'Required', 'supervisor',
+ '00000000-0000-0000-0000-000000000001', '__smoke-supervisor-reading__',
+ 'Core', 'Required', 'supervisor',
  'Draft', null, null
 );
 
