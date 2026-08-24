@@ -6,6 +6,14 @@ update public.profiles
 set medication_pin_hash = extensions.crypt('246810', extensions.gen_salt('bf'))
 where id = '00000000-0000-0000-0000-000000000002';
 
+set local role authenticated;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000001',true);
+select set_config(
+ 'request.jwt.claims',
+ '{"sub":"00000000-0000-0000-0000-000000000001","aal":"aal2","role":"authenticated"}',
+ true
+);
+
 insert into public.compliance_documents (
  id, organisation_id, scope, subject_name, category, title, storage_path,
  original_filename, mime_type, review_date, version, uploaded_by,
@@ -18,7 +26,7 @@ insert into public.compliance_documents (
  'SIL Staff Handbook', '__smoke__/required-worker-policy.pdf',
  'required-worker-policy.pdf', 'application/pdf', current_date + 365, 1,
  '00000000-0000-0000-0000-000000000001', 'Core', 'Required', 'worker',
- 'Approved', '00000000-0000-0000-0000-000000000001', now()
+ 'Draft', null, null
 ),
 (
  '61000000-0000-0000-0000-000000000002',
@@ -27,10 +35,16 @@ insert into public.compliance_documents (
  'Supervisor Governance Policy', '__smoke__/supervisor-governance-policy.pdf',
  'supervisor-governance-policy.pdf', 'application/pdf', current_date + 365, 1,
  '00000000-0000-0000-0000-000000000001', 'Core', 'Required', 'supervisor',
- 'Approved', '00000000-0000-0000-0000-000000000001', now()
+ 'Draft', null, null
 );
 
-set local role authenticated;
+select public.approve_controlled_document(
+ '61000000-0000-0000-0000-000000000001', current_date + 365, current_date
+);
+select public.approve_controlled_document(
+ '61000000-0000-0000-0000-000000000002', current_date + 365, current_date
+);
+
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000002',true);
 select set_config(
  'request.jwt.claims',
