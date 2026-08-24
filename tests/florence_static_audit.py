@@ -154,7 +154,7 @@ require('sil.js?v=20260814-domestic-duty-1' in sil_html, "SIL page loads current
 require('sil.css?v=20260814-domestic-duty-1' in sil_html, "SIL page loads current audit-library styles")
 require('sil-record.js?v=20260814-domestic-duty-1' in sil_record_html, "evidence page loads its current secure viewer")
 require('set-password.js?v=20260824-1' in set_password_html, "setup page loads its controlled asset")
-require('florence-static-20260824-vehicle-refusal-1' in service_worker, "service worker uses current cache namespace")
+require('florence-static-20260824-worker-reading-fix-1' in service_worker, "service worker uses current cache namespace")
 require('florence-mobile-hotfix.js?v=20260823-1' in index, "index loads the current mobile reliability fix")
 require('florence-mobile-hotfix.js?v=20260823-1' in service_worker, "service worker caches the current mobile reliability fix")
 require('florence-skin-rash-monitoring.js?v=20260821-1' in index, "index loads skin and rash monitoring")
@@ -165,10 +165,10 @@ require('portal-access-invite.js?v=20260824-1' in index, "index loads portal acc
 require('portal-access-invite.css?v=20260824-1' in index, "index loads portal access invitation styles")
 require('portal-access-invite.js?v=20260824-1' in service_worker, "service worker caches portal access invitations")
 require('portal-access-invite.css?v=20260824-1' in service_worker, "service worker caches portal access invitation styles")
-require('worker-document-readiness.js?v=20260824-1' in index, "index loads mandatory worker document readiness")
-require('worker-document-readiness.css?v=20260824-1' in index, "index loads mandatory worker document readiness styles")
-require('worker-document-readiness.js?v=20260824-1' in service_worker, "service worker caches mandatory worker document readiness")
-require('worker-document-readiness.css?v=20260824-1' in service_worker, "service worker caches mandatory worker document readiness styles")
+require('worker-document-readiness.js?v=20260824-2' in index, "index loads mandatory worker document readiness")
+require('worker-document-readiness.css?v=20260824-2' in index, "index loads mandatory worker document readiness styles")
+require('worker-document-readiness.js?v=20260824-2' in service_worker, "service worker caches mandatory worker document readiness")
+require('worker-document-readiness.css?v=20260824-2' in service_worker, "service worker caches mandatory worker document readiness styles")
 require('florence-vehicle-refusal-support.js?v=20260824-1' in index, "main app loads community access and vehicle refusal support")
 require('florence-vehicle-refusal-support.css?v=20260824-1' in index, "main app loads vehicle refusal support styles")
 require('florence-vehicle-refusal-support.js?v=20260824-1' in sil_html, "SIL loads community access and vehicle refusal support")
@@ -260,8 +260,15 @@ for marker in [
     "/rest/v1/rpc/acknowledge_worker_documents",
     "I have read and understood this document",
     "Clock-in stays locked until all are complete.",
+    'normalisedPath.startsWith("/object/")',
+    "`/storage/v1${normalisedPath}`",
+    "showDocumentAsOpened(documentId, button)",
 ]:
     require(marker in worker_readiness, f"worker readiness runtime contains {marker!r}")
+require(
+    re.search(r"@media \(max-width: 680px\).*?\.worker-reading-sign\s*\{.*?position:\s*static;", text("worker-document-readiness.css"), re.S),
+    "mobile worker reading sign-off is inline and does not cover document checkboxes",
+)
 for marker in [
     "create table if not exists public.worker_document_reads",
     "create or replace function public.record_worker_document_open",

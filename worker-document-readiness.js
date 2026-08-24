@@ -189,7 +189,30 @@
     });
     const signedPath = result?.signedURL || result?.signedUrl;
     if (!signedPath) throw new Error("Florence could not prepare the private document.");
-    return new URL(signedPath, SUPABASE_URL).toString();
+    let normalisedPath = String(signedPath).trim();
+    if (!/^https?:\/\//i.test(normalisedPath)) {
+      if (normalisedPath.startsWith("/object/")) normalisedPath = `/storage/v1${normalisedPath}`;
+      else if (!normalisedPath.startsWith("/storage/v1/")) normalisedPath = `/storage/v1/${normalisedPath.replace(/^\/+/, "")}`;
+    }
+    const url = new URL(normalisedPath, SUPABASE_URL);
+    if (url.origin !== new URL(SUPABASE_URL).origin) {
+      throw new Error("Florence rejected an invalid private document link.");
+    }
+    return url.toString();
+  }
+
+  function showDocumentAsOpened(documentId, button) {
+    const record = readiness?.find(item => item.document_id === documentId);
+    const article = button.closest("[data-worker-document]");
+    if (!record || !article) return;
+    button.disabled = false;
+    button.textContent = "Open again";
+    const state = article.querySelector(".worker-reading-state");
+    if (state) state.textContent = "Opened — check when read";
+    const label = article.querySelector(".worker-reading-check");
+    const checkbox = label?.querySelector('input[name="worker_document"]');
+    label?.classList.remove("disabled");
+    if (checkbox) checkbox.disabled = false;
   }
 
   async function openDocument(documentId, button) {
@@ -214,7 +237,7 @@
         link.click();
       }
       await loadReadiness(true);
-      renderModal();
+      showDocumentAsOpened(documentId, button);
       setModalStatus("Document opened. Read the complete document, then return and check it off.");
       renderBanner();
     } catch (error) {
