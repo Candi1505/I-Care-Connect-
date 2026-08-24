@@ -140,6 +140,7 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/20260824141000_define_worker_service_scope_helper.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/20260824142000_fix_worker_service_scope_helper_bootstrap.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/20260824143000_ensure_vehicle_refusal_timeline_link.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/20260824144000_ensure_vehicle_refusal_audit_action.sql
 
       - name: Exercise controlled-document approval and audit evidence controls
         run: psql -v ON_ERROR_STOP=1 -f tests/florence_complete_audit_library_smoke_test.sql

@@ -84,6 +84,7 @@ required_files = [
     "supabase/migrations/20260824141000_define_worker_service_scope_helper.sql",
     "supabase/migrations/20260824142000_fix_worker_service_scope_helper_bootstrap.sql",
     "supabase/migrations/20260824143000_ensure_vehicle_refusal_timeline_link.sql",
+    "supabase/migrations/20260824144000_ensure_vehicle_refusal_audit_action.sql",
     "tests/florence_worker_document_readiness_smoke_test.sql",
     "tests/florence_vehicle_refusal_support_smoke_test.sql",
 ]
@@ -120,6 +121,7 @@ vehicle_refusal_sql = text("supabase/migrations/20260824140000_add_vehicle_refus
 vehicle_refusal_scope_sql = text("supabase/migrations/20260824141000_define_worker_service_scope_helper.sql")
 vehicle_refusal_scope_fix_sql = text("supabase/migrations/20260824142000_fix_worker_service_scope_helper_bootstrap.sql")
 vehicle_refusal_timeline_sql = text("supabase/migrations/20260824143000_ensure_vehicle_refusal_timeline_link.sql")
+vehicle_refusal_audit_sql = text("supabase/migrations/20260824144000_ensure_vehicle_refusal_audit_action.sql")
 skin_monitoring_sql = text("supabase/migrations/20260821060000_add_skin_rash_monitoring.sql")
 skin_monitoring_timeline_fix_sql = text("supabase/migrations/20260821070000_fix_skin_report_timeline_severity.sql")
 handover_domestic_fix_sql = text("supabase/migrations/20260823001000_fix_handover_acknowledgement_and_unrostered_domestic.sql")
@@ -131,6 +133,7 @@ portal_complaints = text("portal-complaints.js")
 quality_gate = text(".github/workflows/florence-quality-gate.yml")
 require(
     "20260824140000_add_vehicle_refusal_support_record.sql" in quality_gate
+    and "20260824144000_ensure_vehicle_refusal_audit_action.sql" in quality_gate
     and "florence_vehicle_refusal_support_smoke_test.sql" in quality_gate,
     "quality gate applies and exercises the vehicle refusal support migration",
 )
@@ -226,6 +229,15 @@ for marker in [
     "client_timeline_related_sil_record_idx",
 ]:
     require(marker in vehicle_refusal_timeline_sql, f"vehicle refusal timeline link contains {marker!r}")
+for marker in [
+    "drop constraint if exists audit_events_action_check",
+    "create or replace function public.record_access_event",
+    "'INSERT', 'UPDATE', 'DELETE', 'VIEW'",
+    "perform public.require_verified_mfa()",
+    "revoke all on function public.record_access_event(text,text,text,jsonb) from public, anon",
+    "grant execute on function public.record_access_event(text,text,text,jsonb) to authenticated",
+]:
+    require(marker in vehicle_refusal_audit_sql, f"vehicle refusal audit repair contains {marker!r}")
 for marker in [
     "Add portal access",
     "Participant portal — for Ash",
