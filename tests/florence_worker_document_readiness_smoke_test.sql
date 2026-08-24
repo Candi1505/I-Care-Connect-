@@ -3,7 +3,7 @@
 begin;
 
 update public.profiles
-set medication_pin_hash = crypt('246810', gen_salt('bf'))
+set medication_pin_hash = extensions.crypt('246810', extensions.gen_salt('bf'))
 where id = '00000000-0000-0000-0000-000000000002';
 
 insert into public.compliance_documents (
