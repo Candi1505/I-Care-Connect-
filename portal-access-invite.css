@@ -5,7 +5,7 @@ body.portal-access-modal-open{overflow:hidden}
 .portal-access-invite-panel>button{flex:0 0 auto;min-height:48px}
 .portal-access-modal{position:fixed;inset:0;z-index:100100;display:grid;place-items:center;padding:20px}
 .portal-access-backdrop{position:absolute;inset:0;background:rgba(15,21,32,.7);backdrop-filter:blur(5px)}
-.portal-access-card{position:relative;width:min(100%,520px);max-height:calc(100dvh - 32px);overflow:auto;padding:26px;border-radius:24px;background:#fff;box-shadow:0 28px 90px rgba(0,0,0,.38)}
+.portal-access-card{position:relative;width:min(100%,520px);max-height:calc(100dvh - 32px);overflow:auto;overscroll-behavior:contain;padding:26px 26px calc(26px + env(safe-area-inset-bottom));border-radius:24px;background:#fff;box-shadow:0 28px 90px rgba(0,0,0,.38)}
 .portal-access-card h2{margin:.2rem 0 .5rem}
 .portal-access-card form{display:grid;gap:14px;margin-top:20px}
 .portal-access-card label{display:grid;gap:7px;font-weight:750;color:#152033}

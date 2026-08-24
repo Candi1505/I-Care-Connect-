@@ -60,6 +60,8 @@
 !florence-skin-rash-monitoring.js
 !portal-access-invite.css
 !portal-access-invite.js
+!worker-document-readiness.css
+!worker-document-readiness.js
 
 # Cloudflare security and crawler controls
 !_headers

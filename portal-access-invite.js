@@ -38,13 +38,18 @@
   async function request(path, options = {}) {
     const session = readSession();
     if (!session) throw new Error("Sign in to Florence before managing portal access.");
-    const response = await fetch(`${SUPABASE_URL}${path}`, {
-      ...options,
-      headers: { ...headers(session), ...(options.headers || {}) },
-      cache: "no-store",
-      credentials: "omit",
-      referrerPolicy: "no-referrer",
-    });
+    let response;
+    try {
+      response = await fetch(`${SUPABASE_URL}${path}`, {
+        ...options,
+        headers: { ...headers(session), ...(options.headers || {}) },
+        cache: "no-store",
+        credentials: "omit",
+        referrerPolicy: "no-referrer",
+      });
+    } catch {
+      throw new Error("Florence could not reach secure account setup. Check your connection and try again.");
+    }
     const payload = await response.json().catch(() => null);
     if (!response.ok) throw new Error(payload?.error || payload?.message || "Florence could not manage portal access.");
     return payload;

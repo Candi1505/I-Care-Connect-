@@ -69,12 +69,16 @@ required_files = [
     "florence-skin-rash-monitoring.css",
     "portal-access-invite.js",
     "portal-access-invite.css",
+    "worker-document-readiness.js",
+    "worker-document-readiness.css",
     "supabase/migrations/20260821060000_add_skin_rash_monitoring.sql",
     "supabase/migrations/20260821061500_index_skin_report_worker_reviews.sql",
     "supabase/migrations/20260821070000_fix_skin_report_timeline_severity.sql",
     "supabase/migrations/20260823001000_fix_handover_acknowledgement_and_unrostered_domestic.sql",
     "supabase/migrations/20260824090000_add_portal_access_acknowledgement.sql",
     "supabase/migrations/20260824093000_protect_portal_access_evidence.sql",
+    "supabase/migrations/20260824120500_require_worker_document_readiness.sql",
+    "tests/florence_worker_document_readiness_smoke_test.sql",
 ]
 for path in required_files:
     require((ROOT / path).exists(), f"required file exists: {path}")
@@ -102,6 +106,8 @@ skin_monitoring = text("florence-skin-rash-monitoring.js")
 portal_access_invite = text("portal-access-invite.js")
 portal_access_sql = text("supabase/migrations/20260824090000_add_portal_access_acknowledgement.sql")
 portal_access_protection_sql = text("supabase/migrations/20260824093000_protect_portal_access_evidence.sql")
+worker_readiness = text("worker-document-readiness.js")
+worker_readiness_sql = text("supabase/migrations/20260824120500_require_worker_document_readiness.sql")
 skin_monitoring_sql = text("supabase/migrations/20260821060000_add_skin_rash_monitoring.sql")
 skin_monitoring_timeline_fix_sql = text("supabase/migrations/20260821070000_fix_skin_report_timeline_severity.sql")
 handover_domestic_fix_sql = text("supabase/migrations/20260823001000_fix_handover_acknowledgement_and_unrostered_domestic.sql")
@@ -128,7 +134,7 @@ require('sil.js?v=20260814-domestic-duty-1' in sil_html, "SIL page loads current
 require('sil.css?v=20260814-domestic-duty-1' in sil_html, "SIL page loads current audit-library styles")
 require('sil-record.js?v=20260814-domestic-duty-1' in sil_record_html, "evidence page loads its current secure viewer")
 require('set-password.js?v=20260824-1' in set_password_html, "setup page loads its controlled asset")
-require('florence-static-20260824-portal-access-1' in service_worker, "service worker uses current cache namespace")
+require('florence-static-20260824-worker-readiness-1' in service_worker, "service worker uses current cache namespace")
 require('florence-mobile-hotfix.js?v=20260823-1' in index, "index loads the current mobile reliability fix")
 require('florence-mobile-hotfix.js?v=20260823-1' in service_worker, "service worker caches the current mobile reliability fix")
 require('florence-skin-rash-monitoring.js?v=20260821-1' in index, "index loads skin and rash monitoring")
@@ -139,6 +145,10 @@ require('portal-access-invite.js?v=20260824-1' in index, "index loads portal acc
 require('portal-access-invite.css?v=20260824-1' in index, "index loads portal access invitation styles")
 require('portal-access-invite.js?v=20260824-1' in service_worker, "service worker caches portal access invitations")
 require('portal-access-invite.css?v=20260824-1' in service_worker, "service worker caches portal access invitation styles")
+require('worker-document-readiness.js?v=20260824-1' in index, "index loads mandatory worker document readiness")
+require('worker-document-readiness.css?v=20260824-1' in index, "index loads mandatory worker document readiness styles")
+require('worker-document-readiness.js?v=20260824-1' in service_worker, "service worker caches mandatory worker document readiness")
+require('worker-document-readiness.css?v=20260824-1' in service_worker, "service worker caches mandatory worker document readiness styles")
 for marker in [
     "Add portal access",
     "Participant portal — for Ash",
@@ -152,6 +162,27 @@ for marker in [
     "expires in",
 ]:
     require(marker in portal_access_invite, f"portal invitation runtime contains {marker!r}")
+require('https://esm.sh/@supabase/supabase-js@2.106.2' in text("supabase/functions/account-setup-admin/index.ts"), "portal setup function uses the same pinned Supabase runtime as the proven staff-management function")
+for marker in [
+    "REQUIRED BEFORE YOUR NEXT SHIFT",
+    "Open every current document, read it, then check it off.",
+    "/rest/v1/rpc/my_worker_document_readiness",
+    "/rest/v1/rpc/record_worker_document_open",
+    "/rest/v1/rpc/acknowledge_worker_documents",
+    "I have read and understood this document",
+    "Clock-in stays locked until all are complete.",
+]:
+    require(marker in worker_readiness, f"worker readiness runtime contains {marker!r}")
+for marker in [
+    "create table if not exists public.worker_document_reads",
+    "create or replace function public.record_worker_document_open",
+    "create or replace function public.acknowledge_worker_documents",
+    "create or replace function public.my_worker_document_readiness",
+    "access_level = 'worker'",
+    "Read and acknowledge all current worker documents before clocking in.",
+    "as restrictive",
+]:
+    require(marker in worker_readiness_sql, f"worker readiness migration contains {marker!r}")
 for marker in [
     "portal_relationship text",
     "portal_access_acknowledged_at timestamptz",
@@ -402,7 +433,7 @@ require('consumeSetupLink()' in set_password, "account setup consumes the privat
 require('history.replaceState(null,"",`${location.pathname}${location.search}`)' in set_password, "account setup removes the secret fragment from browser history")
 account_setup_admin = text("supabase/functions/account-setup-admin/index.ts")
 account_setup = text("supabase/functions/account-setup/index.ts")
-require('authorisation_confirmed!==true' in account_setup_admin, "portal invitations require supervisor authorisation confirmation")
+require('body.authorisation_confirmed !== true' in account_setup_admin, "portal invitations require supervisor authorisation confirmation")
 require('portal_activation_required' in account_setup_admin, "portal invitations audit pending activation")
 require('portal_access_acknowledged_at:now' in account_setup, "portal setup records the account holder acknowledgement")
 require('password_created_and_portal_access_acknowledged' in account_setup, "portal setup creates acknowledgement audit evidence")
