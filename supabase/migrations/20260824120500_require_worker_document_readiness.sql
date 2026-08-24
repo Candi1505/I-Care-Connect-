@@ -34,6 +34,30 @@ using (
   and (staff_id = auth.uid() or public.is_supervisor())
 );
 
+-- Keep the participant/family document allow-list reproducible in clean
+-- environments as well as existing production databases.
+create or replace function public.is_portal_controlled_document(p_title text)
+returns boolean
+language sql
+immutable
+set search_path = public, pg_temp
+as $$
+  select coalesce(p_title, '') = any(array[
+    'Participant Information Booklet','Participant Information Booklet — Easy Read',
+    'Participant Rights and Responsibilities Policy','SIL Participant Welcome and Rights Guide',
+    'Feedback and Complaints Policy','Feedback and Complaints Form',
+    'Feedback and Complaints Summary','Advocate or Support Person Request Form',
+    'Participant Satisfaction Survey','Privacy and Information Management Policy',
+    'Privacy Consent Form — Easy Read','SIL Supported Decision-Making Policy',
+    'SIL Safeguarding Policy','SIL Visitor and Private Space Guidance',
+    'Participant Money and Property Policy'
+  ]::text[]);
+$$;
+
+revoke all on function public.is_portal_controlled_document(text) from public, anon;
+grant execute on function public.is_portal_controlled_document(text)
+  to authenticated, service_role;
+
 -- Keep the complete governance library supervisor-only. Workers may read only
 -- approved current documents explicitly classified for worker access.
 drop policy if exists compliance_documents_mfa_required on public.compliance_documents;
