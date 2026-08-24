@@ -1,6 +1,42 @@
 -- Require every worker to open and individually acknowledge the current
 -- worker-facing controlled documents before their next Florence clock-in.
 
+create table if not exists public.worker_document_acknowledgements (
+  id uuid primary key default gen_random_uuid(),
+  organisation_id uuid not null references public.organisations(id) on delete cascade,
+  staff_id uuid not null references public.profiles(id) on delete restrict,
+  document_id uuid not null references public.compliance_documents(id) on delete restrict,
+  document_version integer not null,
+  acknowledged_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  unique (staff_id, document_id, document_version)
+);
+
+alter table public.worker_document_acknowledgements enable row level security;
+revoke all on table public.worker_document_acknowledgements from public, anon, authenticated;
+grant select on table public.worker_document_acknowledgements to authenticated;
+
+drop policy if exists worker_document_acknowledgements_mfa_required
+  on public.worker_document_acknowledgements;
+create policy worker_document_acknowledgements_mfa_required
+on public.worker_document_acknowledgements
+as restrictive
+for all
+to authenticated
+using (coalesce(auth.jwt()->>'aal', 'aal1') = 'aal2')
+with check (coalesce(auth.jwt()->>'aal', 'aal1') = 'aal2');
+
+drop policy if exists worker_document_acknowledgements_select
+  on public.worker_document_acknowledgements;
+create policy worker_document_acknowledgements_select
+on public.worker_document_acknowledgements
+for select
+to authenticated
+using (
+  organisation_id = public.current_org_id()
+  and (staff_id = auth.uid() or public.is_supervisor())
+);
+
 create table if not exists public.worker_document_reads (
   id uuid primary key default gen_random_uuid(),
   organisation_id uuid not null references public.organisations(id) on delete cascade,
