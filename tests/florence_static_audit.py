@@ -83,6 +83,7 @@ required_files = [
     "supabase/migrations/20260824140000_add_vehicle_refusal_support_record.sql",
     "supabase/migrations/20260824141000_define_worker_service_scope_helper.sql",
     "supabase/migrations/20260824142000_fix_worker_service_scope_helper_bootstrap.sql",
+    "supabase/migrations/20260824143000_ensure_vehicle_refusal_timeline_link.sql",
     "tests/florence_worker_document_readiness_smoke_test.sql",
     "tests/florence_vehicle_refusal_support_smoke_test.sql",
 ]
@@ -118,6 +119,7 @@ vehicle_refusal = text("florence-vehicle-refusal-support.js")
 vehicle_refusal_sql = text("supabase/migrations/20260824140000_add_vehicle_refusal_support_record.sql")
 vehicle_refusal_scope_sql = text("supabase/migrations/20260824141000_define_worker_service_scope_helper.sql")
 vehicle_refusal_scope_fix_sql = text("supabase/migrations/20260824142000_fix_worker_service_scope_helper_bootstrap.sql")
+vehicle_refusal_timeline_sql = text("supabase/migrations/20260824143000_ensure_vehicle_refusal_timeline_link.sql")
 skin_monitoring_sql = text("supabase/migrations/20260821060000_add_skin_rash_monitoring.sql")
 skin_monitoring_timeline_fix_sql = text("supabase/migrations/20260821070000_fix_skin_report_timeline_severity.sql")
 handover_domestic_fix_sql = text("supabase/migrations/20260823001000_fix_handover_acknowledgement_and_unrostered_domestic.sql")
@@ -218,6 +220,12 @@ for marker in [
     "from public.worker_service_scopes scope",
 ]:
     require(marker in vehicle_refusal_scope_fix_sql, f"vehicle refusal service-scope bootstrap fix contains {marker!r}")
+for marker in [
+    "add column if not exists related_sil_record_id uuid",
+    "references public.sil_records(id) on delete set null",
+    "client_timeline_related_sil_record_idx",
+]:
+    require(marker in vehicle_refusal_timeline_sql, f"vehicle refusal timeline link contains {marker!r}")
 for marker in [
     "Add portal access",
     "Participant portal — for Ash",
