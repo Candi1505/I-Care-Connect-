@@ -284,8 +284,9 @@ body.worker-reading-modal-open {
   }
 
   .worker-reading-sign {
-    bottom: -1rem;
+    position: static;
     margin: 1rem -1rem -1rem;
     padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom));
+    box-shadow: none;
   }
 }
