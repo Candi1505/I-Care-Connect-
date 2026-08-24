@@ -40,29 +40,46 @@
     }
   }
 
-  function configureDomesticChecklist() {
-    const forms = document.querySelectorAll("form.record-form");
-    for (const form of forms) {
-      const title = form.closest(".record-modal")?.querySelector("h2")?.textContent?.trim();
-      if (title !== "Domestic duties checklist") continue;
-      const shiftSelect = form.elements.namedItem("shift_id");
-      if (!(shiftSelect instanceof HTMLSelectElement)) continue;
+  function isDomesticChecklistForm(form) {
+    if (!(form instanceof HTMLFormElement)) return false;
+    return Boolean(
+      form.elements.namedItem("participant_id")
+      && form.elements.namedItem("shift_id")
+      && form.elements.namedItem("shift_date")
+      && form.querySelector("input[name='tasks']"),
+    );
+  }
 
-      shiftSelect.required = false;
-      const firstOption = shiftSelect.options[0];
-      if (firstOption) {
-        firstOption.value = NO_ROSTER_SHIFT_ID;
-        firstOption.textContent = "No roster shift — supervisor record";
-      }
+  function prepareDomesticChecklist(form) {
+    if (!isDomesticChecklistForm(form)) return false;
+    const shiftSelect = form.elements.namedItem("shift_id");
+    if (!(shiftSelect instanceof HTMLSelectElement)) return false;
 
-      const label = shiftSelect.closest("label");
-      if (label && !label.querySelector(".domestic-shift-help")) {
-        const help = document.createElement("small");
-        help.className = "domestic-shift-help";
-        help.textContent = "Workers choose an accepted domestic shift. Supervisors can save a verified checklist when no roster shift exists.";
-        shiftSelect.insertAdjacentElement("afterend", help);
-      }
+    shiftSelect.required = false;
+    let noShiftOption = Array.from(shiftSelect.options).find(
+      (option) => option.value === NO_ROSTER_SHIFT_ID,
+    );
+    if (!noShiftOption) {
+      noShiftOption = shiftSelect.options[0] || document.createElement("option");
+      noShiftOption.value = NO_ROSTER_SHIFT_ID;
+      noShiftOption.textContent = "No roster shift — supervisor record";
+      if (!noShiftOption.parentElement) shiftSelect.prepend(noShiftOption);
     }
+    if (!shiftSelect.value) shiftSelect.value = NO_ROSTER_SHIFT_ID;
+    form.dataset.domesticChecklistReady = "true";
+
+    const label = shiftSelect.closest("label");
+    if (label && !label.querySelector(".domestic-shift-help")) {
+      const help = document.createElement("small");
+      help.className = "domestic-shift-help";
+      help.textContent = "Workers choose an accepted domestic shift. Supervisors can save a verified checklist when no roster shift exists.";
+      shiftSelect.insertAdjacentElement("afterend", help);
+    }
+    return true;
+  }
+
+  function configureDomesticChecklist() {
+    document.querySelectorAll("form.record-form").forEach(prepareDomesticChecklist);
   }
 
   function loadDraft() {
@@ -304,6 +321,7 @@
   }, true);
 
   document.addEventListener("submit", (event) => {
+    prepareDomesticChecklist(event.target);
     const current = getExpenditureForm();
     if (!current || event.target !== current.form || restoringFiles) return;
     saveDraft(current.form, current.kind);
@@ -325,9 +343,10 @@
   }, true);
 
   document.addEventListener("click", (event) => {
+    const button = event.target.closest("button");
+    if (button?.type === "submit") prepareDomesticChecklist(button.form);
     const current = getExpenditureForm();
     if (!current) return;
-    const button = event.target.closest("button");
     if (!button) return;
     if (button.classList.contains("modal-close") || button.classList.contains("modal-scrim") || button.textContent?.trim() === "Cancel") {
       clearDraft(current.kind);

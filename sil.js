@@ -4,6 +4,7 @@ const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 document.documentElement.classList.add("sil-auth-pending");
 let db=null,currentProfile=null;
 let directory={participants:[],staff:[],shifts:[]};
+const NO_ROSTER_SHIFT_ID="00000000-0000-0000-0000-000000000000";
 const DOMESTIC_TASKS=[
  ["Kitchen",[
   ["kitchen_benches","Benches and accessible surfaces wiped"],
@@ -169,7 +170,8 @@ function fieldHtml(f,recordType){
  }
  if(type==="shift"){
   const options=directory.shifts.map(item=>`<option value="${item.id}" data-participant="${item.participant_id}">${esc(shiftLabel(item))}</option>`).join("");
-  return`<label>${label}${hint}<select name="${name}"${req}><option value="">Select accepted shift…</option>${options}</select></label>`
+  const noRosterOption=recordType==="domesticChecklist"&&currentProfile?.role==="supervisor"?`<option value="${NO_ROSTER_SHIFT_ID}" data-supervisor-no-shift="true">No roster shift — supervisor record</option>`:"";
+  return`<label>${label}${hint}<select name="${name}"${req}><option value="">Select accepted shift…</option>${options}${noRosterOption}</select></label>`
  }
  if(type==="checklist")return`<div class="domestic-checklist">${DOMESTIC_TASKS.map(([section,tasks])=>`<fieldset><legend>${esc(section)}</legend>${tasks.map(([key,text])=>`<label class="sil-checkbox domestic-task"><input name="task_${key}" type="checkbox" value="true"><span>${esc(text)}</span></label>`).join("")}</fieldset>`).join("")}</div>`;
  if(name==="worker"){
@@ -191,8 +193,15 @@ function shiftLabel(shift){
 function filterDomesticShifts(){
  const participant=$("#sil-dialog-fields [name=participant]")?.value||"";
  const select=$("#sil-dialog-fields [name=shift]");if(!select)return;
- [...select.options].forEach((option,index)=>{if(index)option.hidden=Boolean(participant)&&option.dataset.participant!==participant});
+ [...select.options].forEach((option,index)=>{if(index&&!option.dataset.supervisorNoShift)option.hidden=Boolean(participant)&&option.dataset.participant!==participant});
  if(select.selectedOptions[0]?.hidden)select.value=""
+ const availableRosterShifts=[...select.options].filter(option=>option.value&&option.value!==NO_ROSTER_SHIFT_ID&&!option.hidden);
+ const noRosterOption=select.querySelector("option[data-supervisor-no-shift]");
+ if(noRosterOption){
+  noRosterOption.hidden=availableRosterShifts.length>0;
+  if(!availableRosterShifts.length){select.required=false;select.value=NO_ROSTER_SHIFT_ID}
+  else{select.required=true;if(select.value===NO_ROSTER_SHIFT_ID)select.value=""}
+ }
 }
 function todayValue(){return new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10)}
 function localDateTimeValue(){return new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16)}
@@ -234,10 +243,12 @@ async function submit(event){
  try{
   const values=Object.fromEntries(new FormData(formElement));
   if(type==="domesticChecklist"){
-   const participantId=String(values.participant||""),shiftId=String(values.shift||"");
+   const participantId=String(values.participant||"");
+   let shiftId=String(values.shift||"");
    const tasks={};
    DOMESTIC_TASKS.flatMap(([,items])=>items).forEach(([key])=>{if(values["task_"+key]==="true")tasks[key]=true});
    if(!participantId)throw new Error("Choose the participant this checklist belongs to");
+   if(!shiftId&&currentProfile?.role==="supervisor")shiftId=NO_ROSTER_SHIFT_ID;
    if(!shiftId)throw new Error("Choose your accepted shift");
    if(!Object.keys(tasks).length)throw new Error("Tick at least one duty you completed");
    const {error}=await db.rpc("record_domestic_checklist",{
