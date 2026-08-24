@@ -23,6 +23,7 @@ EXPECTED_ASSETS = {
     "florence-skin-rash-monitoring.css", "florence-skin-rash-monitoring.js",
     "portal-access-invite.css", "portal-access-invite.js",
     "worker-document-readiness.css", "worker-document-readiness.js",
+    "florence-vehicle-refusal-support.css", "florence-vehicle-refusal-support.js",
     "_headers", "robots.txt",
 }
 EXPECTED_ASSET_PATTERNS = {"assets/", "assets/**", "first-aid/", "first-aid/**"}

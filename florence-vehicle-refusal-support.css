@@ -1,0 +1,58 @@
++.vehicle-modal-layer{position:fixed;inset:0;z-index:100000;display:grid;place-items:center;padding:18px;font-family:inherit;color:#19142d}
++.vehicle-modal-scrim{position:absolute;inset:0;border:0;background:rgba(20,15,38,.62);backdrop-filter:blur(5px);cursor:default}
++.vehicle-modal{position:relative;width:min(820px,100%);max-height:calc(100dvh - 36px);overflow:auto;overscroll-behavior:contain;background:#fbfdfd;border:1px solid rgba(44,134,132,.22);border-radius:28px;padding:28px;box-shadow:0 28px 80px rgba(18,13,41,.34)}
++.vehicle-modal-close{position:absolute;top:15px;right:17px;width:42px;height:42px;border:1px solid #d9d8df;border-radius:50%;background:#fff;color:#332b48;font-size:29px;line-height:1;cursor:pointer}
++.vehicle-modal-icon{display:grid;place-items:center;width:48px;height:48px;border-radius:15px;background:linear-gradient(135deg,#118c99,#7422a9);color:#fff;box-shadow:0 10px 24px rgba(64,62,147,.22)}
++.vehicle-modal .eyebrow{margin:18px 0 4px;color:#137979;font-size:.72rem;font-weight:800;letter-spacing:.12em}
++.vehicle-modal h2{margin:0 52px 5px 0;font-size:clamp(1.55rem,4vw,2.15rem);line-height:1.1;color:#21183b}
++.vehicle-modal-subtitle{margin:0;color:#645c75;line-height:1.5}
++.vehicle-modal-tabs{display:flex;gap:8px;margin:22px 0 16px;padding:5px;background:#efeff4;border-radius:14px}
++.vehicle-modal-tabs button{flex:1;border:0;border-radius:10px;padding:11px 14px;background:transparent;color:#5f596b;font:inherit;font-weight:700;cursor:pointer}
++.vehicle-modal-tabs button.active{background:#fff;color:#251840;box-shadow:0 2px 9px rgba(40,31,71,.1)}
++.vehicle-modal-layer .hidden{display:none!important}
++.vehicle-form{display:grid;gap:16px}
++.vehicle-context-pill{justify-self:start;padding:7px 11px;border-radius:999px;background:#e4f5f2;color:#146e6a;font-size:.78rem;font-weight:800}
++.vehicle-critical-rule,.vehicle-guidance{margin:0;padding:15px 16px;border-radius:16px;line-height:1.5}
++.vehicle-critical-rule{border:1px solid #edb5ab;background:#fff2ef;color:#812d25}
++.vehicle-guidance{border:1px solid #d8cce9;background:#f7f1ff;color:#4d3d66}
++.vehicle-form fieldset{display:grid;gap:14px;margin:0;padding:18px;border:1px solid #dce5e5;border-radius:18px;background:#fff}
++.vehicle-form legend{padding:0 8px;color:#2c2441;font-size:1rem;font-weight:800}
++.vehicle-form label{display:grid;gap:7px;color:#302841;font-size:.92rem;font-weight:750;line-height:1.35}
++.vehicle-form input,.vehicle-form select,.vehicle-form textarea{box-sizing:border-box;width:100%;min-height:50px;border:1px solid #d6d3db;border-radius:13px;background:#fffdf6;padding:12px 14px;color:#211a31;font:inherit;font-weight:550;outline:none}
++.vehicle-form textarea{min-height:92px;resize:vertical;line-height:1.45}
++.vehicle-form input:focus,.vehicle-form select:focus,.vehicle-form textarea:focus{border-color:#228e95;box-shadow:0 0 0 3px rgba(34,142,149,.15)}
++.vehicle-field-pair{display:grid;grid-template-columns:1fr 1fr;gap:13px}
++.vehicle-field-help{margin:0;color:#6c6577;font-size:.86rem;line-height:1.45}
++.vehicle-checkbox-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
++.vehicle-form .vehicle-check{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1px solid #dedce3;border-radius:12px;background:#fbfafc;font-weight:650;cursor:pointer}
++.vehicle-form .vehicle-check input{flex:0 0 auto;width:20px;min-height:20px;height:20px;margin:1px 0 0;accent-color:#178f93}
++.vehicle-declaration{padding:16px!important;border-color:#acd9d5!important;background:#effaf8!important;font-weight:800!important}
++.vehicle-modal-actions{display:flex;justify-content:flex-end;gap:10px;padding-top:4px}
++.vehicle-modal-actions button{min-height:48px;border:1px solid #d8d3de;border-radius:14px;padding:11px 18px;background:#fff;color:#302744;font:inherit;font-weight:800;cursor:pointer}
++.vehicle-modal-actions button.primary{border-color:transparent;background:linear-gradient(135deg,#078c9b,#7b1fb1);color:#fff;box-shadow:0 8px 20px rgba(88,39,151,.2)}
++.vehicle-modal-actions button:disabled{opacity:.6;cursor:wait}
++.vehicle-error,.vehicle-success{margin:0;padding:13px 15px;border-radius:13px;line-height:1.45}
++.vehicle-error{border:1px solid #edb9b1;background:#fff3f1;color:#8b2e27}
++.vehicle-success{margin-bottom:13px;border:1px solid #9fd8c7;background:#edf9f5;color:#14624f;font-weight:750}
++.vehicle-loading,.vehicle-empty{padding:26px;text-align:center;color:#665f73}
++.vehicle-history-card{margin-bottom:12px;padding:16px;border:1px solid #dce3e4;border-radius:17px;background:#fff;box-shadow:0 5px 14px rgba(33,25,53,.05)}
++.vehicle-history-card.needs-review{border-color:#e7a49a;background:#fff8f6}
++.vehicle-history-card header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px}
++.vehicle-history-card header div{display:grid;gap:3px}
++.vehicle-history-card header small{color:#746e7d}
++.vehicle-history-card header>span{flex:0 0 auto;padding:5px 9px;border-radius:999px;background:#e6f5f3;color:#1c716f;font-size:.75rem;font-weight:800}
++.vehicle-history-card p{margin:7px 0;color:#4f485b;line-height:1.42}
++.vehicle-history-card .vehicle-supervision{color:#276c63}
++.vehicle-history-card.needs-review .vehicle-supervision{color:#982f27}
++.vehicle-history-card footer{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:12px;padding-top:11px;border-top:1px solid #ece9ee;color:#6d6676;font-size:.8rem}
++.vehicle-history-card footer a{color:#217d84;font-weight:800;text-decoration:none}
++.vehicle-floating-error{position:fixed;z-index:100001;left:50%;bottom:24px;transform:translateX(-50%);width:min(520px,calc(100% - 32px));box-sizing:border-box;padding:15px 18px;border-radius:14px;background:#8a2f29;color:#fff;box-shadow:0 15px 35px rgba(50,20,20,.28);font-weight:700}
++@media(max-width:680px){
++ .vehicle-modal-layer{align-items:end;padding:0}
++ .vehicle-modal{width:100%;max-height:94dvh;border-radius:25px 25px 0 0;padding:22px 16px calc(20px + env(safe-area-inset-bottom))}
++ .vehicle-field-pair,.vehicle-checkbox-grid{grid-template-columns:1fr}
++ .vehicle-modal-actions{position:sticky;bottom:-1px;margin:0 -4px;padding:12px 4px 3px;background:linear-gradient(180deg,rgba(251,253,253,0),#fbfdfd 25%)}
++ .vehicle-modal-actions button{flex:1;padding-inline:10px}
++ .vehicle-history-card header,.vehicle-history-card footer{display:grid}
++}
++

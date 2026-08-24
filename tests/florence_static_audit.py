@@ -71,6 +71,8 @@ required_files = [
     "portal-access-invite.css",
     "worker-document-readiness.js",
     "worker-document-readiness.css",
+    "florence-vehicle-refusal-support.js",
+    "florence-vehicle-refusal-support.css",
     "supabase/migrations/20260821060000_add_skin_rash_monitoring.sql",
     "supabase/migrations/20260821061500_index_skin_report_worker_reviews.sql",
     "supabase/migrations/20260821070000_fix_skin_report_timeline_severity.sql",
@@ -78,7 +80,13 @@ required_files = [
     "supabase/migrations/20260824090000_add_portal_access_acknowledgement.sql",
     "supabase/migrations/20260824093000_protect_portal_access_evidence.sql",
     "supabase/migrations/20260824120500_require_worker_document_readiness.sql",
+    "supabase/migrations/20260824140000_add_vehicle_refusal_support_record.sql",
+    "supabase/migrations/20260824141000_define_worker_service_scope_helper.sql",
+    "supabase/migrations/20260824142000_fix_worker_service_scope_helper_bootstrap.sql",
+    "supabase/migrations/20260824143000_ensure_vehicle_refusal_timeline_link.sql",
+    "supabase/migrations/20260824144000_ensure_vehicle_refusal_audit_action.sql",
     "tests/florence_worker_document_readiness_smoke_test.sql",
+    "tests/florence_vehicle_refusal_support_smoke_test.sql",
 ]
 for path in required_files:
     require((ROOT / path).exists(), f"required file exists: {path}")
@@ -108,6 +116,12 @@ portal_access_sql = text("supabase/migrations/20260824090000_add_portal_access_a
 portal_access_protection_sql = text("supabase/migrations/20260824093000_protect_portal_access_evidence.sql")
 worker_readiness = text("worker-document-readiness.js")
 worker_readiness_sql = text("supabase/migrations/20260824120500_require_worker_document_readiness.sql")
+vehicle_refusal = text("florence-vehicle-refusal-support.js")
+vehicle_refusal_sql = text("supabase/migrations/20260824140000_add_vehicle_refusal_support_record.sql")
+vehicle_refusal_scope_sql = text("supabase/migrations/20260824141000_define_worker_service_scope_helper.sql")
+vehicle_refusal_scope_fix_sql = text("supabase/migrations/20260824142000_fix_worker_service_scope_helper_bootstrap.sql")
+vehicle_refusal_timeline_sql = text("supabase/migrations/20260824143000_ensure_vehicle_refusal_timeline_link.sql")
+vehicle_refusal_audit_sql = text("supabase/migrations/20260824144000_ensure_vehicle_refusal_audit_action.sql")
 skin_monitoring_sql = text("supabase/migrations/20260821060000_add_skin_rash_monitoring.sql")
 skin_monitoring_timeline_fix_sql = text("supabase/migrations/20260821070000_fix_skin_report_timeline_severity.sql")
 handover_domestic_fix_sql = text("supabase/migrations/20260823001000_fix_handover_acknowledgement_and_unrostered_domestic.sql")
@@ -117,6 +131,12 @@ app_js = text("app.js")
 readiness_controls = text("florence-readiness-controls.js")
 portal_complaints = text("portal-complaints.js")
 quality_gate = text(".github/workflows/florence-quality-gate.yml")
+require(
+    "20260824140000_add_vehicle_refusal_support_record.sql" in quality_gate
+    and "20260824144000_ensure_vehicle_refusal_audit_action.sql" in quality_gate
+    and "florence_vehicle_refusal_support_smoke_test.sql" in quality_gate,
+    "quality gate applies and exercises the vehicle refusal support migration",
+)
 
 require(
     "@supabase/supabase-js@2.106.2" in index
@@ -134,7 +154,7 @@ require('sil.js?v=20260814-domestic-duty-1' in sil_html, "SIL page loads current
 require('sil.css?v=20260814-domestic-duty-1' in sil_html, "SIL page loads current audit-library styles")
 require('sil-record.js?v=20260814-domestic-duty-1' in sil_record_html, "evidence page loads its current secure viewer")
 require('set-password.js?v=20260824-1' in set_password_html, "setup page loads its controlled asset")
-require('florence-static-20260824-worker-readiness-1' in service_worker, "service worker uses current cache namespace")
+require('florence-static-20260824-vehicle-refusal-1' in service_worker, "service worker uses current cache namespace")
 require('florence-mobile-hotfix.js?v=20260823-1' in index, "index loads the current mobile reliability fix")
 require('florence-mobile-hotfix.js?v=20260823-1' in service_worker, "service worker caches the current mobile reliability fix")
 require('florence-skin-rash-monitoring.js?v=20260821-1' in index, "index loads skin and rash monitoring")
@@ -149,6 +169,75 @@ require('worker-document-readiness.js?v=20260824-1' in index, "index loads manda
 require('worker-document-readiness.css?v=20260824-1' in index, "index loads mandatory worker document readiness styles")
 require('worker-document-readiness.js?v=20260824-1' in service_worker, "service worker caches mandatory worker document readiness")
 require('worker-document-readiness.css?v=20260824-1' in service_worker, "service worker caches mandatory worker document readiness styles")
+require('florence-vehicle-refusal-support.js?v=20260824-1' in index, "main app loads community access and vehicle refusal support")
+require('florence-vehicle-refusal-support.css?v=20260824-1' in index, "main app loads vehicle refusal support styles")
+require('florence-vehicle-refusal-support.js?v=20260824-1' in sil_html, "SIL loads community access and vehicle refusal support")
+require('florence-vehicle-refusal-support.css?v=20260824-1' in sil_html, "SIL loads vehicle refusal support styles")
+require('florence-vehicle-refusal-support.js?v=20260824-1' in service_worker, "service worker caches vehicle refusal support")
+require('florence-vehicle-refusal-support.css?v=20260824-1' in service_worker, "service worker caches vehicle refusal support styles")
+for marker in [
+    "Community access & vehicle refusal",
+    "Evelyn must never be left unattended in the vehicle.",
+    "A replacement worker must physically arrive and accept handover",
+    "not automatically an incident report",
+    "Evelyn’s exact words or factual behaviour",
+    "Open, non-leading question asked",
+    "Information and genuine options",
+    "Did the worker remain continuously with Evelyn?",
+    "Victoria Kussrow",
+    "Candice Long",
+    "PIN sign and save record",
+    "/rest/v1/rpc/record_vehicle_refusal",
+    "data-vehicle-refusal-context",
+]:
+    require(marker in vehicle_refusal, f"vehicle refusal runtime contains {marker!r}")
+for marker in [
+    "create or replace function public.record_vehicle_refusal",
+    "security definer",
+    "set search_path to 'public', 'extensions', 'pg_temp'",
+    "perform public.require_verified_mfa()",
+    "not public.can_access_participant(p_participant_id)",
+    "crypt(p_pin, v_profile.medication_pin_hash)",
+    "'vehicleRefusal', 'Supported decision-making'",
+    "'Other'::public.timeline_event_type",
+    "'Low'::public.timeline_severity",
+    "'Moderate'::public.timeline_severity",
+    "'Incident report' = any",
+    "revoke all on function public.record_vehicle_refusal",
+    ") to authenticated;",
+]:
+    require(marker in vehicle_refusal_sql, f"vehicle refusal migration contains {marker!r}")
+for marker in [
+    "create or replace function public.worker_service_allowed",
+    "from public.worker_service_scopes scope",
+    "security definer",
+    "set search_path to 'public', 'pg_temp'",
+    "revoke all on function public.worker_service_allowed(uuid, text) from public, anon",
+    "grant execute on function public.worker_service_allowed(uuid, text) to authenticated",
+]:
+    require(marker in vehicle_refusal_scope_sql, f"vehicle refusal service-scope helper contains {marker!r}")
+for marker in [
+    "language plpgsql",
+    "to_regclass('public.worker_service_scopes') is null",
+    "return public.is_supervisor()",
+    "from public.worker_service_scopes scope",
+]:
+    require(marker in vehicle_refusal_scope_fix_sql, f"vehicle refusal service-scope bootstrap fix contains {marker!r}")
+for marker in [
+    "add column if not exists related_sil_record_id uuid",
+    "references public.sil_records(id) on delete set null",
+    "client_timeline_related_sil_record_idx",
+]:
+    require(marker in vehicle_refusal_timeline_sql, f"vehicle refusal timeline link contains {marker!r}")
+for marker in [
+    "drop constraint if exists audit_events_action_check",
+    "create or replace function public.record_access_event",
+    "'INSERT', 'UPDATE', 'DELETE', 'VIEW'",
+    "perform public.require_verified_mfa()",
+    "revoke all on function public.record_access_event(text,text,text,jsonb) from public, anon",
+    "grant execute on function public.record_access_event(text,text,text,jsonb) to authenticated",
+]:
+    require(marker in vehicle_refusal_audit_sql, f"vehicle refusal audit repair contains {marker!r}")
 for marker in [
     "Add portal access",
     "Participant portal — for Ash",
