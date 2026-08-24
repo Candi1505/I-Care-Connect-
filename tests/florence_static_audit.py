@@ -81,6 +81,7 @@ required_files = [
     "supabase/migrations/20260824093000_protect_portal_access_evidence.sql",
     "supabase/migrations/20260824120500_require_worker_document_readiness.sql",
     "supabase/migrations/20260824140000_add_vehicle_refusal_support_record.sql",
+    "supabase/migrations/20260824141000_define_worker_service_scope_helper.sql",
     "tests/florence_worker_document_readiness_smoke_test.sql",
     "tests/florence_vehicle_refusal_support_smoke_test.sql",
 ]
@@ -114,6 +115,7 @@ worker_readiness = text("worker-document-readiness.js")
 worker_readiness_sql = text("supabase/migrations/20260824120500_require_worker_document_readiness.sql")
 vehicle_refusal = text("florence-vehicle-refusal-support.js")
 vehicle_refusal_sql = text("supabase/migrations/20260824140000_add_vehicle_refusal_support_record.sql")
+vehicle_refusal_scope_sql = text("supabase/migrations/20260824141000_define_worker_service_scope_helper.sql")
 skin_monitoring_sql = text("supabase/migrations/20260821060000_add_skin_rash_monitoring.sql")
 skin_monitoring_timeline_fix_sql = text("supabase/migrations/20260821070000_fix_skin_report_timeline_severity.sql")
 handover_domestic_fix_sql = text("supabase/migrations/20260823001000_fix_handover_acknowledgement_and_unrostered_domestic.sql")
@@ -198,6 +200,15 @@ for marker in [
     ") to authenticated;",
 ]:
     require(marker in vehicle_refusal_sql, f"vehicle refusal migration contains {marker!r}")
+for marker in [
+    "create or replace function public.worker_service_allowed",
+    "from public.worker_service_scopes scope",
+    "security definer",
+    "set search_path to 'public', 'pg_temp'",
+    "revoke all on function public.worker_service_allowed(uuid, text) from public, anon",
+    "grant execute on function public.worker_service_allowed(uuid, text) to authenticated",
+]:
+    require(marker in vehicle_refusal_scope_sql, f"vehicle refusal service-scope helper contains {marker!r}")
 for marker in [
     "Add portal access",
     "Participant portal — for Ash",
