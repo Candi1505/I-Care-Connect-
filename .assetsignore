@@ -62,6 +62,8 @@
 !portal-access-invite.js
 !worker-document-readiness.css
 !worker-document-readiness.js
+!florence-vehicle-refusal-support.css
+!florence-vehicle-refusal-support.js
 
 # Cloudflare security and crawler controls
 !_headers
