@@ -40,29 +40,34 @@ Deno.serve(async req=>{
   if(req.method!=="POST")return json({error:"POST required"},405);
   const {db,user,profile}=await context(req);const body=await req.json().catch(()=>({}));const action=String(body.action||"");
   if(action==="invite"){
-   const email=normaliseEmail(body.email),fullName=String(body.full_name||"").trim(),allowed=["staff","supervisor","family","client"],role=allowed.includes(body.role)?String(body.role):"staff",participantId=["family","client"].includes(role)?String(body.participant_id||""):null;
+   const email=normaliseEmail(body.email),fullName=String(body.full_name||"").trim(),allowed=["staff","supervisor","family","client"],role=allowed.includes(body.role)?String(body.role):"staff",portalRole=["family","client"].includes(role),participantId=portalRole?String(body.participant_id||""):null,relationship=portalRole?String(body.relationship||"").trim():null;
    if(!fullName||!/^\S+@\S+\.\S+$/.test(email))throw new Error("A valid name and email are required");
-   if(["family","client"].includes(role)){
+   if(portalRole){
+    if(body.authorisation_confirmed!==true)throw new Error("Confirm this person is authorised for the participant");
+    if(role==="family"&&!relationship)throw new Error("Record the family representative's relationship to the participant");
     const {data,error}=await db.from("participants").select("id").eq("id",participantId).eq("organisation_id",profile.organisation_id).single();if(error||!data)throw new Error("Choose a valid participant for this portal account");
    }
    const users=await allUsers(db);let authUser=users.find(item=>normaliseEmail(item.email)===email)||null;const existing=!!authUser;
+   let existingProfile:null|{organisation_id:string;role:string;active:boolean;portal_access_acknowledged_at:string|null}=null;
    if(authUser){
-    const {data:existingProfile}=await db.from("profiles").select("organisation_id").eq("id",authUser.id).maybeSingle();
+    const {data}=await db.from("profiles").select("organisation_id,role,active,portal_access_acknowledged_at").eq("id",authUser.id).maybeSingle();existingProfile=data;
     if(existingProfile&&existingProfile.organisation_id!==profile.organisation_id)throw new Error("This email is already linked to another Florence organisation");
     const {data,error}=await db.auth.admin.updateUserById(authUser.id,{email_confirm:true,user_metadata:{...authUser.user_metadata,full_name:fullName,organisation_id:profile.organisation_id,role,participant_id:participantId}});if(error||!data.user)throw error||new Error("Account could not be updated");authUser=data.user;
    }else{
     const {data,error}=await db.auth.admin.createUser({email,email_confirm:true,user_metadata:{full_name:fullName,organisation_id:profile.organisation_id,role,participant_id:participantId}});if(error||!data.user)throw error||new Error("Account could not be created");authUser=data.user;
    }
-   const {error:profileError}=await db.from("profiles").upsert({id:authUser.id,organisation_id:profile.organisation_id,participant_id:participantId,full_name:fullName,email,role,active:true},{onConflict:"id"});if(profileError)throw profileError;
+   const needsPortalActivation=portalRole&&(!existingProfile?.portal_access_acknowledged_at||!["family","client"].includes(existingProfile.role));
+   const active=needsPortalActivation?false:(existingProfile?.active??true);
+   const {error:profileError}=await db.from("profiles").upsert({id:authUser.id,organisation_id:profile.organisation_id,participant_id:participantId,full_name:fullName,email,role,active,portal_relationship:relationship},{onConflict:"id"});if(profileError){if(!existing)await db.auth.admin.deleteUser(authUser.id);throw profileError}
    const code=await issueCode(db,profile.organisation_id,authUser.id,email,user.id);
-   await db.from("audit_events").insert({organisation_id:profile.organisation_id,actor_id:user.id,table_name:"profiles",record_id:authUser.id,action:existing?"UPDATE":"INSERT",after_data:{event:existing?"setup_code_reissued":"account_created_with_setup_code",role,participant_id:participantId}});
-   return json({success:true,user_id:authUser.id,existing,setup_code:code,expires_minutes:30,email});
+   await db.from("audit_events").insert({organisation_id:profile.organisation_id,actor_id:user.id,table_name:"profiles",record_id:authUser.id,action:existing?"UPDATE":"INSERT",after_data:{event:existing?"setup_code_reissued":"account_created_with_setup_code",role,participant_id:participantId,relationship,portal_activation_required:needsPortalActivation,authorisation_confirmed:true}});
+   return json({success:true,user_id:authUser.id,existing,setup_code:code,expires_minutes:30,email,role,participant_id:participantId,activation_required:needsPortalActivation});
   }
   if(action==="generate-code"){
-   const userId=String(body.user_id||"");const {data:target,error}=await db.from("profiles").select("id,email,active").eq("id",userId).eq("organisation_id",profile.organisation_id).single();if(error||!target?.active||!target.email)throw new Error("Active Florence account with an email address not found");
+   const userId=String(body.user_id||"");const {data:target,error}=await db.from("profiles").select("id,email,role,active").eq("id",userId).eq("organisation_id",profile.organisation_id).single();if(error||!target?.active||!target.email)throw new Error("Active Florence account with an email address not found");
    const code=await issueCode(db,profile.organisation_id,target.id,normaliseEmail(target.email),user.id);
    await db.from("audit_events").insert({organisation_id:profile.organisation_id,actor_id:user.id,table_name:"profiles",record_id:target.id,action:"UPDATE",after_data:{event:"setup_code_reissued"}});
-   return json({success:true,setup_code:code,expires_minutes:30,email:target.email});
+   return json({success:true,setup_code:code,expires_minutes:30,email:target.email,role:target.role});
   }
   return json({error:"Unknown account setup action"},400);
  }catch(error){return json({error:error instanceof Error?error.message:String(error)},400)}

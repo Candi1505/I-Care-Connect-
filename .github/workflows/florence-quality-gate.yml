@@ -26,6 +26,7 @@ jobs:
           node --check operations.js
           node --check staff-management.js
           node --check set-password.js
+          node --check portal-access-invite.js
           node --check sil.js
           node --check sil-record.js
           node --check service-worker.js
@@ -119,6 +120,8 @@ jobs:
           grep -q 'COMPLETE_AUDIT_LIBRARY_READY' /tmp/florence-audit-library.txt
           psql -v ON_ERROR_STOP=1 -f florence-complete-audit-library-security-hardening.sql | tee /tmp/florence-audit-library-hardening.txt
           grep -q 'COMPLETE_AUDIT_LIBRARY_HARDENED' /tmp/florence-audit-library-hardening.txt
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/20260824090000_add_portal_access_acknowledgement.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/20260824093000_protect_portal_access_evidence.sql
 
       - name: Reproduce and repair the live missing SIL table condition
         run: |
