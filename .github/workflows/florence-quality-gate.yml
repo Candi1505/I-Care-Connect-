@@ -28,6 +28,9 @@ jobs:
       - name: Florence security and readiness audit
         run: python tests/florence_static_audit.py
 
+      - name: Same-device MFA onboarding audit
+        run: python tests/florence_mfa_onboarding_audit.py
+
       - name: Sydney invocation and governance-pack checks
         run: |
           set -euo pipefail

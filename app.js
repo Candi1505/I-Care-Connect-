@@ -170,26 +170,40 @@ async function ensureMfa(){
   title:"Protect your Florence account",
   message:"Add Florence to an authenticator app once. After this setup, future sign-ins will only ask for the six-digit code.",
   qrCode:enrolled.totp?.qr_code||"",
-  uri:enrolled.totp?.uri||""
+  uri:enrolled.totp?.uri||"",
+  secret:enrolled.totp?.secret||""
  });
  await cleanupUnverified(enrolled.id).catch(()=>{});
  await db.rpc("record_access_event",{p_action:"MFA_ENROLLED",p_table_name:"auth",p_record_id:null,p_metadata:{factor_type:"totp"}}).catch(()=>{});
 }
-function verifyMfaFactor({factorId,title,message,qrCode="",uri=""}){
+function verifyMfaFactor({factorId,title,message,qrCode="",uri="",secret=""}){
  return new Promise((resolve,reject)=>{
   const isSetup=Boolean(qrCode);
   const overlay=document.createElement("div");overlay.className="mfa-gate";
   overlay.innerHTML=`<form class="panel mfa-gate-card"><p class="eyebrow">Required security</p><h2>${esc(title)}</h2>
    <p>${esc(message)}</p>
-   ${isSetup?`<img class="mfa-qr" src="${qrCode}" alt="Authenticator QR code">${uri?`<a class="secondary wide" href="${esc(uri)}">Open authenticator app</a>`:""}<p class="mfa-gate-help">Use the QR code or the button above. The private setup secret is not displayed. If an old unfinished Florence entry is in your authenticator, remove it before adding this new one.</p>`:""}
+   ${isSetup?`<div class="mfa-setup-options">
+    ${uri?`<a class="primary wide mfa-open-authenticator" href="${esc(uri)}">Open authenticator app</a>`:""}
+    ${secret?`<section class="mfa-manual-setup"><strong>Set up on this phone</strong><p>If the button does not open your app, choose Add account, then Enter setup key, and use the key below.</p><div class="mfa-secret-row"><code title="Florence one-time authenticator setup key">${esc(secret)}</code><button class="mfa-copy-key" type="button" data-copy-mfa-key>Copy setup key</button></div></section>`:""}
+    <section class="mfa-qr-setup"><strong>Using a second device?</strong><p>Scan this QR code with the authenticator app on your phone.</p><img class="mfa-qr" src="${qrCode}" alt="Authenticator QR code"></section>
+    <small class="mfa-secret-warning">Keep this setup key private. Florence shows it only during setup. Never photograph or send the key or QR code.</small>
+   </div>`:""}
    <label>Six-digit code<input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required></label>
    <p class="notice hidden" data-mfa-status role="alert"></p>
    <button class="primary wide" type="submit">Continue securely</button>
    <button class="link wide" type="button" data-mfa-signout>Sign out</button>
    <p class="mfa-gate-help">Florence keeps this screen open if a code expires or is mistyped, so you can enter a fresh code without restarting setup.</p></form>`;
   document.body.appendChild(overlay);
-  const form=overlay.querySelector("form"),input=form.querySelector('[name="code"]'),submit=form.querySelector('button[type="submit"]'),status=form.querySelector("[data-mfa-status]"),signOut=form.querySelector("[data-mfa-signout]");
+  const form=overlay.querySelector("form"),input=form.querySelector('[name="code"]'),submit=form.querySelector('button[type="submit"]'),status=form.querySelector("[data-mfa-status]"),signOut=form.querySelector("[data-mfa-signout]"),copyKey=form.querySelector("[data-copy-mfa-key]");
   const showError=text=>{status.textContent=text;status.classList.remove("hidden")};
+  if(copyKey)copyKey.onclick=async()=>{
+   try{
+    if(!navigator.clipboard?.writeText)throw new Error("Clipboard access is unavailable.");
+    await navigator.clipboard.writeText(secret);
+    copyKey.textContent="Setup key copied";
+    setTimeout(()=>{if(copyKey.isConnected)copyKey.textContent="Copy setup key"},1600);
+   }catch(_error){showError("Press and hold the setup key to copy it into your authenticator app.")}
+  };
   form.onsubmit=async event=>{
    event.preventDefault();
    const code=String(new FormData(form).get("code")||"").replace(/\s+/g,"");

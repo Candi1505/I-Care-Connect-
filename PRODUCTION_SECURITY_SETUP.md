@@ -46,6 +46,8 @@ This reviewed package hardens both the browser app and its privileged Supabase p
 
 Every active supervisor, support worker, family representative and participant portal account must enrol an authenticator and verify a six-digit code before Florence opens sensitive data.
 
+During first-time enrolment Florence must support both approved setup routes: scanning the QR code from a second device, or opening the authenticator / entering the one-time setup key on the same phone. The setup key is shown only for the current enrolment, is never stored by Florence, and must never be photographed, messaged or recorded as support evidence.
+
 Record evidence of MFA enrolment without recording the QR code, setup secret or one-time codes. Supervisors must never ask workers for their Florence password, authenticator setup secret or signing PIN.
 
 ## Participant-access setup

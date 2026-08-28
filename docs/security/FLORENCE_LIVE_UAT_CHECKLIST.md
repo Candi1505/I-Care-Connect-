@@ -38,6 +38,7 @@ Status values: **Pass / Fail / Not tested / Not applicable**.
 | Password sign-in | Correct password proceeds to MFA; incorrect password denied |  |  |
 | MFA required | Protected application does not open at AAL1 |  |  |
 | Authenticator verification | Current six-digit code accepted; expired/incorrect code denied |  |  |
+| Same-phone authenticator setup | Open-authenticator action or one-time manual setup key works without photographing or messaging the QR code |  |  |
 | Idle timeout | Session signs out after the configured inactivity period |  |  |
 | Participant creation | Supervisor can create a fake participant |  |  |
 | Optional fields | Participant can be saved without information not yet available |  |  |

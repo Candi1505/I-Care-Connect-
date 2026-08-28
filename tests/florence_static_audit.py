@@ -104,7 +104,7 @@ for path in ["index.html", "set-password.html", "sil.html", "sil-record.html"]:
     require(not duplicates, f"{path} contains no duplicate IDs: {duplicates}")
 
 index = text("index.html")
-modern_asset_match = re.search(r'src="(/assets/index-[A-Za-z0-9_-]+\.js)"', index)
+modern_asset_match = re.search(r'src="(/assets/index-[A-Za-z0-9_-]+\.js)(?:\?[^\"]*)?"', index)
 modern_app = text(modern_asset_match.group(1).lstrip("/")) if modern_asset_match else ""
 modern_index = bool(modern_app)
 set_password_html = text("set-password.html")
@@ -159,7 +159,7 @@ require('sil.js?v=20260824-supervisor-domestic-1' in sil_html, "SIL page loads c
 require('sil.css?v=20260814-domestic-duty-1' in sil_html, "SIL page loads current audit-library styles")
 require('sil-record.js?v=20260814-domestic-duty-1' in sil_record_html, "evidence page loads its current secure viewer")
 require('set-password.js?v=20260824-1' in set_password_html, "setup page loads its controlled asset")
-require('florence-static-20260824-full-audit-1' in service_worker, "service worker uses current cache namespace")
+require('florence-static-20260828-mfa-onboarding-1' in service_worker, "service worker uses current cache namespace")
 require('florence-mobile-hotfix.js?v=20260824-2' in index, "index loads the current mobile reliability fix")
 require('florence-mobile-hotfix.js?v=20260824-2' in service_worker, "service worker caches the current mobile reliability fix")
 require('florence-skin-rash-monitoring.js?v=20260821-1' in index, "index loads skin and rash monitoring")
