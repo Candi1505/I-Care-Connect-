@@ -1,4 +1,4 @@
-const CACHE="florence-static-20260828-mfa-onboarding-1";
+const CACHE="florence-static-20260828-mfa-resume-1";
 const CORE_FIX="./core-ui-fixes-v3.js?v=20260812-mobile-regressions-1";
 const DEPUTY_UI="./deputy-integration.js?v=20260809-mobile-main-stability-1";
 const INVOICE_UI="./invoicing-workspace.js?v=20260813-multi-client-1";

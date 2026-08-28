@@ -156,7 +156,18 @@ async function ensureMfa(){
   });
   return;
  }
- await cleanupUnverified();
+ const unfinished=factors.find(x=>String(x.status).toLowerCase()!=="verified");
+ if(unfinished){
+  await verifyMfaFactor({
+   factorId:unfinished.id,
+   title:"Finish your Florence setup",
+   message:"Return to the authenticator entry you just added and enter its current six-digit code. Florence has kept the same private setup so a browser reload will not invalidate it.",
+   resumeSetup:true
+  });
+  await cleanupUnverified(unfinished.id).catch(()=>{});
+  await db.rpc("record_access_event",{p_action:"MFA_ENROLLED",p_table_name:"auth",p_record_id:null,p_metadata:{factor_type:"totp"}}).catch(()=>{});
+  return;
+ }
  let enrolled=null,enrollError=null;
  for(let attempt=0;attempt<2&&!enrolled;attempt++){
   const suffix=`${Date.now().toString(36)}${attempt?`-${attempt}`:""}`;
@@ -176,7 +187,7 @@ async function ensureMfa(){
  await cleanupUnverified(enrolled.id).catch(()=>{});
  await db.rpc("record_access_event",{p_action:"MFA_ENROLLED",p_table_name:"auth",p_record_id:null,p_metadata:{factor_type:"totp"}}).catch(()=>{});
 }
-function verifyMfaFactor({factorId,title,message,qrCode="",uri="",secret=""}){
+function verifyMfaFactor({factorId,title,message,qrCode="",uri="",secret="",resumeSetup=false}){
  return new Promise((resolve,reject)=>{
   const isSetup=Boolean(qrCode);
   const overlay=document.createElement("div");overlay.className="mfa-gate";
@@ -187,14 +198,17 @@ function verifyMfaFactor({factorId,title,message,qrCode="",uri="",secret=""}){
     ${secret?`<section class="mfa-manual-setup"><strong>Set up on this phone</strong><p>If the button does not open your app, choose Add account, then Enter setup key, and use the key below.</p><div class="mfa-secret-row"><code title="Florence one-time authenticator setup key">${esc(secret)}</code><button class="mfa-copy-key" type="button" data-copy-mfa-key>Copy setup key</button></div></section>`:""}
     <section class="mfa-qr-setup"><strong>Using a second device?</strong><p>Scan this QR code with the authenticator app on your phone.</p><img class="mfa-qr" src="${qrCode}" alt="Authenticator QR code"></section>
     <small class="mfa-secret-warning">Keep this setup key private. Florence shows it only during setup. Never photograph or send the key or QR code.</small>
+    <small class="mfa-secret-warning">After adding Florence, return here without refreshing. If the browser reloads, Florence will keep this same setup and ask you to finish it.</small>
    </div>`:""}
+   ${resumeSetup?`<div class="mfa-manual-setup"><strong>Your unfinished setup is safe</strong><p>Use the newest Florence entry in your authenticator. If you cannot identify it, restart once and remove the older unfinished Florence entries from the authenticator app.</p></div>`:""}
    <label>Six-digit code<input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required></label>
    <p class="notice hidden" data-mfa-status role="alert"></p>
    <button class="primary wide" type="submit">Continue securely</button>
+   ${(isSetup||resumeSetup)?`<button class="link wide" type="button" data-mfa-restart>Restart authenticator setup</button>`:""}
    <button class="link wide" type="button" data-mfa-signout>Sign out</button>
    <p class="mfa-gate-help">Florence keeps this screen open if a code expires or is mistyped, so you can enter a fresh code without restarting setup.</p></form>`;
   document.body.appendChild(overlay);
-  const form=overlay.querySelector("form"),input=form.querySelector('[name="code"]'),submit=form.querySelector('button[type="submit"]'),status=form.querySelector("[data-mfa-status]"),signOut=form.querySelector("[data-mfa-signout]"),copyKey=form.querySelector("[data-copy-mfa-key]");
+  const form=overlay.querySelector("form"),input=form.querySelector('[name="code"]'),submit=form.querySelector('button[type="submit"]'),status=form.querySelector("[data-mfa-status]"),signOut=form.querySelector("[data-mfa-signout]"),restart=form.querySelector("[data-mfa-restart]"),copyKey=form.querySelector("[data-copy-mfa-key]");
   const showError=text=>{status.textContent=text;status.classList.remove("hidden")};
   if(copyKey)copyKey.onclick=async()=>{
    try{
@@ -203,6 +217,12 @@ function verifyMfaFactor({factorId,title,message,qrCode="",uri="",secret=""}){
     copyKey.textContent="Setup key copied";
     setTimeout(()=>{if(copyKey.isConnected)copyKey.textContent="Copy setup key"},1600);
    }catch(_error){showError("Press and hold the setup key to copy it into your authenticator app.")}
+  };
+  if(restart)restart.onclick=async()=>{
+   restart.disabled=true;showError("Creating one clean authenticator setup…");
+   const {error}=await db.auth.mfa.unenroll({factorId});
+   if(error){restart.disabled=false;showError(error.message||"Florence could not restart authenticator setup.");return}
+   location.reload();
   };
   form.onsubmit=async event=>{
    event.preventDefault();
@@ -216,7 +236,7 @@ function verifyMfaFactor({factorId,title,message,qrCode="",uri="",secret=""}){
    }catch(error){
     const raw=String(error?.message||"Florence could not verify that code.");
     const friendly=/invalid|expired|verification|challenge|code/i.test(raw)
-     ?(isSetup?"That code was not accepted. Make sure it comes from the Florence entry created by this screen, wait for a fresh code, then try again.":"That code was not accepted. Wait for a fresh Florence code in your authenticator and try again.")
+     ?((isSetup||resumeSetup)?"That code does not match this Florence setup. Use the newest Florence entry, wait for a fresh code, or restart the authenticator setup once.":"That code was not accepted. Wait for a fresh Florence code in your authenticator and try again.")
      :raw;
     showError(friendly);input.value="";input.focus();
    }finally{submit.disabled=false;submit.textContent="Continue securely"}

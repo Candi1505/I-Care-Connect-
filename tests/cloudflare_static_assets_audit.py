@@ -21,6 +21,7 @@ EXPECTED_ASSETS = {
     "favicon.svg", "florence-theme.css", "florence-theme.js", "icare-connect-logo.png",
     "florence-mobile-hotfix.css", "florence-mobile-hotfix.js",
     "florence-mfa-onboarding.css",
+    "florence-mfa-resume.js",
     "florence-skin-rash-monitoring.css", "florence-skin-rash-monitoring.js",
     "portal-access-invite.css", "portal-access-invite.js",
     "worker-document-readiness.css", "worker-document-readiness.js",
