@@ -59,7 +59,8 @@ function enhanceIncidentReview(){
  root.querySelectorAll(".review-card").forEach(card=>{const title=card.querySelector("h2")?.textContent||"";if(/^Incident\s*·/i.test(title)){const e=card.querySelector(".eyebrow");if(e&&!e.textContent.trim())e.textContent="INCIDENT"}})
 }
 function enhanceComplaintButtons(){
- const activeComplaintTab=[...document.querySelectorAll("button.active")].find(b=>b.textContent.trim()==="Complaints & feedback");if(!activeComplaintTab)return;
+ const activeComplaintTab=[...document.querySelectorAll("button.active")].find(b=>b.textContent.trim()==="Complaints & feedback");
+ if(!activeComplaintTab){document.querySelectorAll("[data-open-complaint-register]").forEach(b=>b.remove());return}
  const h1=[...document.querySelectorAll("h1")].find(h=>["Incidents & complaints","Family & participant portal"].includes(h.textContent.trim()));if(!h1)return;
  const parent=h1.closest(".content")||h1.closest("main")||document;if(parent.querySelector("[data-open-complaint-register]"))return;
  const btn=document.createElement("button");btn.type="button";btn.className="row-primary florence-open-complaints";btn.dataset.openComplaintRegister="true";btn.textContent="Open complaint register";
