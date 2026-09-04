@@ -159,7 +159,7 @@ require('sil.js?v=20260824-supervisor-domestic-1' in sil_html, "SIL page loads c
 require('sil.css?v=20260814-domestic-duty-1' in sil_html, "SIL page loads current audit-library styles")
 require('sil-record.js?v=20260814-domestic-duty-1' in sil_record_html, "evidence page loads its current secure viewer")
 require('set-password.js?v=20260824-1' in set_password_html, "setup page loads its controlled asset")
-require('florence-static-20260828-mfa-resume-1' in service_worker, "service worker uses current cache namespace")
+require('florence-static-20260904-community-late-entry-1' in service_worker, "service worker uses current cache namespace")
 require('florence-mobile-hotfix.js?v=20260824-2' in index, "index loads the current mobile reliability fix")
 require('florence-mobile-hotfix.js?v=20260824-2' in service_worker, "service worker caches the current mobile reliability fix")
 require('florence-skin-rash-monitoring.js?v=20260821-1' in index, "index loads skin and rash monitoring")

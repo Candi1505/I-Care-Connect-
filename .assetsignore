@@ -70,6 +70,8 @@
 !florence-timesheet-recovery.js
 !florence-complaints-review-hotfix.css
 !florence-complaints-review-hotfix.js
+!florence-community-late-entry.css
+!florence-community-late-entry.js
 
 # Cloudflare security and crawler controls
 !_headers
