@@ -1,0 +1,65 @@
+.late-entry-panel {
+  display: grid;
+  gap: 0.55rem;
+  padding: 1rem;
+  border: 1px solid rgba(14, 107, 84, 0.24);
+  border-radius: 18px;
+  background: rgba(232, 247, 240, 0.72);
+  color: #173d34;
+}
+
+.late-entry-panel strong {
+  font-size: 0.98rem;
+}
+
+.late-entry-panel p {
+  margin: 0;
+  color: #49675f;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.late-entry-status {
+  display: inline-flex;
+  width: fit-content;
+  padding: 0.4rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(14, 107, 84, 0.1);
+  color: #0e6b54;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.late-entry-panel.is-late {
+  border-color: rgba(167, 94, 0, 0.36);
+  background: #fff7e8;
+}
+
+.late-entry-panel.is-late .late-entry-status {
+  background: #f9dfb2;
+  color: #754500;
+}
+
+.late-entry-reason {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.2rem;
+  color: #533600;
+  font-weight: 750;
+}
+
+.late-entry-reason[hidden] {
+  display: none;
+}
+
+.late-entry-reason textarea,
+.late-entry-date-field input {
+  width: 100%;
+}
+
+@media (max-width: 680px) {
+  .late-entry-panel {
+    padding: 0.85rem;
+    border-radius: 15px;
+  }
+}
